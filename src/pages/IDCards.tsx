@@ -1,0 +1,150 @@
+import { useState } from 'react';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { CLASS_LIST } from '@/types';
+import { Search, Printer, Download, User, QrCode, School } from 'lucide-react';
+
+const students = [
+  { id: '1', name: 'Chioma Adeyemi', admissionNumber: 'ADM-2025-0001', class: 'Primary 5', photo: null },
+  { id: '2', name: 'Emeka Okonkwo', admissionNumber: 'ADM-2025-0002', class: 'JSS 2', photo: null },
+  { id: '3', name: 'Fatima Ibrahim', admissionNumber: 'ADM-2025-0003', class: 'Nursery 2', photo: null },
+];
+
+export default function IDCards() {
+  const [selectedStudent, setSelectedStudent] = useState<typeof students[0] | null>(null);
+  const [search, setSearch] = useState('');
+  const [classFilter, setClassFilter] = useState('all');
+
+  return (
+    <MainLayout title="Student ID Cards" subtitle="Generate and manage student identification cards">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
+        {/* Left Column - Student Selection */}
+        <div className="space-y-4">
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search student..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={classFilter} onValueChange={setClassFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="All Classes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+                {CLASS_LIST.map((cls) => (
+                  <SelectItem key={cls.id} value={cls.id}>
+                    {cls.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border/50 shadow-sm divide-y divide-border">
+            {students.map((student) => (
+              <button
+                key={student.id}
+                onClick={() => setSelectedStudent(student)}
+                className={`w-full flex items-center gap-4 p-4 text-left hover:bg-muted/30 transition-colors ${
+                  selectedStudent?.id === student.id ? 'bg-primary/5' : ''
+                }`}
+              >
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-foreground">{student.name}</p>
+                  <p className="text-sm text-muted-foreground">{student.admissionNumber}</p>
+                </div>
+                <Badge variant="secondary">{student.class}</Badge>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Right Column - ID Card Preview */}
+        <div className="space-y-4">
+          <h3 className="font-semibold text-foreground">ID Card Preview</h3>
+          
+          {selectedStudent ? (
+            <>
+              {/* ID Card */}
+              <div className="bg-card rounded-2xl border-2 border-primary/20 shadow-lg overflow-hidden max-w-sm mx-auto">
+                {/* Header */}
+                <div className="bg-gradient-primary p-4 text-center text-primary-foreground">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <School className="h-6 w-6" />
+                    <span className="font-bold text-lg">EduManage School</span>
+                  </div>
+                  <p className="text-xs opacity-90">Excellence in Education</p>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 text-center">
+                  {/* Photo */}
+                  <div className="h-28 w-28 mx-auto rounded-full bg-muted border-4 border-primary/20 flex items-center justify-center mb-4">
+                    <User className="h-14 w-14 text-muted-foreground" />
+                  </div>
+
+                  {/* Details */}
+                  <h4 className="font-bold text-xl text-foreground mb-1">{selectedStudent.name}</h4>
+                  <p className="text-sm text-muted-foreground mb-3">{selectedStudent.class}</p>
+                  
+                  <div className="bg-muted/50 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-muted-foreground mb-1">Admission Number</p>
+                    <p className="font-mono font-bold text-primary">{selectedStudent.admissionNumber}</p>
+                  </div>
+
+                  {/* QR Code placeholder */}
+                  <div className="inline-flex items-center justify-center h-20 w-20 bg-foreground rounded-lg">
+                    <QrCode className="h-16 w-16 text-background" />
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="bg-muted/50 p-3 text-center text-xs text-muted-foreground">
+                  <p>Valid for Academic Year 2024/2025</p>
+                  <p>If found, please return to school</p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 justify-center">
+                <Button variant="outline">
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print ID Card
+                </Button>
+                <Button className="bg-gradient-primary hover:opacity-90">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="bg-card rounded-xl border border-border/50 p-12 shadow-sm text-center">
+              <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">Select a Student</h3>
+              <p className="text-muted-foreground">
+                Choose a student from the list to preview and generate their ID card
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </MainLayout>
+  );
+}
