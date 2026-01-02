@@ -68,14 +68,22 @@ export default function Admission() {
         ...formData,
         photoUrl: photoUrl || undefined,
       };
-      const student = addStudent(studentData);
-      setNewStudent(student);
-      setShowSuccess(true);
-      
-      toast({
-        title: 'Student Admitted Successfully!',
-        description: `${student.fullName} has been admitted with admission number ${student.admissionNumber}`,
-      });
+      const student = await addStudent(studentData);
+      if (student) {
+        setNewStudent(student);
+        setShowSuccess(true);
+        
+        toast({
+          title: 'Student Admitted Successfully!',
+          description: `${student.fullName} has been admitted with admission number ${student.admissionNumber}`,
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to admit student. Please try again.',
+          variant: 'destructive',
+        });
+      }
 
       // Reset form
       setFormData({
