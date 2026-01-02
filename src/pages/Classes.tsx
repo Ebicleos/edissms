@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -5,6 +6,7 @@ import { CLASS_LIST_DETAILED } from '@/types';
 import { useStudents } from '@/hooks/useStudents';
 import { Users, GraduationCap, ChevronRight, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { AddClassDialog } from '@/components/classes/AddClassDialog';
 
 const levelColors: Record<string, string> = {
   'Early Years': 'bg-pink-100 text-pink-700 border-pink-200',
@@ -24,6 +26,7 @@ const levelIcons: Record<string, string> = {
 
 export default function Classes() {
   const { getStudentsByClass } = useStudents();
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   // Group classes by level
   const groupedClasses = CLASS_LIST_DETAILED.reduce((acc, cls) => {
@@ -50,7 +53,10 @@ export default function Classes() {
               5 Levels
             </Badge>
           </div>
-          <Button className="bg-gradient-primary hover:opacity-90">
+          <Button 
+            className="bg-gradient-primary hover:opacity-90"
+            onClick={() => setAddDialogOpen(true)}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Class
           </Button>
@@ -116,6 +122,11 @@ export default function Classes() {
           </div>
         ))}
       </div>
+
+      <AddClassDialog 
+        open={addDialogOpen} 
+        onOpenChange={setAddDialogOpen}
+      />
     </MainLayout>
   );
 }

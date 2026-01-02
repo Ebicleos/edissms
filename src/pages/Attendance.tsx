@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,23 +19,131 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { CLASS_LIST_DETAILED, AttendanceStatus } from '@/types';
-import { Check, X, Clock, AlertCircle, Save, CalendarDays } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import { Check, X, Clock, AlertCircle, Save, CalendarDays, Loader2 } from 'lucide-react';
 
-const mockStudents = [
-  { id: '1', name: 'Chioma Adeyemi', admissionNumber: 'ADM-2025-0001' },
-  { id: '2', name: 'Emeka Okonkwo', admissionNumber: 'ADM-2025-0002' },
-  { id: '3', name: 'Fatima Ibrahim', admissionNumber: 'ADM-2025-0003' },
-  { id: '4', name: 'David Okafor', admissionNumber: 'ADM-2025-0004' },
-  { id: '5', name: 'Grace Mensah', admissionNumber: 'ADM-2025-0005' },
-];
+interface StudentRecord {
+  id: string;
+  name: string;
+  admissionNumber: string;
+}
 
 export default function Attendance() {
+  const { user } = useAuth();
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
+  const [students, setStudents] = useState<StudentRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (selectedClass) {
+      fetchStudents();
+    }
+  }, [selectedClass]);
+
+  useEffect(() => {
+    if (selectedClass && selectedDate) {
+      fetchExistingAttendance();
+    }
+  }, [selectedClass, selectedDate]);
+
+  const fetchStudents = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('student_classes')
+        .select(`
+          student_id,
+          admission_number,
+          profiles!inner(full_name)
+        `)
+        .eq('class_id', selectedClass);
+
+      if (error) throw error;
+
+      const studentRecords: StudentRecord[] = (data || []).map((s: any) => ({
+        id: s.student_id,
+        name: s.profiles?.full_name || 'Unknown',
+        admissionNumber: s.admission_number || 'N/A',
+      }));
+
+      setStudents(studentRecords);
+    } catch (error: any) {
+      toast.error('Failed to load students', { description: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchExistingAttendance = async () => {
+    if (!selectedDate) return;
+    
+    try {
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('attendance')
+        .select('student_id, status')
+        .eq('class_id', selectedClass)
+        .eq('date', dateStr);
+
+      if (error) throw error;
+
+      const attendanceMap: Record<string, AttendanceStatus> = {};
+      (data || []).forEach((record: any) => {
+        attendanceMap[record.student_id] = record.status as AttendanceStatus;
+      });
+      setAttendance(attendanceMap);
+    } catch (error: any) {
+      console.error('Error fetching attendance:', error);
+    }
+  };
 
   const handleAttendanceChange = (studentId: string, status: AttendanceStatus) => {
     setAttendance((prev) => ({ ...prev, [studentId]: status }));
+  };
+
+  const handleSaveAttendance = async () => {
+    if (!selectedClass || !selectedDate || Object.keys(attendance).length === 0) {
+      toast.error('Please mark attendance for at least one student');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      
+      // Prepare upsert data
+      const records = Object.entries(attendance).map(([studentId, status]) => ({
+        student_id: studentId,
+        class_id: selectedClass,
+        date: dateStr,
+        status,
+        marked_by: user?.id,
+      }));
+
+      // Delete existing records for the day and class, then insert new ones
+      await supabase
+        .from('attendance')
+        .delete()
+        .eq('class_id', selectedClass)
+        .eq('date', dateStr);
+
+      const { error } = await supabase.from('attendance').insert(records);
+
+      if (error) throw error;
+
+      toast.success('Attendance saved successfully', {
+        description: `${records.length} records saved for ${selectedDate.toLocaleDateString()}`,
+      });
+    } catch (error: any) {
+      toast.error('Failed to save attendance', { description: error.message });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getStatusIcon = (status?: AttendanceStatus) => {
@@ -93,13 +201,17 @@ export default function Attendance() {
             </div>
 
             {/* Summary */}
-            {selectedClass && (
+            {selectedClass && students.length > 0 && (
               <div className="bg-card rounded-xl border border-border/50 p-4 shadow-sm space-y-3">
                 <h3 className="font-semibold text-foreground">Summary</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Students</span>
+                    <Badge variant="outline">{students.length}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Present</span>
-                    <Badge className="badge-success">{presentCount}</Badge>
+                    <Badge className="bg-success text-success-foreground">{presentCount}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Absent</span>
@@ -107,7 +219,7 @@ export default function Attendance() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Late</span>
-                    <Badge className="badge-warning">{lateCount}</Badge>
+                    <Badge className="bg-warning text-warning-foreground">{lateCount}</Badge>
                   </div>
                 </div>
               </div>
@@ -132,75 +244,93 @@ export default function Attendance() {
                       })}
                     </p>
                   </div>
-                  <Button className="bg-gradient-primary hover:opacity-90">
-                    <Save className="mr-2 h-4 w-4" />
+                  <Button 
+                    className="bg-gradient-primary hover:opacity-90"
+                    onClick={handleSaveAttendance}
+                    disabled={isSaving || Object.keys(attendance).length === 0}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
                     Save Attendance
                   </Button>
                 </div>
 
-                <Table>
-                  <TableHeader>
-                    <TableRow className="table-header">
-                      <TableHead>Student</TableHead>
-                      <TableHead>Admission No.</TableHead>
-                      <TableHead className="text-center">Present</TableHead>
-                      <TableHead className="text-center">Absent</TableHead>
-                      <TableHead className="text-center">Late</TableHead>
-                      <TableHead className="text-center">Excused</TableHead>
-                      <TableHead className="text-center">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockStudents.map((student) => (
-                      <TableRow key={student.id} className="hover:bg-muted/30">
-                        <TableCell className="font-medium">{student.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{student.admissionNumber}</TableCell>
-                        <TableCell className="text-center">
-                          <Button
-                            size="icon"
-                            variant={attendance[student.id] === 'present' ? 'default' : 'outline'}
-                            className={attendance[student.id] === 'present' ? 'bg-success hover:bg-success/90' : ''}
-                            onClick={() => handleAttendanceChange(student.id, 'present')}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Button
-                            size="icon"
-                            variant={attendance[student.id] === 'absent' ? 'destructive' : 'outline'}
-                            onClick={() => handleAttendanceChange(student.id, 'absent')}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Button
-                            size="icon"
-                            variant={attendance[student.id] === 'late' ? 'default' : 'outline'}
-                            className={attendance[student.id] === 'late' ? 'bg-warning hover:bg-warning/90' : ''}
-                            onClick={() => handleAttendanceChange(student.id, 'late')}
-                          >
-                            <Clock className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Button
-                            size="icon"
-                            variant={attendance[student.id] === 'excused' ? 'default' : 'outline'}
-                            className={attendance[student.id] === 'excused' ? 'bg-info hover:bg-info/90' : ''}
-                            onClick={() => handleAttendanceChange(student.id, 'excused')}
-                          >
-                            <AlertCircle className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {getStatusIcon(attendance[student.id])}
-                        </TableCell>
+                {isLoading ? (
+                  <div className="flex justify-center p-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : students.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <p className="text-muted-foreground">No students found in this class</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead>Student</TableHead>
+                        <TableHead>Admission No.</TableHead>
+                        <TableHead className="text-center">Present</TableHead>
+                        <TableHead className="text-center">Absent</TableHead>
+                        <TableHead className="text-center">Late</TableHead>
+                        <TableHead className="text-center">Excused</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {students.map((student) => (
+                        <TableRow key={student.id} className="hover:bg-muted/30">
+                          <TableCell className="font-medium">{student.name}</TableCell>
+                          <TableCell className="text-muted-foreground">{student.admissionNumber}</TableCell>
+                          <TableCell className="text-center">
+                            <Button
+                              size="icon"
+                              variant={attendance[student.id] === 'present' ? 'default' : 'outline'}
+                              className={attendance[student.id] === 'present' ? 'bg-success hover:bg-success/90' : ''}
+                              onClick={() => handleAttendanceChange(student.id, 'present')}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button
+                              size="icon"
+                              variant={attendance[student.id] === 'absent' ? 'destructive' : 'outline'}
+                              onClick={() => handleAttendanceChange(student.id, 'absent')}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button
+                              size="icon"
+                              variant={attendance[student.id] === 'late' ? 'default' : 'outline'}
+                              className={attendance[student.id] === 'late' ? 'bg-warning hover:bg-warning/90' : ''}
+                              onClick={() => handleAttendanceChange(student.id, 'late')}
+                            >
+                              <Clock className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button
+                              size="icon"
+                              variant={attendance[student.id] === 'excused' ? 'default' : 'outline'}
+                              className={attendance[student.id] === 'excused' ? 'bg-info hover:bg-info/90' : ''}
+                              onClick={() => handleAttendanceChange(student.id, 'excused')}
+                            >
+                              <AlertCircle className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {getStatusIcon(attendance[student.id])}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </div>
             ) : (
               <div className="bg-card rounded-xl border border-border/50 p-12 shadow-sm text-center">
