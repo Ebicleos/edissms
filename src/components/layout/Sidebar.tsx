@@ -17,6 +17,8 @@ import {
   Trophy,
   PenTool,
   Plus,
+  FileText,
+  ArrowUpRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, AppRole } from '@/contexts/AuthContext';
@@ -37,6 +39,8 @@ const menuItems: MenuItem[] = [
   { icon: UserCog, label: 'Teachers', path: '/teachers', roles: ['admin'] },
   { icon: Wallet, label: 'Fees', path: '/fees', roles: ['admin'] },
   { icon: ClipboardList, label: 'Exams', path: '/exams', roles: ['admin'] },
+  { icon: FileText, label: 'Report Cards', path: '/report-cards', roles: ['admin'] },
+  { icon: ArrowUpRight, label: 'Promotion', path: '/promotion', roles: ['admin'] },
   { icon: Video, label: 'Online Classes', path: '/online-classes', roles: ['admin', 'teacher', 'student'] },
   { icon: Calendar, label: 'Attendance', path: '/attendance', roles: ['admin', 'teacher'] },
   { icon: IdCard, label: 'ID Cards', path: '/id-cards', roles: ['admin'] },

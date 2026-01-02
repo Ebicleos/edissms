@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { School, User, Lock, Bell, Shield, Save, Loader2 } from 'lucide-react';
+import { School, User, Lock, Bell, Shield, Save, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +31,11 @@ export default function Settings() {
   const [address, setAddress] = useState('');
   const [academicYear, setAcademicYear] = useState('');
   const [term, setTerm] = useState('');
+
+  // Report card settings
+  const [principalName, setPrincipalName] = useState('');
+  const [closingDate, setClosingDate] = useState('');
+  const [nextTermBegins, setNextTermBegins] = useState('');
 
   // Account settings
   const [fullName, setFullName] = useState('');
@@ -70,6 +75,9 @@ export default function Settings() {
       setAddress(schoolData.address || '');
       setAcademicYear(schoolData.academic_year || '');
       setTerm(schoolData.term || '');
+      setPrincipalName(schoolData.principal_name || '');
+      setClosingDate(schoolData.closing_date || '');
+      setNextTermBegins(schoolData.next_term_begins || '');
     }
 
     // Set account settings from profile
@@ -98,6 +106,9 @@ export default function Settings() {
       address,
       academic_year: academicYear,
       term,
+      principal_name: principalName,
+      closing_date: closingDate || null,
+      next_term_begins: nextTermBegins || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -208,6 +219,10 @@ export default function Settings() {
             <TabsTrigger value="notifications" className="gap-2">
               <Bell className="h-4 w-4" />
               Notifications
+            </TabsTrigger>
+            <TabsTrigger value="report-cards" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Report Cards
             </TabsTrigger>
           </TabsList>
 
@@ -521,6 +536,110 @@ export default function Settings() {
                   >
                     <Save className="mr-2 h-4 w-4" />
                     Save Preferences
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Report Card Settings */}
+          <TabsContent value="report-cards">
+            <Card>
+              <CardHeader>
+                <CardTitle>Report Card Settings</CardTitle>
+                <CardDescription>
+                  Configure report card display and academic calendar
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="principalName">Principal/Proprietor Name</Label>
+                    <Input 
+                      id="principalName" 
+                      value={principalName}
+                      onChange={(e) => setPrincipalName(e.target.value)}
+                      placeholder="Enter principal's name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="closingDate">Term Closing Date</Label>
+                    <Input 
+                      id="closingDate" 
+                      type="date"
+                      value={closingDate}
+                      onChange={(e) => setClosingDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="nextTermBegins">Next Term Begins</Label>
+                    <Input 
+                      id="nextTermBegins" 
+                      type="date"
+                      value={nextTermBegins}
+                      onChange={(e) => setNextTermBegins(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-medium text-foreground mb-4">Grading Scale</h4>
+                  <div className="grid grid-cols-4 gap-2 text-sm font-medium text-muted-foreground mb-2">
+                    <span>Score Range</span>
+                    <span>Grade</span>
+                    <span>Remarks</span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="grid grid-cols-4 gap-2 items-center">
+                      <span>80 - 100</span>
+                      <span className="font-semibold">A</span>
+                      <span className="text-success">Excellent</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 items-center">
+                      <span>75 - 79</span>
+                      <span className="font-semibold">B+</span>
+                      <span className="text-success">Very Good</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 items-center">
+                      <span>70 - 74</span>
+                      <span className="font-semibold">B</span>
+                      <span className="text-primary">Good</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 items-center">
+                      <span>60 - 69</span>
+                      <span className="font-semibold">C</span>
+                      <span className="text-primary">Credit</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 items-center">
+                      <span>50 - 59</span>
+                      <span className="font-semibold">D</span>
+                      <span className="text-warning">Pass</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 items-center">
+                      <span>0 - 49</span>
+                      <span className="font-semibold">F</span>
+                      <span className="text-destructive">Fail</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Contact support to customize grading scale
+                  </p>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button 
+                    className="bg-gradient-primary hover:opacity-90"
+                    onClick={handleSaveSchoolSettings}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Save Settings
                   </Button>
                 </div>
               </CardContent>
