@@ -1,13 +1,65 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Users, ClipboardList, Calendar, BookOpen, Plus } from 'lucide-react';
+import { Users, ClipboardList, Calendar, Plus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function TeacherDashboard() {
-  const { profile, userClass } = useAuth();
+  const { profile, userClass, user } = useAuth();
   const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    classCount: 0,
+    studentCount: 0,
+    examCount: 0,
+    isLoading: true,
+  });
+
+  useEffect(() => {
+    async function fetchTeacherStats() {
+      if (!user) return;
+
+      try {
+        // Fetch teacher's classes
+        const { data: classesData } = await supabase
+          .from('teacher_classes')
+          .select('class_id')
+          .eq('teacher_id', user.id);
+
+        const classIds = classesData?.map((c) => c.class_id) || [];
+
+        // Fetch students count in those classes
+        let studentCount = 0;
+        if (classIds.length > 0) {
+          const { count } = await supabase
+            .from('students')
+            .select('id', { count: 'exact', head: true })
+            .in('class_id', classIds);
+          studentCount = count || 0;
+        }
+
+        // Fetch exams created by this teacher
+        const { count: examCount } = await supabase
+          .from('exams')
+          .select('id', { count: 'exact', head: true })
+          .eq('teacher_id', user.id)
+          .eq('is_published', true);
+
+        setStats({
+          classCount: classIds.length,
+          studentCount,
+          examCount: examCount || 0,
+          isLoading: false,
+        });
+      } catch (error) {
+        console.error('Error fetching teacher stats:', error);
+        setStats((prev) => ({ ...prev, isLoading: false }));
+      }
+    }
+
+    fetchTeacherStats();
+  }, [user]);
 
   const quickActions = [
     {
@@ -84,8 +136,10 @@ export default function TeacherDashboard() {
               <CardTitle className="text-lg">My Classes</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-primary">1</p>
-              <p className="text-muted-foreground">Assigned class</p>
+              <p className="text-3xl font-bold text-primary">
+                {stats.isLoading ? '...' : stats.classCount}
+              </p>
+              <p className="text-muted-foreground">Assigned classes</p>
             </CardContent>
           </Card>
           <Card>
@@ -93,7 +147,9 @@ export default function TeacherDashboard() {
               <CardTitle className="text-lg">Students</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-blue-600">0</p>
+              <p className="text-3xl font-bold text-blue-600">
+                {stats.isLoading ? '...' : stats.studentCount}
+              </p>
               <p className="text-muted-foreground">In your classes</p>
             </CardContent>
           </Card>
@@ -102,7 +158,9 @@ export default function TeacherDashboard() {
               <CardTitle className="text-lg">Active Exams</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-green-600">0</p>
+              <p className="text-3xl font-bold text-green-600">
+                {stats.isLoading ? '...' : stats.examCount}
+              </p>
               <p className="text-muted-foreground">Published exams</p>
             </CardContent>
           </Card>

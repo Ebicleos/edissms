@@ -3,9 +3,12 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentStudents } from '@/components/dashboard/RecentStudents';
 import { FeesSummary } from '@/components/dashboard/FeesSummary';
-import { Users, GraduationCap, BookOpen, Wallet, UserCheck, TrendingUp } from 'lucide-react';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { Users, GraduationCap, BookOpen, UserCheck, Loader2 } from 'lucide-react';
 
 export default function Dashboard() {
+  const stats = useDashboardStats();
+
   return (
     <MainLayout title="Dashboard" subtitle="Welcome back! Here's your school overview.">
       <div className="space-y-6 animate-fade-in">
@@ -13,32 +16,30 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Total Students"
-            value="1,247"
+            value={stats.isLoading ? '...' : stats.totalStudents.toLocaleString()}
             subtitle="Active enrollments"
             icon={Users}
             variant="primary"
-            trend={{ value: 12, isPositive: true }}
           />
           <StatCard
             title="Total Teachers"
-            value="48"
+            value={stats.isLoading ? '...' : stats.totalTeachers.toLocaleString()}
             subtitle="Full-time staff"
             icon={GraduationCap}
             variant="secondary"
           />
           <StatCard
             title="Total Classes"
-            value="17"
+            value={stats.isLoading ? '...' : stats.totalClasses.toLocaleString()}
             subtitle="Across all levels"
             icon={BookOpen}
             variant="accent"
           />
           <StatCard
             title="Attendance Rate"
-            value="94.2%"
+            value={stats.isLoading ? '...' : `${stats.attendanceRate}%`}
             subtitle="This month"
             icon={UserCheck}
-            trend={{ value: 2.5, isPositive: true }}
           />
         </div>
 
