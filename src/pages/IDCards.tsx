@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CLASS_LIST } from '@/types';
+import { CLASS_LIST_DETAILED } from '@/types';
 import { Search, Printer, Download, User, QrCode, School } from 'lucide-react';
 
 const students = [
@@ -45,7 +45,7 @@ export default function IDCards() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Classes</SelectItem>
-                {CLASS_LIST.map((cls) => (
+                {CLASS_LIST_DETAILED.map((cls) => (
                   <SelectItem key={cls.id} value={cls.id}>
                     {cls.name}
                   </SelectItem>

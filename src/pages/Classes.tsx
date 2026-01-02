@@ -1,7 +1,7 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CLASS_LIST } from '@/types';
+import { CLASS_LIST_DETAILED } from '@/types';
 import { useStudents } from '@/hooks/useStudents';
 import { Users, GraduationCap, ChevronRight, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -26,7 +26,7 @@ export default function Classes() {
   const { getStudentsByClass } = useStudents();
 
   // Group classes by level
-  const groupedClasses = CLASS_LIST.reduce((acc, cls) => {
+  const groupedClasses = CLASS_LIST_DETAILED.reduce((acc, cls) => {
     if (!acc[cls.level]) {
       acc[cls.level] = [];
     }
@@ -35,7 +35,7 @@ export default function Classes() {
       studentCount: getStudentsByClass(cls.id).length,
     });
     return acc;
-  }, {} as Record<string, Array<typeof CLASS_LIST[0] & { studentCount: number }>>);
+  }, {} as Record<string, Array<typeof CLASS_LIST_DETAILED[0] & { studentCount: number }>>);
 
   return (
     <MainLayout title="Classes" subtitle="Manage all school classes and levels">
@@ -44,7 +44,7 @@ export default function Classes() {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Badge variant="secondary" className="text-sm">
-              {CLASS_LIST.length} Classes
+              {CLASS_LIST_DETAILED.length} Classes
             </Badge>
             <Badge variant="outline" className="text-sm">
               5 Levels

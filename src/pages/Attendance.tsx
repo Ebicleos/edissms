@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { CLASS_LIST, AttendanceStatus } from '@/types';
+import { CLASS_LIST_DETAILED, AttendanceStatus } from '@/types';
 import { Check, X, Clock, AlertCircle, Save, CalendarDays } from 'lucide-react';
 
 const mockStudents = [
@@ -83,7 +83,7 @@ export default function Attendance() {
                   <SelectValue placeholder="Choose a class" />
                 </SelectTrigger>
                 <SelectContent>
-                  {CLASS_LIST.map((cls) => (
+                  {CLASS_LIST_DETAILED.map((cls) => (
                     <SelectItem key={cls.id} value={cls.id}>
                       {cls.name}
                     </SelectItem>
@@ -121,7 +121,7 @@ export default function Attendance() {
                 <div className="p-4 border-b border-border flex justify-between items-center">
                   <div>
                     <h3 className="font-semibold text-foreground">
-                      {CLASS_LIST.find((c) => c.id === selectedClass)?.name} Attendance
+                      {CLASS_LIST_DETAILED.find((c) => c.id === selectedClass)?.name} Attendance
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       {selectedDate?.toLocaleDateString('en-NG', {
