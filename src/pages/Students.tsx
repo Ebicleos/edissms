@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,14 +25,36 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useStudents } from '@/hooks/useStudents';
-import { CLASS_LIST_DETAILED } from '@/types';
+import { CLASS_LIST_DETAILED, Student } from '@/types';
 import { Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Printer, IdCard } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Students() {
-  const { students } = useStudents();
+  const { students, deleteStudent } = useStudents();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('all');
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
@@ -53,6 +75,42 @@ export default function Students() {
       currency: 'NGN',
       minimumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const handleViewDetails = (student: Student) => {
+    setSelectedStudent(student);
+    setViewDialogOpen(true);
+  };
+
+  const handleEditStudent = (student: Student) => {
+    toast.info(`Editing ${student.fullName}`, {
+      description: 'Edit functionality will be available soon.',
+    });
+  };
+
+  const handlePrintReceipt = (student: Student) => {
+    toast.success(`Printing receipt for ${student.fullName}`, {
+      description: 'Receipt is being generated...',
+    });
+  };
+
+  const handleGenerateIDCard = (student: Student) => {
+    navigate(`/id-cards?student=${student.id}`);
+    toast.success(`Generating ID Card for ${student.fullName}`);
+  };
+
+  const handleDeleteClick = (student: Student) => {
+    setSelectedStudent(student);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedStudent) {
+      deleteStudent(selectedStudent.id);
+      toast.success(`${selectedStudent.fullName} has been deleted`);
+      setDeleteDialogOpen(false);
+      setSelectedStudent(null);
+    }
   };
 
   return (
@@ -153,23 +211,23 @@ export default function Students() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleViewDetails(student)}>
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditStudent(student)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit Student
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handlePrintReceipt(student)}>
                             <Printer className="mr-2 h-4 w-4" />
                             Print Receipt
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleGenerateIDCard(student)}>
                             <IdCard className="mr-2 h-4 w-4" />
                             Generate ID Card
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(student)}>
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
@@ -196,6 +254,89 @@ export default function Students() {
           </div>
         </div>
       </div>
+
+      {/* View Details Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Student Details</DialogTitle>
+            <DialogDescription>
+              Complete information about the student
+            </DialogDescription>
+          </DialogHeader>
+          {selectedStudent && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-xl font-semibold text-primary">
+                    {selectedStudent.fullName.split(' ').map((n) => n[0]).join('')}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-semibold text-lg">{selectedStudent.fullName}</p>
+                  <Badge variant="outline">{selectedStudent.admissionNumber}</Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Class</p>
+                  <p className="font-medium">{selectedStudent.className}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Age</p>
+                  <p className="font-medium">{selectedStudent.age} years</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Gender</p>
+                  <p className="font-medium capitalize">{selectedStudent.gender}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Date of Birth</p>
+                  <p className="font-medium">{selectedStudent.dateOfBirth}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Guardian</p>
+                  <p className="font-medium">{selectedStudent.guardianName}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Phone</p>
+                  <p className="font-medium">{selectedStudent.phoneContact}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">Address</p>
+                  <p className="font-medium">{selectedStudent.address}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Admission Fee</p>
+                  <p className="font-medium">{formatCurrency(selectedStudent.admissionFee)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Admission Date</p>
+                  <p className="font-medium">{selectedStudent.dateOfAdmission}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {selectedStudent?.fullName}'s record. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }
