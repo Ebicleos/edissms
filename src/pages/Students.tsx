@@ -91,7 +91,7 @@ export default function Students() {
 
   const handleSaveStudent = (updatedStudent: Student) => {
     if (updateStudent) {
-      updateStudent(updatedStudent);
+      updateStudent(updatedStudent.id, updatedStudent);
     }
     setEditDialogOpen(false);
     setSelectedStudent(null);
