@@ -515,6 +515,45 @@ export type Database = {
         }
         Relationships: []
       }
+      promotion_history: {
+        Row: {
+          academic_year: string
+          average_score: number | null
+          created_at: string | null
+          from_class: string
+          id: string
+          promoted_by: string | null
+          promotion_date: string | null
+          status: string
+          student_id: string
+          to_class: string
+        }
+        Insert: {
+          academic_year: string
+          average_score?: number | null
+          created_at?: string | null
+          from_class: string
+          id?: string
+          promoted_by?: string | null
+          promotion_date?: string | null
+          status?: string
+          student_id: string
+          to_class: string
+        }
+        Update: {
+          academic_year?: string
+          average_score?: number | null
+          created_at?: string | null
+          from_class?: string
+          id?: string
+          promoted_by?: string | null
+          promotion_date?: string | null
+          status?: string
+          student_id?: string
+          to_class?: string
+        }
+        Relationships: []
+      }
       questions: {
         Row: {
           correct_option: string
@@ -565,48 +604,72 @@ export type Database = {
       report_cards: {
         Row: {
           academic_year: string
+          attendance_present: number | null
+          attendance_total: number | null
+          attitude: string | null
           average_score: number | null
           class_id: string
+          closing_date: string | null
+          conduct: string | null
           generated_at: string | null
           id: string
+          interest: string | null
           next_term_begins: string | null
           position: number | null
           principal_remarks: string | null
+          promotion_status: string | null
           student_id: string
           teacher_remarks: string | null
           term: string
+          term_summary: Json | null
           total_marks_obtainable: number | null
           total_marks_obtained: number | null
           total_students: number | null
         }
         Insert: {
           academic_year: string
+          attendance_present?: number | null
+          attendance_total?: number | null
+          attitude?: string | null
           average_score?: number | null
           class_id: string
+          closing_date?: string | null
+          conduct?: string | null
           generated_at?: string | null
           id?: string
+          interest?: string | null
           next_term_begins?: string | null
           position?: number | null
           principal_remarks?: string | null
+          promotion_status?: string | null
           student_id: string
           teacher_remarks?: string | null
           term: string
+          term_summary?: Json | null
           total_marks_obtainable?: number | null
           total_marks_obtained?: number | null
           total_students?: number | null
         }
         Update: {
           academic_year?: string
+          attendance_present?: number | null
+          attendance_total?: number | null
+          attitude?: string | null
           average_score?: number | null
           class_id?: string
+          closing_date?: string | null
+          conduct?: string | null
           generated_at?: string | null
           id?: string
+          interest?: string | null
           next_term_begins?: string | null
           position?: number | null
           principal_remarks?: string | null
+          promotion_status?: string | null
           student_id?: string
           teacher_remarks?: string | null
           term?: string
+          term_summary?: Json | null
           total_marks_obtainable?: number | null
           total_marks_obtained?: number | null
           total_students?: number | null
@@ -617,12 +680,17 @@ export type Database = {
         Row: {
           academic_year: string | null
           address: string | null
+          closing_date: string | null
           created_at: string | null
           email: string | null
+          grading_scale: Json | null
           id: string
           logo_url: string | null
           motto: string | null
+          next_term_begins: string | null
           phone: string | null
+          principal_name: string | null
+          report_card_config: Json | null
           school_name: string | null
           term: string | null
           updated_at: string | null
@@ -630,12 +698,17 @@ export type Database = {
         Insert: {
           academic_year?: string | null
           address?: string | null
+          closing_date?: string | null
           created_at?: string | null
           email?: string | null
+          grading_scale?: Json | null
           id?: string
           logo_url?: string | null
           motto?: string | null
+          next_term_begins?: string | null
           phone?: string | null
+          principal_name?: string | null
+          report_card_config?: Json | null
           school_name?: string | null
           term?: string | null
           updated_at?: string | null
@@ -643,12 +716,17 @@ export type Database = {
         Update: {
           academic_year?: string | null
           address?: string | null
+          closing_date?: string | null
           created_at?: string | null
           email?: string | null
+          grading_scale?: Json | null
           id?: string
           logo_url?: string | null
           motto?: string | null
+          next_term_begins?: string | null
           phone?: string | null
+          principal_name?: string | null
+          report_card_config?: Json | null
           school_name?: string | null
           term?: string | null
           updated_at?: string | null
@@ -733,6 +811,7 @@ export type Database = {
           student_id: string
           subject_id: string | null
           subject_name: string
+          subject_position: number | null
           term: string
           total_score: number | null
         }
@@ -750,6 +829,7 @@ export type Database = {
           student_id: string
           subject_id?: string | null
           subject_name: string
+          subject_position?: number | null
           term: string
           total_score?: number | null
         }
@@ -767,6 +847,7 @@ export type Database = {
           student_id?: string
           subject_id?: string | null
           subject_name?: string
+          subject_position?: number | null
           term?: string
           total_score?: number | null
         }

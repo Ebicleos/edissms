@@ -22,6 +22,8 @@ import Attendance from "./pages/Attendance";
 import IDCards from "./pages/IDCards";
 import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
+import ReportCards from "./pages/ReportCards";
+import StudentPromotion from "./pages/StudentPromotion";
 import NotFound from "./pages/NotFound";
 
 // Teacher pages
@@ -97,6 +99,16 @@ const App = () => (
             <Route path="/settings" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="/report-cards" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <ReportCards />
+              </ProtectedRoute>
+            } />
+            <Route path="/promotion" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <StudentPromotion />
               </ProtectedRoute>
             } />
 
