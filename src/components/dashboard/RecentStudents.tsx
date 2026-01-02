@@ -1,17 +1,54 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, UserCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { CLASS_LIST_DETAILED } from '@/types';
 
-const recentStudents = [
-  { id: '1', name: 'Chioma Adeyemi', class: 'Primary 5', admissionNumber: 'ADM-2025-0001', date: '2025-01-15' },
-  { id: '2', name: 'Emeka Okonkwo', class: 'JSS 2', admissionNumber: 'ADM-2025-0002', date: '2025-01-14' },
-  { id: '3', name: 'Fatima Ibrahim', class: 'Nursery 2', admissionNumber: 'ADM-2025-0003', date: '2025-01-13' },
-  { id: '4', name: 'David Okafor', class: 'SSS 1', admissionNumber: 'ADM-2025-0004', date: '2025-01-12' },
-  { id: '5', name: 'Grace Mensah', class: 'Primary 3', admissionNumber: 'ADM-2025-0005', date: '2025-01-11' },
-];
+interface RecentStudent {
+  id: string;
+  name: string;
+  class: string;
+  admissionNumber: string;
+}
+
+const getClassName = (classId: string): string => {
+  const cls = CLASS_LIST_DETAILED.find(c => c.id === classId);
+  return cls?.name || classId;
+};
 
 export function RecentStudents() {
+  const [recentStudents, setRecentStudents] = useState<RecentStudent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecentStudents = async () => {
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, full_name, class_id, admission_number')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching recent students:', error);
+        setRecentStudents([]);
+      } else {
+        setRecentStudents(
+          (data || []).map((s) => ({
+            id: s.id,
+            name: s.full_name,
+            class: getClassName(s.class_id),
+            admissionNumber: s.admission_number,
+          }))
+        );
+      }
+      setIsLoading(false);
+    };
+
+    fetchRecentStudents();
+  }, []);
+
   return (
     <div className="bg-card rounded-xl border border-border/50 p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
@@ -23,23 +60,29 @@ export function RecentStudents() {
         </Button>
       </div>
       <div className="space-y-3">
-        {recentStudents.map((student) => (
-          <div
-            key={student.id}
-            className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-          >
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <UserCircle className="h-6 w-6 text-primary" />
+        {isLoading ? (
+          <p className="text-muted-foreground text-sm">Loading...</p>
+        ) : recentStudents.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No students found</p>
+        ) : (
+          recentStudents.map((student) => (
+            <div
+              key={student.id}
+              className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+            >
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <UserCircle className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-foreground truncate">{student.name}</p>
+                <p className="text-sm text-muted-foreground">{student.admissionNumber}</p>
+              </div>
+              <Badge variant="secondary" className="hidden sm:inline-flex">
+                {student.class}
+              </Badge>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-foreground truncate">{student.name}</p>
-              <p className="text-sm text-muted-foreground">{student.admissionNumber}</p>
-            </div>
-            <Badge variant="secondary" className="hidden sm:inline-flex">
-              {student.class}
-            </Badge>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

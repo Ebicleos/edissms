@@ -1,113 +1,6 @@
-import { useState, useCallback } from 'react';
-import { Student, Term, Gender } from '@/types';
-
-// Generate a unique admission number
-const generateAdmissionNumber = (count: number): string => {
-  const year = new Date().getFullYear();
-  const number = (count + 1).toString().padStart(4, '0');
-  return `ADM-${year}-${number}`;
-};
-
-// Calculate age from date of birth
-const calculateAge = (dateOfBirth: string): number => {
-  const today = new Date();
-  const birthDate = new Date(dateOfBirth);
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  return age;
-};
-
-// Mock initial data
-const initialStudents: Student[] = [
-  {
-    id: '1',
-    admissionNumber: 'ADM-2025-0001',
-    fullName: 'Chioma Adeyemi',
-    dateOfAdmission: '2025-01-15',
-    admissionFee: 25000,
-    academicYear: '2024/2025',
-    term: 'second',
-    gender: 'female',
-    classId: 'primary5',
-    className: 'Primary 5',
-    dateOfBirth: '2014-03-20',
-    age: 10,
-    guardianName: 'Mrs. Adeyemi',
-    address: '15 Victoria Island, Lagos',
-    phoneContact: '+234 801 234 5678',
-  },
-  {
-    id: '2',
-    admissionNumber: 'ADM-2025-0002',
-    fullName: 'Emeka Okonkwo',
-    dateOfAdmission: '2025-01-14',
-    admissionFee: 30000,
-    academicYear: '2024/2025',
-    term: 'second',
-    gender: 'male',
-    classId: 'jss2',
-    className: 'JSS 2',
-    dateOfBirth: '2011-07-12',
-    age: 13,
-    guardianName: 'Mr. Okonkwo',
-    address: '42 Ikeja GRA, Lagos',
-    phoneContact: '+234 802 345 6789',
-  },
-  {
-    id: '3',
-    admissionNumber: 'ADM-2025-0003',
-    fullName: 'Fatima Ibrahim',
-    dateOfAdmission: '2025-01-13',
-    admissionFee: 15000,
-    academicYear: '2024/2025',
-    term: 'second',
-    gender: 'female',
-    classId: 'nursery2',
-    className: 'Nursery 2',
-    dateOfBirth: '2020-11-05',
-    age: 4,
-    guardianName: 'Mr. Ibrahim',
-    address: '8 Wuse Zone 5, Abuja',
-    phoneContact: '+234 803 456 7890',
-  },
-  {
-    id: '4',
-    admissionNumber: 'ADM-2025-0004',
-    fullName: 'David Okafor',
-    dateOfAdmission: '2025-01-12',
-    admissionFee: 35000,
-    academicYear: '2024/2025',
-    term: 'second',
-    gender: 'male',
-    classId: 'sss1',
-    className: 'SSS 1',
-    dateOfBirth: '2008-09-18',
-    age: 16,
-    guardianName: 'Mrs. Okafor',
-    address: '23 GRA Phase 2, Port Harcourt',
-    phoneContact: '+234 804 567 8901',
-  },
-  {
-    id: '5',
-    admissionNumber: 'ADM-2025-0005',
-    fullName: 'Grace Mensah',
-    dateOfAdmission: '2025-01-11',
-    admissionFee: 20000,
-    academicYear: '2024/2025',
-    term: 'second',
-    gender: 'female',
-    classId: 'primary3',
-    className: 'Primary 3',
-    dateOfBirth: '2016-02-28',
-    age: 8,
-    guardianName: 'Mr. Mensah',
-    address: '55 Lekki Phase 1, Lagos',
-    phoneContact: '+234 805 678 9012',
-  },
-];
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Student, Term, Gender, CLASS_LIST_DETAILED } from '@/types';
 
 export interface AdmissionFormData {
   fullName: string;
@@ -124,46 +17,173 @@ export interface AdmissionFormData {
   term: Term;
 }
 
-export function useStudents() {
-  const [students, setStudents] = useState<Student[]>(initialStudents);
-  const [isLoading, setIsLoading] = useState(false);
+// Helper to get class name from id
+const getClassName = (classId: string): string => {
+  const cls = CLASS_LIST_DETAILED.find(c => c.id === classId);
+  return cls?.name || classId;
+};
 
-  const addStudent = useCallback((data: AdmissionFormData): Student => {
-    const admissionNumber = generateAdmissionNumber(students.length);
-    const age = calculateAge(data.dateOfBirth);
+// Calculate age from date of birth
+const calculateAge = (dateOfBirth: string | null): number => {
+  if (!dateOfBirth) return 0;
+  const today = new Date();
+  const birthDate = new Date(dateOfBirth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+// Generate next admission number
+const generateAdmissionNumber = async (): Promise<string> => {
+  const { data } = await supabase
+    .from('students')
+    .select('admission_number')
+    .order('admission_number', { ascending: false })
+    .limit(1);
+  
+  if (data && data.length > 0) {
+    const lastNum = parseInt(data[0].admission_number.replace(/\D/g, ''), 10);
+    return String(lastNum + 1).padStart(4, '0');
+  }
+  return '0001';
+};
+
+export function useStudents() {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchStudents = useCallback(async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching students:', error);
+      setStudents([]);
+    } else {
+      const mapped: Student[] = (data || []).map((s) => ({
+        id: s.id,
+        admissionNumber: s.admission_number,
+        fullName: s.full_name,
+        dateOfAdmission: s.date_of_admission || '',
+        admissionFee: Number(s.admission_fee) || 0,
+        academicYear: s.academic_year || '2024/2025',
+        term: (s.term as Term) || 'first',
+        gender: s.gender as Gender,
+        classId: s.class_id,
+        className: getClassName(s.class_id),
+        dateOfBirth: s.date_of_birth || '',
+        age: calculateAge(s.date_of_birth),
+        guardianName: s.guardian_name || '',
+        address: s.address || '',
+        phoneContact: s.phone_contact || '',
+        email: s.email || undefined,
+        photoUrl: s.photo_url || undefined,
+      }));
+      setStudents(mapped);
+    }
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
+
+  const addStudent = useCallback(async (data: AdmissionFormData): Promise<Student | null> => {
+    const admissionNumber = await generateAdmissionNumber();
     
+    const { data: inserted, error } = await supabase
+      .from('students')
+      .insert({
+        admission_number: admissionNumber,
+        full_name: data.fullName,
+        gender: data.gender,
+        class_id: data.classId,
+        date_of_birth: data.dateOfBirth || null,
+        admission_fee: data.admissionFee,
+        academic_year: data.academicYear,
+        term: data.term,
+        guardian_name: data.guardianName,
+        address: data.address,
+        phone_contact: data.phoneContact,
+        email: data.email || null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding student:', error);
+      return null;
+    }
+
     const newStudent: Student = {
-      id: crypto.randomUUID(),
-      admissionNumber,
-      fullName: data.fullName,
-      dateOfAdmission: new Date().toISOString().split('T')[0],
-      admissionFee: data.admissionFee,
-      academicYear: data.academicYear,
-      term: data.term,
-      gender: data.gender,
-      classId: data.classId,
+      id: inserted.id,
+      admissionNumber: inserted.admission_number,
+      fullName: inserted.full_name,
+      dateOfAdmission: inserted.date_of_admission || '',
+      admissionFee: Number(inserted.admission_fee) || 0,
+      academicYear: inserted.academic_year || '2024/2025',
+      term: (inserted.term as Term) || 'first',
+      gender: inserted.gender as Gender,
+      classId: inserted.class_id,
       className: data.className,
-      dateOfBirth: data.dateOfBirth,
-      age,
-      guardianName: data.guardianName,
-      address: data.address,
-      phoneContact: data.phoneContact,
-      email: data.email,
+      dateOfBirth: inserted.date_of_birth || '',
+      age: calculateAge(inserted.date_of_birth),
+      guardianName: inserted.guardian_name || '',
+      address: inserted.address || '',
+      phoneContact: inserted.phone_contact || '',
+      email: inserted.email || undefined,
     };
 
     setStudents((prev) => [newStudent, ...prev]);
     return newStudent;
-  }, [students.length]);
+  }, []);
 
-  const updateStudent = useCallback((id: string, data: Partial<Student>) => {
+  const updateStudent = useCallback(async (id: string, data: Partial<Student>) => {
+    const updateData: Record<string, unknown> = {};
+    if (data.fullName !== undefined) updateData.full_name = data.fullName;
+    if (data.gender !== undefined) updateData.gender = data.gender;
+    if (data.classId !== undefined) updateData.class_id = data.classId;
+    if (data.dateOfBirth !== undefined) updateData.date_of_birth = data.dateOfBirth || null;
+    if (data.guardianName !== undefined) updateData.guardian_name = data.guardianName;
+    if (data.address !== undefined) updateData.address = data.address;
+    if (data.phoneContact !== undefined) updateData.phone_contact = data.phoneContact;
+    if (data.email !== undefined) updateData.email = data.email || null;
+    if (data.photoUrl !== undefined) updateData.photo_url = data.photoUrl || null;
+
+    const { error } = await supabase
+      .from('students')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating student:', error);
+      return;
+    }
+
     setStudents((prev) =>
       prev.map((student) =>
-        student.id === id ? { ...student, ...data } : student
+        student.id === id ? { ...student, ...data, className: data.classId ? getClassName(data.classId) : student.className } : student
       )
     );
   }, []);
 
-  const deleteStudent = useCallback((id: string) => {
+  const deleteStudent = useCallback(async (id: string) => {
+    const { error } = await supabase
+      .from('students')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting student:', error);
+      return;
+    }
+
     setStudents((prev) => prev.filter((student) => student.id !== id));
   }, []);
 
@@ -186,5 +206,6 @@ export function useStudents() {
     getStudentById,
     getStudentsByClass,
     totalStudents: students.length,
+    refetch: fetchStudents,
   };
 }

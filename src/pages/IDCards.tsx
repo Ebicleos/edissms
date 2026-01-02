@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,17 +12,26 @@ import {
 } from '@/components/ui/select';
 import { CLASS_LIST_DETAILED } from '@/types';
 import { Search, Printer, Download, User, QrCode, School } from 'lucide-react';
-
-const students = [
-  { id: '1', name: 'Chioma Adeyemi', admissionNumber: 'ADM-2025-0001', class: 'Primary 5', photo: null },
-  { id: '2', name: 'Emeka Okonkwo', admissionNumber: 'ADM-2025-0002', class: 'JSS 2', photo: null },
-  { id: '3', name: 'Fatima Ibrahim', admissionNumber: 'ADM-2025-0003', class: 'Nursery 2', photo: null },
-];
+import { useStudents } from '@/hooks/useStudents';
 
 export default function IDCards() {
-  const [selectedStudent, setSelectedStudent] = useState<typeof students[0] | null>(null);
+  const { students, isLoading } = useStudents();
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('all');
+
+  const filteredStudents = useMemo(() => {
+    return students.filter((student) => {
+      const matchesSearch = student.fullName.toLowerCase().includes(search.toLowerCase()) ||
+        student.admissionNumber.toLowerCase().includes(search.toLowerCase());
+      const matchesClass = classFilter === 'all' || student.classId === classFilter;
+      return matchesSearch && matchesClass;
+    });
+  }, [students, search, classFilter]);
+
+  const selectedStudent = useMemo(() => {
+    return students.find((s) => s.id === selectedStudentId) || null;
+  }, [students, selectedStudentId]);
 
   return (
     <MainLayout title="Student ID Cards" subtitle="Generate and manage student identification cards">
@@ -54,25 +63,31 @@ export default function IDCards() {
             </Select>
           </div>
 
-          <div className="bg-card rounded-xl border border-border/50 shadow-sm divide-y divide-border">
-            {students.map((student) => (
-              <button
-                key={student.id}
-                onClick={() => setSelectedStudent(student)}
-                className={`w-full flex items-center gap-4 p-4 text-left hover:bg-muted/30 transition-colors ${
-                  selectedStudent?.id === student.id ? 'bg-primary/5' : ''
-                }`}
-              >
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">{student.name}</p>
-                  <p className="text-sm text-muted-foreground">{student.admissionNumber}</p>
-                </div>
-                <Badge variant="secondary">{student.class}</Badge>
-              </button>
-            ))}
+          <div className="bg-card rounded-xl border border-border/50 shadow-sm divide-y divide-border max-h-[600px] overflow-y-auto">
+            {isLoading ? (
+              <div className="p-4 text-muted-foreground">Loading students...</div>
+            ) : filteredStudents.length === 0 ? (
+              <div className="p-4 text-muted-foreground">No students found</div>
+            ) : (
+              filteredStudents.slice(0, 50).map((student) => (
+                <button
+                  key={student.id}
+                  onClick={() => setSelectedStudentId(student.id)}
+                  className={`w-full flex items-center gap-4 p-4 text-left hover:bg-muted/30 transition-colors ${
+                    selectedStudentId === student.id ? 'bg-primary/5' : ''
+                  }`}
+                >
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{student.fullName}</p>
+                    <p className="text-sm text-muted-foreground">{student.admissionNumber}</p>
+                  </div>
+                  <Badge variant="secondary">{student.className}</Badge>
+                </button>
+              ))
+            )}
           </div>
         </div>
 
@@ -97,12 +112,20 @@ export default function IDCards() {
                 <div className="p-6 text-center">
                   {/* Photo */}
                   <div className="h-28 w-28 mx-auto rounded-full bg-muted border-4 border-primary/20 flex items-center justify-center mb-4">
-                    <User className="h-14 w-14 text-muted-foreground" />
+                    {selectedStudent.photoUrl ? (
+                      <img
+                        src={selectedStudent.photoUrl}
+                        alt={selectedStudent.fullName}
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-14 w-14 text-muted-foreground" />
+                    )}
                   </div>
 
                   {/* Details */}
-                  <h4 className="font-bold text-xl text-foreground mb-1">{selectedStudent.name}</h4>
-                  <p className="text-sm text-muted-foreground mb-3">{selectedStudent.class}</p>
+                  <h4 className="font-bold text-xl text-foreground mb-1">{selectedStudent.fullName}</h4>
+                  <p className="text-sm text-muted-foreground mb-3">{selectedStudent.className}</p>
                   
                   <div className="bg-muted/50 rounded-lg p-3 mb-4">
                     <p className="text-xs text-muted-foreground mb-1">Admission Number</p>
