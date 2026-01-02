@@ -861,6 +861,63 @@ export type Database = {
           },
         ]
       }
+      students: {
+        Row: {
+          academic_year: string | null
+          address: string | null
+          admission_fee: number | null
+          admission_number: string
+          class_id: string
+          created_at: string | null
+          date_of_admission: string | null
+          date_of_birth: string | null
+          email: string | null
+          full_name: string
+          gender: string
+          guardian_name: string | null
+          id: string
+          phone_contact: string | null
+          photo_url: string | null
+          term: string | null
+        }
+        Insert: {
+          academic_year?: string | null
+          address?: string | null
+          admission_fee?: number | null
+          admission_number: string
+          class_id: string
+          created_at?: string | null
+          date_of_admission?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          full_name: string
+          gender: string
+          guardian_name?: string | null
+          id?: string
+          phone_contact?: string | null
+          photo_url?: string | null
+          term?: string | null
+        }
+        Update: {
+          academic_year?: string | null
+          address?: string | null
+          admission_fee?: number | null
+          admission_number?: string
+          class_id?: string
+          created_at?: string | null
+          date_of_admission?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string
+          gender?: string
+          guardian_name?: string | null
+          id?: string
+          phone_contact?: string | null
+          photo_url?: string | null
+          term?: string | null
+        }
+        Relationships: []
+      }
       subjects: {
         Row: {
           class_id: string | null
