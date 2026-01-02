@@ -30,6 +30,7 @@ import NotFound from "./pages/NotFound";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherExams from "./pages/teacher/TeacherExams";
 import CreateExam from "./pages/teacher/CreateExam";
+import EditExam from "./pages/teacher/EditExam";
 
 // Student pages
 import StudentDashboard from "./pages/student/StudentDashboard";
@@ -148,6 +149,11 @@ const App = () => (
             <Route path="/teacher/exams/create" element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <CreateExam />
+              </ProtectedRoute>
+            } />
+            <Route path="/teacher/exams/:examId/edit" element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <EditExam />
               </ProtectedRoute>
             } />
 

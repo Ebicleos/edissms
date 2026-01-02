@@ -53,10 +53,18 @@ interface FeePayment {
   admission_number?: string;
 }
 
+interface Student {
+  id: string;
+  full_name: string;
+  admission_number: string;
+  class_id: string;
+}
+
 export default function Fees() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [feePayments, setFeePayments] = useState<FeePayment[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<FeePayment | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -66,30 +74,46 @@ export default function Fees() {
 
   // New payment form state
   const [newPaymentStudentId, setNewPaymentStudentId] = useState('');
-  const [newPaymentClass, setNewPaymentClass] = useState('');
   const [newPaymentAmount, setNewPaymentAmount] = useState('');
   const [newPaymentTerm, setNewPaymentTerm] = useState('First Term');
   const [newPaymentYear, setNewPaymentYear] = useState('2024/2025');
 
   useEffect(() => {
     fetchFeePayments();
+    fetchStudents();
   }, []);
+
+  const fetchStudents = async () => {
+    const { data, error } = await supabase
+      .from('students')
+      .select('id, full_name, admission_number, class_id')
+      .order('full_name');
+
+    if (!error && data) {
+      setStudents(data);
+    }
+  };
 
   const fetchFeePayments = async () => {
     const { data, error } = await supabase
       .from('fee_payments')
-      .select(`
-        *,
-        profiles:student_id (full_name),
-        student_classes:student_id (admission_number)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      const payments = data.map((p: any) => ({
+      // Fetch student details separately from students table
+      const studentIds = [...new Set(data.map((p) => p.student_id))];
+      const { data: studentsData } = await supabase
+        .from('students')
+        .select('id, full_name, admission_number')
+        .in('id', studentIds);
+
+      const studentMap = new Map(studentsData?.map((s) => [s.id, s]) || []);
+
+      const payments = data.map((p) => ({
         ...p,
-        student_name: p.profiles?.full_name || 'Unknown',
-        admission_number: p.student_classes?.admission_number || 'N/A',
+        student_name: studentMap.get(p.student_id)?.full_name || 'Unknown',
+        admission_number: studentMap.get(p.student_id)?.admission_number || 'N/A',
       }));
       setFeePayments(payments);
     }
@@ -207,15 +231,21 @@ export default function Fees() {
 
   const handleRecordNewPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPaymentStudentId || !newPaymentAmount || !newPaymentClass) {
-      toast.error('Please fill all required fields');
+    if (!newPaymentStudentId || !newPaymentAmount) {
+      toast.error('Please select a student and enter an amount');
+      return;
+    }
+
+    const selectedStudent = students.find((s) => s.id === newPaymentStudentId);
+    if (!selectedStudent) {
+      toast.error('Invalid student selected');
       return;
     }
 
     setIsSubmitting(true);
     const { error } = await supabase.from('fee_payments').insert({
       student_id: newPaymentStudentId,
-      class_id: newPaymentClass,
+      class_id: selectedStudent.class_id,
       amount_payable: Number(newPaymentAmount),
       amount_paid: 0,
       status: 'unpaid',
@@ -233,7 +263,6 @@ export default function Fees() {
     toast.success('Fee record created successfully!');
     setRecordPaymentOpen(false);
     setNewPaymentStudentId('');
-    setNewPaymentClass('');
     setNewPaymentAmount('');
     fetchFeePayments();
   };
@@ -439,24 +468,19 @@ export default function Fees() {
           </DialogHeader>
           <form onSubmit={handleRecordNewPayment} className="space-y-4">
             <div>
-              <Label htmlFor="studentId">Student ID</Label>
-              <Input
-                id="studentId"
-                placeholder="Enter student UUID"
-                value={newPaymentStudentId}
-                onChange={(e) => setNewPaymentStudentId(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="classId">Class</Label>
-              <Input
-                id="classId"
-                placeholder="e.g., Primary 5"
-                value={newPaymentClass}
-                onChange={(e) => setNewPaymentClass(e.target.value)}
-                required
-              />
+              <Label htmlFor="studentSelect">Select Student</Label>
+              <Select value={newPaymentStudentId} onValueChange={setNewPaymentStudentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a student" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {students.map((student) => (
+                    <SelectItem key={student.id} value={student.id}>
+                      {student.full_name} ({student.admission_number}) - {student.class_id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="amountPayable">Amount Payable</Label>
