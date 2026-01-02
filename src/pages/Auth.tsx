@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, AppRole } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -62,17 +62,18 @@ export default function Auth() {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
 
-  // Redirect if already logged in
-  if (user && role) {
-    if (role === 'admin') {
-      navigate('/', { replace: true });
-    } else if (role === 'teacher') {
-      navigate('/teacher', { replace: true });
-    } else {
-      navigate('/student', { replace: true });
+  // Redirect if already logged in - using useEffect to properly react to role changes
+  useEffect(() => {
+    if (user && role) {
+      if (role === 'admin') {
+        navigate('/', { replace: true });
+      } else if (role === 'teacher') {
+        navigate('/teacher', { replace: true });
+      } else {
+        navigate('/student', { replace: true });
+      }
     }
-    return null;
-  }
+  }, [user, role, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
