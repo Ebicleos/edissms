@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +9,18 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Video, Play, Download, Clock, Users, Calendar, Plus, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 
 const liveClasses = [
   {
@@ -74,6 +86,39 @@ const materials = [
 ];
 
 export default function OnlineClasses() {
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+
+  const handleJoinClass = (classTitle: string) => {
+    toast.success(`Joining "${classTitle}"...`, {
+      description: 'Video conferencing will open shortly.',
+    });
+  };
+
+  const handleViewDetails = (classTitle: string) => {
+    toast.info(`Viewing details for "${classTitle}"`, {
+      description: 'Class details will be displayed here.',
+    });
+  };
+
+  const handleScheduleClass = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.success('Class scheduled successfully!');
+    setScheduleOpen(false);
+  };
+
+  const handleUploadMaterial = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.success('Material uploaded successfully!');
+    setUploadOpen(false);
+  };
+
+  const handleDownload = (materialTitle: string) => {
+    toast.success(`Downloading "${materialTitle}"...`, {
+      description: 'Your download will start shortly.',
+    });
+  };
+
   return (
     <MainLayout title="Online Classes" subtitle="Live classes, lessons, and learning materials">
       <div className="space-y-8 animate-fade-in">
@@ -81,10 +126,45 @@ export default function OnlineClasses() {
         <section>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-foreground">Today's Classes</h2>
-            <Button className="bg-gradient-primary hover:opacity-90">
-              <Plus className="mr-2 h-4 w-4" />
-              Schedule Class
-            </Button>
+            <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-primary hover:opacity-90">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Schedule Class
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Schedule New Class</DialogTitle>
+                  <DialogDescription>
+                    Fill in the details to schedule a new online class.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleScheduleClass} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Class Title</Label>
+                    <Input id="title" placeholder="e.g., Mathematics - Algebra" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="class">Class/Grade</Label>
+                    <Input id="class" placeholder="e.g., Primary 5" required />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="startTime">Start Time</Label>
+                      <Input id="startTime" type="time" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="endTime">End Time</Label>
+                      <Input id="endTime" type="time" required />
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90">
+                    Schedule Class
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {liveClasses.map((cls) => (
@@ -117,6 +197,7 @@ export default function OnlineClasses() {
                     )}
                   </div>
                   <Button
+                    onClick={() => cls.status === 'live' ? handleJoinClass(cls.title) : handleViewDetails(cls.title)}
                     className={`w-full ${
                       cls.status === 'live'
                         ? 'bg-gradient-accent hover:opacity-90'
@@ -145,10 +226,43 @@ export default function OnlineClasses() {
         <section>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-foreground">Learning Materials</h2>
-            <Button variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Upload Material
-            </Button>
+            <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Upload Material
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Upload Learning Material</DialogTitle>
+                  <DialogDescription>
+                    Upload a document or video for students to access.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleUploadMaterial} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="materialTitle">Title</Label>
+                    <Input id="materialTitle" placeholder="e.g., Mathematics Workbook" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="subject">Subject</Label>
+                    <Input id="subject" placeholder="e.g., Mathematics" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="materialClass">Class/Grade</Label>
+                    <Input id="materialClass" placeholder="e.g., Primary 5" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="file">File</Label>
+                    <Input id="file" type="file" required />
+                  </div>
+                  <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90">
+                    Upload Material
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
           <div className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
             <div className="divide-y divide-border">
@@ -176,7 +290,7 @@ export default function OnlineClasses() {
                       </div>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => handleDownload(material.title)}>
                     <Download className="mr-2 h-4 w-4" />
                     Download
                   </Button>
