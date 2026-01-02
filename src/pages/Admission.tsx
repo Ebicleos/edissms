@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useStudents, AdmissionFormData } from '@/hooks/useStudents';
 import { CLASS_LIST_DETAILED, ACADEMIC_YEARS, Term, Gender } from '@/types';
+import { PhotoUpload } from '@/components/students/PhotoUpload';
 import { UserPlus, Check, Printer } from 'lucide-react';
 import {
   Dialog,
@@ -26,6 +27,7 @@ export default function Admission() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [newStudent, setNewStudent] = useState<Student | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<AdmissionFormData>({
     fullName: '',
@@ -62,7 +64,11 @@ export default function Admission() {
     setIsSubmitting(true);
 
     try {
-      const student = addStudent(formData);
+      const studentData = {
+        ...formData,
+        photoUrl: photoUrl || undefined,
+      };
+      const student = addStudent(studentData);
       setNewStudent(student);
       setShowSuccess(true);
       
@@ -86,6 +92,7 @@ export default function Admission() {
         academicYear: '2024/2025',
         term: 'second',
       });
+      setPhotoUrl(null);
     } catch (error) {
       toast({
         title: 'Error',
@@ -109,6 +116,14 @@ export default function Admission() {
     <MainLayout title="Student Admission" subtitle="Register a new student">
       <div className="max-w-4xl animate-slide-up">
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Photo Upload Section */}
+          <div className="form-section">
+            <PhotoUpload
+              currentPhotoUrl={photoUrl || undefined}
+              onPhotoChange={setPhotoUrl}
+            />
+          </div>
+
           {/* Personal Information */}
           <div className="form-section">
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">

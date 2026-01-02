@@ -44,17 +44,19 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useStudents } from '@/hooks/useStudents';
 import { CLASS_LIST_DETAILED, Student } from '@/types';
-import { Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Printer, IdCard } from 'lucide-react';
+import { EditStudentDialog } from '@/components/students/EditStudentDialog';
+import { Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Printer, IdCard, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Students() {
-  const { students, deleteStudent } = useStudents();
+  const { students, deleteStudent, updateStudent } = useStudents();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
@@ -83,9 +85,16 @@ export default function Students() {
   };
 
   const handleEditStudent = (student: Student) => {
-    toast.info(`Editing ${student.fullName}`, {
-      description: 'Edit functionality will be available soon.',
-    });
+    setSelectedStudent(student);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveStudent = (updatedStudent: Student) => {
+    if (updateStudent) {
+      updateStudent(updatedStudent);
+    }
+    setEditDialogOpen(false);
+    setSelectedStudent(null);
   };
 
   const handlePrintReceipt = (student: Student) => {
@@ -97,6 +106,13 @@ export default function Students() {
   const handleGenerateIDCard = (student: Student) => {
     navigate(`/id-cards?student=${student.id}`);
     toast.success(`Generating ID Card for ${student.fullName}`);
+  };
+
+  const handleUploadPhoto = (student: Student) => {
+    toast.info(`Photo upload for ${student.fullName}`, {
+      description: 'Use the Edit Student option to upload a photo.',
+    });
+    handleEditStudent(student);
   };
 
   const handleDeleteClick = (student: Student) => {
@@ -155,7 +171,7 @@ export default function Students() {
         <div className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="table-header">
+              <TableRow className="bg-muted/50">
                 <TableHead>Student</TableHead>
                 <TableHead>Admission No.</TableHead>
                 <TableHead>Class</TableHead>
@@ -178,10 +194,14 @@ export default function Students() {
                   <TableRow key={student.id} className="hover:bg-muted/30">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-sm font-semibold text-primary">
-                            {student.fullName.split(' ').map((n) => n[0]).join('')}
-                          </span>
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                          {student.photoUrl ? (
+                            <img src={student.photoUrl} alt={student.fullName} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="text-sm font-semibold text-primary">
+                              {student.fullName.split(' ').map((n) => n[0]).join('')}
+                            </span>
+                          )}
                         </div>
                         <div>
                           <p className="font-medium text-foreground">{student.fullName}</p>
@@ -218,6 +238,10 @@ export default function Students() {
                           <DropdownMenuItem onClick={() => handleEditStudent(student)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit Student
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUploadPhoto(student)}>
+                            <Camera className="mr-2 h-4 w-4" />
+                            Upload Photo
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handlePrintReceipt(student)}>
                             <Printer className="mr-2 h-4 w-4" />
@@ -267,10 +291,14 @@ export default function Students() {
           {selectedStudent && (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-xl font-semibold text-primary">
-                    {selectedStudent.fullName.split(' ').map((n) => n[0]).join('')}
-                  </span>
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                  {selectedStudent.photoUrl ? (
+                    <img src={selectedStudent.photoUrl} alt={selectedStudent.fullName} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-xl font-semibold text-primary">
+                      {selectedStudent.fullName.split(' ').map((n) => n[0]).join('')}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <p className="font-semibold text-lg">{selectedStudent.fullName}</p>
@@ -319,6 +347,14 @@ export default function Students() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Student Dialog */}
+      <EditStudentDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        student={selectedStudent}
+        onSave={handleSaveStudent}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
