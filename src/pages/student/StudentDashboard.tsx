@@ -3,7 +3,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, ClipboardList, Calendar, IdCard, GraduationCap } from 'lucide-react';
+import { BookOpen, ClipboardList, Calendar, IdCard, GraduationCap, CreditCard } from 'lucide-react';
 
 export default function StudentDashboard() {
   const { profile, userClass } = useAuth();
@@ -32,11 +32,18 @@ export default function StudentDashboard() {
       color: 'from-purple-500 to-pink-500',
     },
     {
+      title: 'School Fees',
+      description: 'Check fees & pay online',
+      icon: CreditCard,
+      path: '/student/fees',
+      color: 'from-yellow-500 to-orange-500',
+    },
+    {
       title: 'ID Card',
       description: 'View and print your ID',
       icon: IdCard,
       path: '/student/id-card',
-      color: 'from-orange-500 to-red-500',
+      color: 'from-red-500 to-pink-500',
     },
   ];
 
@@ -54,7 +61,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* Quick Actions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (

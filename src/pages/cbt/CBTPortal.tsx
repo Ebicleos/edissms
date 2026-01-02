@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ClipboardList, Clock, Play, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { ClipboardList, Clock, Play, CheckCircle2, AlertCircle, Loader2, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Exam {
@@ -19,6 +19,7 @@ interface Exam {
   start_time: string | null;
   end_time: string | null;
   is_published: boolean;
+  is_exam_active: boolean;
   created_at: string;
 }
 
@@ -37,6 +38,7 @@ export default function CBTPortal() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [examSystemActive, setExamSystemActive] = useState(false);
 
   useEffect(() => {
     fetchExams();
@@ -55,6 +57,9 @@ export default function CBTPortal() {
 
     if (!error && data) {
       setExams(data);
+      // Check if any exam is active
+      const hasActiveExam = data.some((exam: Exam) => exam.is_exam_active);
+      setExamSystemActive(hasActiveExam);
     }
     setIsLoading(false);
   };
@@ -100,8 +105,11 @@ export default function CBTPortal() {
     }
   };
 
-  const handleStartExam = (examId: string) => {
-    navigate(`/cbt/exam/${examId}`);
+  const handleStartExam = (exam: Exam) => {
+    if (!exam.is_exam_active) {
+      return;
+    }
+    navigate(`/cbt/exam/${exam.id}`);
   };
 
   const handleViewResults = (examId: string) => {
@@ -143,6 +151,21 @@ export default function CBTPortal() {
           )}
         </div>
 
+        {/* Exam System Status Banner */}
+        {!examSystemActive && exams.length > 0 && (
+          <Card className="border-warning bg-warning/10">
+            <CardContent className="flex items-center gap-4 py-4">
+              <Lock className="h-8 w-8 text-warning" />
+              <div>
+                <h3 className="font-semibold text-warning">Exams Not Active</h3>
+                <p className="text-sm text-muted-foreground">
+                  CBT exams are currently not available. Please wait for the admin to activate the exam session.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Tabs defaultValue="available" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="available" className="flex items-center gap-2">
@@ -172,6 +195,7 @@ export default function CBTPortal() {
                 {availableExams.map((exam) => {
                   const status = getExamStatus(exam);
                   const submission = submissions.find(s => s.exam_id === exam.id);
+                  const canTakeExam = exam.is_exam_active;
                   
                   return (
                     <Card key={exam.id} className="hover:shadow-md transition-shadow">
@@ -183,7 +207,15 @@ export default function CBTPortal() {
                               {exam.subject} • {exam.duration_minutes} minutes
                             </CardDescription>
                           </div>
-                          {getStatusBadge(status)}
+                          <div className="flex gap-2">
+                            {!canTakeExam && (
+                              <Badge variant="outline" className="border-warning text-warning">
+                                <Lock className="h-3 w-3 mr-1" />
+                                Locked
+                              </Badge>
+                            )}
+                            {getStatusBadge(status)}
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent>
@@ -199,8 +231,20 @@ export default function CBTPortal() {
                               </span>
                             )}
                           </div>
-                          <Button onClick={() => handleStartExam(exam.id)}>
-                            {submission ? 'Continue Exam' : 'Start Exam'}
+                          <Button 
+                            onClick={() => handleStartExam(exam)}
+                            disabled={!canTakeExam}
+                          >
+                            {!canTakeExam ? (
+                              <>
+                                <Lock className="mr-2 h-4 w-4" />
+                                Locked
+                              </>
+                            ) : submission ? (
+                              'Continue Exam'
+                            ) : (
+                              'Start Exam'
+                            )}
                           </Button>
                         </div>
                       </CardContent>

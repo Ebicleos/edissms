@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, AppRole } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +14,7 @@ import { CLASS_LIST } from '@/types';
 import { z } from 'zod';
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  identifier: z.string().min(1, 'Email or Admission Number is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -53,7 +54,7 @@ export default function Auth() {
   const [selectedClass, setSelectedClass] = useState('');
   
   // Login form
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   
   // Signup form
@@ -78,19 +79,53 @@ export default function Auth() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const result = loginSchema.safeParse({ email: loginEmail, password: loginPassword });
+    const result = loginSchema.safeParse({ identifier: loginIdentifier, password: loginPassword });
     if (!result.success) {
       toast.error(result.error.errors[0].message);
       return;
     }
 
     setIsLoading(true);
-    const { error } = await signIn(loginEmail, loginPassword);
+    
+    let emailToUse = loginIdentifier;
+    
+    // Check if it's an admission number (for students)
+    if (selectedRole === 'student' && !loginIdentifier.includes('@')) {
+      // Look up the email by admission number
+      const { data: studentData, error: lookupError } = await supabase
+        .from('student_classes')
+        .select('student_id')
+        .eq('admission_number', loginIdentifier)
+        .maybeSingle();
+      
+      if (lookupError || !studentData) {
+        setIsLoading(false);
+        toast.error('Invalid admission number');
+        return;
+      }
+      
+      // Get the email from profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', studentData.student_id)
+        .maybeSingle();
+      
+      if (profileError || !profileData?.email) {
+        setIsLoading(false);
+        toast.error('Could not find account for this admission number');
+        return;
+      }
+      
+      emailToUse = profileData.email;
+    }
+
+    const { error } = await signIn(emailToUse, loginPassword);
     setIsLoading(false);
 
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
-        toast.error('Invalid email or password');
+        toast.error('Invalid credentials');
       } else {
         toast.error(error.message);
       }
@@ -121,6 +156,20 @@ export default function Auth() {
     }
 
     setIsLoading(true);
+    
+    // Check if email already exists with a different role
+    const { data: existingProfiles } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', signupEmail)
+      .maybeSingle();
+    
+    if (existingProfiles) {
+      setIsLoading(false);
+      toast.error('An account with this email already exists. Please login instead.');
+      return;
+    }
+
     const { error } = await signUp(
       signupEmail,
       signupPassword,
@@ -199,15 +248,22 @@ export default function Auth() {
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                    <Label htmlFor="login-identifier">
+                      {selectedRole === 'student' ? 'Email or Admission Number' : 'Email'}
+                    </Label>
                     <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
+                      id="login-identifier"
+                      type={selectedRole === 'student' ? 'text' : 'email'}
+                      placeholder={selectedRole === 'student' ? 'Enter email or admission number' : 'Enter your email'}
+                      value={loginIdentifier}
+                      onChange={(e) => setLoginIdentifier(e.target.value)}
                       required
                     />
+                    {selectedRole === 'student' && (
+                      <p className="text-xs text-muted-foreground">
+                        Students can login with their admission number (e.g., ADM-2025-0001)
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="login-password">Password</Label>

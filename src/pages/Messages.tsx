@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,40 +15,100 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CLASS_LIST_DETAILED } from '@/types';
-import { Mail, MessageSquare, Phone, Send, Users, CheckCircle } from 'lucide-react';
+import { Mail, MessageSquare, Phone, Send, Users, CheckCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
-const messageHistory = [
-  {
-    id: '1',
-    subject: 'Mid-Term Exam Schedule',
-    recipients: 'All Students & Parents',
-    type: 'email',
-    sentAt: '2025-01-15 09:30 AM',
-    status: 'delivered',
-  },
-  {
-    id: '2',
-    subject: 'PTA Meeting Reminder',
-    recipients: 'Primary 5 Parents',
-    type: 'sms',
-    sentAt: '2025-01-14 02:00 PM',
-    status: 'delivered',
-  },
-  {
-    id: '3',
-    subject: 'School Fees Reminder',
-    recipients: 'Pending Payments',
-    type: 'whatsapp',
-    sentAt: '2025-01-13 11:00 AM',
-    status: 'delivered',
-  },
-];
+interface Message {
+  id: string;
+  subject: string | null;
+  recipients_type: string;
+  type: string;
+  sent_at: string;
+  status: string;
+  class_id: string | null;
+}
 
 export default function Messages() {
+  const { user } = useAuth();
   const [selectedType, setSelectedType] = useState('email');
   const [recipientType, setRecipientType] = useState('all');
+  const [selectedClass, setSelectedClass] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [messageHistory, setMessageHistory] = useState<Message[]>([]);
+
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const fetchMessages = async () => {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .order('sent_at', { ascending: false })
+      .limit(10);
+
+    if (!error && data) {
+      setMessageHistory(data);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!message.trim()) {
+      toast.error('Please enter a message');
+      return;
+    }
+
+    if (selectedType === 'email' && !subject.trim()) {
+      toast.error('Please enter a subject for the email');
+      return;
+    }
+
+    if (recipientType === 'class' && !selectedClass) {
+      toast.error('Please select a class');
+      return;
+    }
+
+    setIsLoading(true);
+
+    const { error } = await supabase.from('messages').insert({
+      type: selectedType,
+      subject: selectedType === 'email' ? subject : null,
+      content: message,
+      recipients_type: recipientType,
+      class_id: recipientType === 'class' ? selectedClass : null,
+      sent_by: user?.id,
+      status: 'sent',
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast.error('Failed to send message');
+      return;
+    }
+
+    toast.success(`${selectedType.toUpperCase()} sent successfully!`, {
+      description: `Message sent to ${recipientType === 'class' ? selectedClass : recipientType}`,
+    });
+
+    // Reset form
+    setSubject('');
+    setMessage('');
+    fetchMessages();
+  };
+
+  const getRecipientLabel = (type: string, classId: string | null) => {
+    if (type === 'class' && classId) return classId;
+    if (type === 'all') return 'All Students & Parents';
+    if (type === 'students') return 'All Students';
+    if (type === 'parents') return 'All Parents';
+    if (type === 'teachers') return 'All Teachers';
+    return type;
+  };
 
   return (
     <MainLayout title="Messages" subtitle="Send emails, SMS, and WhatsApp messages">
@@ -97,7 +157,7 @@ export default function Messages() {
               {recipientType === 'class' && (
                 <div>
                   <Label>Select Class</Label>
-                  <Select>
+                  <Select value={selectedClass} onValueChange={setSelectedClass}>
                     <SelectTrigger>
                       <SelectValue placeholder="Choose a class" />
                     </SelectTrigger>
@@ -134,6 +194,7 @@ export default function Messages() {
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Type your message here..."
                   rows={6}
+                  maxLength={1000}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   {message.length} / 1000 characters
@@ -151,9 +212,23 @@ export default function Messages() {
               </div>
 
               {/* Send Button */}
-              <Button className="w-full bg-gradient-primary hover:opacity-90" size="lg">
-                <Send className="mr-2 h-5 w-5" />
-                Send {selectedType === 'email' ? 'Email' : selectedType === 'sms' ? 'SMS' : 'WhatsApp Message'}
+              <Button 
+                className="w-full bg-gradient-primary hover:opacity-90" 
+                size="lg"
+                onClick={handleSendMessage}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-5 w-5" />
+                    Send {selectedType === 'email' ? 'Email' : selectedType === 'sms' ? 'SMS' : 'WhatsApp Message'}
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -164,46 +239,54 @@ export default function Messages() {
           <div className="bg-card rounded-xl border border-border/50 p-6 shadow-sm">
             <h3 className="font-semibold text-foreground mb-4">Recent Messages</h3>
             <div className="space-y-4">
-              {messageHistory.map((msg) => (
-                <div
-                  key={msg.id}
-                  className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <Badge
-                      variant="outline"
-                      className={
-                        msg.type === 'email'
-                          ? 'border-primary text-primary'
-                          : msg.type === 'sms'
-                          ? 'border-secondary text-secondary'
-                          : 'border-success text-success'
-                      }
-                    >
-                      {msg.type === 'email' ? (
-                        <Mail className="h-3 w-3 mr-1" />
-                      ) : msg.type === 'sms' ? (
-                        <Phone className="h-3 w-3 mr-1" />
-                      ) : (
-                        <MessageSquare className="h-3 w-3 mr-1" />
-                      )}
-                      {msg.type.toUpperCase()}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">{msg.sentAt}</span>
-                  </div>
-                  <p className="font-medium text-foreground text-sm">{msg.subject}</p>
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Users className="h-3 w-3" />
-                      {msg.recipients}
+              {messageHistory.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No messages sent yet</p>
+              ) : (
+                messageHistory.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <Badge
+                        variant="outline"
+                        className={
+                          msg.type === 'email'
+                            ? 'border-primary text-primary'
+                            : msg.type === 'sms'
+                            ? 'border-secondary text-secondary'
+                            : 'border-success text-success'
+                        }
+                      >
+                        {msg.type === 'email' ? (
+                          <Mail className="h-3 w-3 mr-1" />
+                        ) : msg.type === 'sms' ? (
+                          <Phone className="h-3 w-3 mr-1" />
+                        ) : (
+                          <MessageSquare className="h-3 w-3 mr-1" />
+                        )}
+                        {msg.type.toUpperCase()}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(msg.sent_at).toLocaleDateString()}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-success">
-                      <CheckCircle className="h-3 w-3" />
-                      {msg.status}
+                    <p className="font-medium text-foreground text-sm">
+                      {msg.subject || 'No Subject'}
+                    </p>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Users className="h-3 w-3" />
+                        {getRecipientLabel(msg.recipients_type, msg.class_id)}
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-success">
+                        <CheckCircle className="h-3 w-3" />
+                        {msg.status}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
