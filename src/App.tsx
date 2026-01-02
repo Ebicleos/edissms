@@ -32,6 +32,8 @@ import CreateExam from "./pages/teacher/CreateExam";
 // Student pages
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentResults from "./pages/student/StudentResults";
+import StudentFees from "./pages/student/StudentFees";
+import StudentIDCard from "./pages/student/StudentIDCard";
 
 // CBT pages
 import CBTPortal from "./pages/cbt/CBTPortal";
@@ -148,9 +150,14 @@ const App = () => (
                 <StudentResults />
               </ProtectedRoute>
             } />
+            <Route path="/student/fees" element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentFees />
+              </ProtectedRoute>
+            } />
             <Route path="/student/id-card" element={
               <ProtectedRoute allowedRoles={['student']}>
-                <IDCards />
+                <StudentIDCard />
               </ProtectedRoute>
             } />
 

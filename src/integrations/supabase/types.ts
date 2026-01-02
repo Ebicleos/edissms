@@ -62,6 +62,7 @@ export type Database = {
           duration_minutes: number
           end_time: string | null
           id: string
+          is_exam_active: boolean | null
           is_published: boolean | null
           start_time: string | null
           subject: string
@@ -74,6 +75,7 @@ export type Database = {
           duration_minutes?: number
           end_time?: string | null
           id?: string
+          is_exam_active?: boolean | null
           is_published?: boolean | null
           start_time?: string | null
           subject: string
@@ -86,9 +88,169 @@ export type Database = {
           duration_minutes?: number
           end_time?: string | null
           id?: string
+          is_exam_active?: boolean | null
           is_published?: boolean | null
           start_time?: string | null
           subject?: string
+          teacher_id?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      fee_payments: {
+        Row: {
+          academic_year: string
+          amount_paid: number
+          amount_payable: number
+          balance: number | null
+          class_id: string
+          created_at: string | null
+          id: string
+          installment: string | null
+          last_payment_date: string | null
+          status: string | null
+          student_id: string
+          term: string
+        }
+        Insert: {
+          academic_year: string
+          amount_paid?: number
+          amount_payable?: number
+          balance?: number | null
+          class_id: string
+          created_at?: string | null
+          id?: string
+          installment?: string | null
+          last_payment_date?: string | null
+          status?: string | null
+          student_id: string
+          term: string
+        }
+        Update: {
+          academic_year?: string
+          amount_paid?: number
+          amount_payable?: number
+          balance?: number | null
+          class_id?: string
+          created_at?: string | null
+          id?: string
+          installment?: string | null
+          last_payment_date?: string | null
+          status?: string | null
+          student_id?: string
+          term?: string
+        }
+        Relationships: []
+      }
+      learning_materials: {
+        Row: {
+          class_id: string
+          created_at: string | null
+          file_size: string | null
+          file_type: string | null
+          file_url: string
+          id: string
+          subject: string
+          title: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          class_id: string
+          created_at?: string | null
+          file_size?: string | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          subject: string
+          title: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          class_id?: string
+          created_at?: string | null
+          file_size?: string | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          subject?: string
+          title?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          class_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          recipients_type: string
+          sent_at: string | null
+          sent_by: string | null
+          status: string | null
+          subject: string | null
+          type: string
+        }
+        Insert: {
+          class_id?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          recipients_type: string
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string | null
+          subject?: string | null
+          type: string
+        }
+        Update: {
+          class_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          recipients_type?: string
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string | null
+          subject?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      online_classes: {
+        Row: {
+          class_id: string
+          created_at: string | null
+          end_time: string | null
+          id: string
+          meeting_url: string | null
+          start_time: string
+          status: string | null
+          subject: string | null
+          teacher_id: string | null
+          title: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string | null
+          end_time?: string | null
+          id?: string
+          meeting_url?: string | null
+          start_time: string
+          status?: string | null
+          subject?: string | null
+          teacher_id?: string | null
+          title: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string | null
+          end_time?: string | null
+          id?: string
+          meeting_url?: string | null
+          start_time?: string
+          status?: string | null
+          subject?: string | null
           teacher_id?: string | null
           title?: string
         }
@@ -167,6 +329,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      school_settings: {
+        Row: {
+          academic_year: string | null
+          address: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          motto: string | null
+          phone: string | null
+          school_name: string | null
+          term: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          academic_year?: string | null
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          motto?: string | null
+          phone?: string | null
+          school_name?: string | null
+          term?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          academic_year?: string | null
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          motto?: string | null
+          phone?: string | null
+          school_name?: string | null
+          term?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       student_answers: {
         Row: {
@@ -252,6 +456,36 @@ export type Database = {
         }
         Relationships: []
       }
+      teachers: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          subject?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -275,6 +509,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_by_admission_number: {
+        Args: { _admission_number: string }
+        Returns: string
+      }
       get_user_class: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {

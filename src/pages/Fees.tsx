@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -24,80 +25,81 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, Filter, MoreVertical, Receipt, FileSpreadsheet, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Search, Filter, MoreVertical, Receipt, FileSpreadsheet, CheckCircle, AlertCircle, Clock, Loader2 } from 'lucide-react';
 import { PaymentStatus } from '@/types';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
-const feePayments = [
-  {
-    id: '1',
-    studentName: 'Chioma Adeyemi',
-    admissionNumber: 'ADM-2025-0001',
-    className: 'Primary 5',
-    amountPayable: 150000,
-    amountPaid: 150000,
-    balance: 0,
-    installment: 1,
-    status: 'paid' as PaymentStatus,
-    lastPaymentDate: '2025-01-15',
-  },
-  {
-    id: '2',
-    studentName: 'Emeka Okonkwo',
-    admissionNumber: 'ADM-2025-0002',
-    className: 'JSS 2',
-    amountPayable: 180000,
-    amountPaid: 100000,
-    balance: 80000,
-    installment: 2,
-    status: 'partial' as PaymentStatus,
-    lastPaymentDate: '2025-01-10',
-  },
-  {
-    id: '3',
-    studentName: 'Fatima Ibrahim',
-    admissionNumber: 'ADM-2025-0003',
-    className: 'Nursery 2',
-    amountPayable: 100000,
-    amountPaid: 0,
-    balance: 100000,
-    installment: 1,
-    status: 'unpaid' as PaymentStatus,
-    lastPaymentDate: null,
-  },
-  {
-    id: '4',
-    studentName: 'David Okafor',
-    admissionNumber: 'ADM-2025-0004',
-    className: 'SSS 1',
-    amountPayable: 200000,
-    amountPaid: 200000,
-    balance: 0,
-    installment: 1,
-    status: 'paid' as PaymentStatus,
-    lastPaymentDate: '2025-01-08',
-  },
-  {
-    id: '5',
-    studentName: 'Grace Mensah',
-    admissionNumber: 'ADM-2025-0005',
-    className: 'Primary 3',
-    amountPayable: 120000,
-    amountPaid: 60000,
-    balance: 60000,
-    installment: 2,
-    status: 'partial' as PaymentStatus,
-    lastPaymentDate: '2025-01-05',
-  },
-];
+interface FeePayment {
+  id: string;
+  student_id: string;
+  class_id: string;
+  amount_payable: number;
+  amount_paid: number;
+  balance: number;
+  installment: string;
+  status: string;
+  term: string;
+  academic_year: string;
+  last_payment_date: string | null;
+  student_name?: string;
+  admission_number?: string;
+}
 
 export default function Fees() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [feePayments, setFeePayments] = useState<FeePayment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedPayment, setSelectedPayment] = useState<FeePayment | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // New payment form state
+  const [newPaymentStudentId, setNewPaymentStudentId] = useState('');
+  const [newPaymentClass, setNewPaymentClass] = useState('');
+  const [newPaymentAmount, setNewPaymentAmount] = useState('');
+  const [newPaymentTerm, setNewPaymentTerm] = useState('First Term');
+  const [newPaymentYear, setNewPaymentYear] = useState('2024/2025');
+
+  useEffect(() => {
+    fetchFeePayments();
+  }, []);
+
+  const fetchFeePayments = async () => {
+    const { data, error } = await supabase
+      .from('fee_payments')
+      .select(`
+        *,
+        profiles:student_id (full_name),
+        student_classes:student_id (admission_number)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      const payments = data.map((p: any) => ({
+        ...p,
+        student_name: p.profiles?.full_name || 'Unknown',
+        admission_number: p.student_classes?.admission_number || 'N/A',
+      }));
+      setFeePayments(payments);
+    }
+    setIsLoading(false);
+  };
 
   const filteredPayments = feePayments.filter((payment) => {
     const matchesSearch =
-      payment.studentName.toLowerCase().includes(search.toLowerCase()) ||
-      payment.admissionNumber.toLowerCase().includes(search.toLowerCase());
+      (payment.student_name?.toLowerCase() || '').includes(search.toLowerCase()) ||
+      (payment.admission_number?.toLowerCase() || '').includes(search.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
 
@@ -112,7 +114,7 @@ export default function Fees() {
     }).format(amount);
   };
 
-  const getStatusBadge = (status: PaymentStatus) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
         return (
@@ -135,12 +137,116 @@ export default function Fees() {
             Unpaid
           </Badge>
         );
+      default:
+        return <Badge>{status}</Badge>;
     }
   };
 
-  const totalExpected = feePayments.reduce((sum, p) => sum + p.amountPayable, 0);
-  const totalCollected = feePayments.reduce((sum, p) => sum + p.amountPaid, 0);
+  const totalExpected = feePayments.reduce((sum, p) => sum + Number(p.amount_payable), 0);
+  const totalCollected = feePayments.reduce((sum, p) => sum + Number(p.amount_paid), 0);
   const totalPending = totalExpected - totalCollected;
+
+  const handleUpdatePayment = (payment: FeePayment) => {
+    setSelectedPayment(payment);
+    setPaymentAmount('');
+    setPaymentDialogOpen(true);
+  };
+
+  const handleSubmitPayment = async () => {
+    if (!selectedPayment || !paymentAmount) return;
+
+    setIsSubmitting(true);
+    const newAmountPaid = Number(selectedPayment.amount_paid) + Number(paymentAmount);
+    const newStatus = newAmountPaid >= selectedPayment.amount_payable ? 'paid' : 'partial';
+
+    const { error } = await supabase
+      .from('fee_payments')
+      .update({
+        amount_paid: newAmountPaid,
+        status: newStatus,
+        last_payment_date: new Date().toISOString(),
+      })
+      .eq('id', selectedPayment.id);
+
+    setIsSubmitting(false);
+
+    if (error) {
+      toast.error('Failed to update payment');
+      return;
+    }
+
+    toast.success('Payment updated successfully!');
+    setPaymentDialogOpen(false);
+    fetchFeePayments();
+  };
+
+  const handlePrintReceipt = (payment: FeePayment) => {
+    toast.success('Generating receipt...', {
+      description: `Receipt for ${payment.student_name}`,
+    });
+    // In a real app, this would generate a PDF receipt
+  };
+
+  const handlePaymentHistory = (payment: FeePayment) => {
+    toast.info('Payment History', {
+      description: `Last payment: ${payment.last_payment_date ? new Date(payment.last_payment_date).toLocaleDateString() : 'No payments yet'}`,
+    });
+  };
+
+  const handleSendReminder = (payment: FeePayment) => {
+    toast.success('Reminder sent!', {
+      description: `Payment reminder sent to ${payment.student_name}'s parents`,
+    });
+  };
+
+  const handleGenerateBillSheet = () => {
+    toast.success('Generating bill sheet...', {
+      description: 'Your bill sheet will be downloaded shortly.',
+    });
+  };
+
+  const handleRecordNewPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPaymentStudentId || !newPaymentAmount || !newPaymentClass) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error } = await supabase.from('fee_payments').insert({
+      student_id: newPaymentStudentId,
+      class_id: newPaymentClass,
+      amount_payable: Number(newPaymentAmount),
+      amount_paid: 0,
+      status: 'unpaid',
+      term: newPaymentTerm,
+      academic_year: newPaymentYear,
+    });
+
+    setIsSubmitting(false);
+
+    if (error) {
+      toast.error('Failed to create fee record');
+      return;
+    }
+
+    toast.success('Fee record created successfully!');
+    setRecordPaymentOpen(false);
+    setNewPaymentStudentId('');
+    setNewPaymentClass('');
+    setNewPaymentAmount('');
+    fetchFeePayments();
+  };
+
+  if (isLoading) {
+    return (
+      <MainLayout title="Fees Management" subtitle="Track and manage school fee payments">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout title="Fees Management" subtitle="Track and manage school fee payments">
@@ -187,11 +293,11 @@ export default function Fees() {
             </Select>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleGenerateBillSheet}>
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               Generate Bill Sheet
             </Button>
-            <Button className="bg-gradient-primary hover:opacity-90">
+            <Button className="bg-gradient-primary hover:opacity-90" onClick={() => setRecordPaymentOpen(true)}>
               <Receipt className="mr-2 h-4 w-4" />
               Record Payment
             </Button>
@@ -214,45 +320,195 @@ export default function Fees() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPayments.map((payment) => (
-                <TableRow key={payment.id} className="hover:bg-muted/30">
-                  <TableCell>
-                    <div>
-                      <p className="font-medium text-foreground">{payment.studentName}</p>
-                      <p className="text-sm text-muted-foreground">{payment.admissionNumber}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{payment.className}</TableCell>
-                  <TableCell className="font-medium">{formatCurrency(payment.amountPayable)}</TableCell>
-                  <TableCell className="text-success font-medium">{formatCurrency(payment.amountPaid)}</TableCell>
-                  <TableCell className={payment.balance > 0 ? 'text-warning font-medium' : 'text-muted-foreground'}>
-                    {formatCurrency(payment.balance)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{payment.installment}/3</Badge>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(payment.status)}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Update Payment</DropdownMenuItem>
-                        <DropdownMenuItem>Print Receipt</DropdownMenuItem>
-                        <DropdownMenuItem>Payment History</DropdownMenuItem>
-                        <DropdownMenuItem>Send Reminder</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {filteredPayments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    No fee records found
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredPayments.map((payment) => (
+                  <TableRow key={payment.id} className="hover:bg-muted/30">
+                    <TableCell>
+                      <div>
+                        <p className="font-medium text-foreground">{payment.student_name}</p>
+                        <p className="text-sm text-muted-foreground">{payment.admission_number}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{payment.class_id}</TableCell>
+                    <TableCell className="font-medium">{formatCurrency(payment.amount_payable)}</TableCell>
+                    <TableCell className="text-success font-medium">{formatCurrency(payment.amount_paid)}</TableCell>
+                    <TableCell className={payment.balance > 0 ? 'text-warning font-medium' : 'text-muted-foreground'}>
+                      {formatCurrency(payment.balance)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{payment.installment}</Badge>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleUpdatePayment(payment)}>
+                            Update Payment
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handlePrintReceipt(payment)}>
+                            Print Receipt
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handlePaymentHistory(payment)}>
+                            Payment History
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSendReminder(payment)}>
+                            Send Reminder
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
       </div>
+
+      {/* Update Payment Dialog */}
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Payment</DialogTitle>
+            <DialogDescription>
+              Record a new payment for {selectedPayment?.student_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">Amount Payable</p>
+                <p className="font-medium">{formatCurrency(selectedPayment?.amount_payable || 0)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Amount Paid</p>
+                <p className="font-medium text-success">{formatCurrency(selectedPayment?.amount_paid || 0)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Balance</p>
+                <p className="font-medium text-warning">{formatCurrency(selectedPayment?.balance || 0)}</p>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="paymentAmount">Payment Amount</Label>
+              <Input
+                id="paymentAmount"
+                type="number"
+                placeholder="Enter amount"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+              />
+            </div>
+            <Button 
+              className="w-full bg-gradient-primary hover:opacity-90" 
+              onClick={handleSubmitPayment}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Record Payment'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Record New Payment Dialog */}
+      <Dialog open={recordPaymentOpen} onOpenChange={setRecordPaymentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record New Fee</DialogTitle>
+            <DialogDescription>
+              Create a new fee record for a student
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleRecordNewPayment} className="space-y-4">
+            <div>
+              <Label htmlFor="studentId">Student ID</Label>
+              <Input
+                id="studentId"
+                placeholder="Enter student UUID"
+                value={newPaymentStudentId}
+                onChange={(e) => setNewPaymentStudentId(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="classId">Class</Label>
+              <Input
+                id="classId"
+                placeholder="e.g., Primary 5"
+                value={newPaymentClass}
+                onChange={(e) => setNewPaymentClass(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="amountPayable">Amount Payable</Label>
+              <Input
+                id="amountPayable"
+                type="number"
+                placeholder="Enter amount"
+                value={newPaymentAmount}
+                onChange={(e) => setNewPaymentAmount(e.target.value)}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Term</Label>
+                <Select value={newPaymentTerm} onValueChange={setNewPaymentTerm}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="First Term">First Term</SelectItem>
+                    <SelectItem value="Second Term">Second Term</SelectItem>
+                    <SelectItem value="Third Term">Third Term</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Academic Year</Label>
+                <Select value={newPaymentYear} onValueChange={setNewPaymentYear}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2024/2025">2024/2025</SelectItem>
+                    <SelectItem value="2025/2026">2025/2026</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Fee Record'
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

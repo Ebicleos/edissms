@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,9 +13,181 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { School, User, Lock, Bell, Database, Shield, Save } from 'lucide-react';
+import { School, User, Lock, Bell, Shield, Save, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Settings() {
+  const { user, profile } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // School settings
+  const [schoolName, setSchoolName] = useState('');
+  const [motto, setMotto] = useState('');
+  const [schoolEmail, setSchoolEmail] = useState('');
+  const [schoolPhone, setSchoolPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [academicYear, setAcademicYear] = useState('');
+  const [term, setTerm] = useState('');
+
+  // Account settings
+  const [fullName, setFullName] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPhone, setAdminPhone] = useState('');
+
+  // Security settings
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Notification settings
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [smsAlerts, setSmsAlerts] = useState(false);
+  const [feeReminders, setFeeReminders] = useState(true);
+  const [attendanceReports, setAttendanceReports] = useState(true);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [profile]);
+
+  const fetchSettings = async () => {
+    setIsLoading(true);
+
+    // Fetch school settings
+    const { data: schoolData } = await supabase
+      .from('school_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+
+    if (schoolData) {
+      setSchoolName(schoolData.school_name || '');
+      setMotto(schoolData.motto || '');
+      setSchoolEmail(schoolData.email || '');
+      setSchoolPhone(schoolData.phone || '');
+      setAddress(schoolData.address || '');
+      setAcademicYear(schoolData.academic_year || '');
+      setTerm(schoolData.term || '');
+    }
+
+    // Set account settings from profile
+    if (profile) {
+      setFullName(profile.full_name || '');
+      setAdminEmail(profile.email || '');
+    }
+
+    setIsLoading(false);
+  };
+
+  const handleSaveSchoolSettings = async () => {
+    setIsSaving(true);
+
+    const { data: existing } = await supabase
+      .from('school_settings')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+
+    const settingsData = {
+      school_name: schoolName,
+      motto,
+      email: schoolEmail,
+      phone: schoolPhone,
+      address,
+      academic_year: academicYear,
+      term,
+      updated_at: new Date().toISOString(),
+    };
+
+    let error;
+    if (existing) {
+      ({ error } = await supabase
+        .from('school_settings')
+        .update(settingsData)
+        .eq('id', existing.id));
+    } else {
+      ({ error } = await supabase.from('school_settings').insert(settingsData));
+    }
+
+    setIsSaving(false);
+
+    if (error) {
+      toast.error('Failed to save school settings');
+      return;
+    }
+
+    toast.success('School settings saved successfully!');
+  };
+
+  const handleSaveAccountSettings = async () => {
+    if (!user) return;
+
+    setIsSaving(true);
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        full_name: fullName,
+        phone_contact: adminPhone,
+      })
+      .eq('id', user.id);
+
+    setIsSaving(false);
+
+    if (error) {
+      toast.error('Failed to save account settings');
+      return;
+    }
+
+    toast.success('Account settings saved successfully!');
+  };
+
+  const handleUpdatePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords don't match");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    setIsSaving(true);
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    setIsSaving(false);
+
+    if (error) {
+      toast.error('Failed to update password');
+      return;
+    }
+
+    toast.success('Password updated successfully!');
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleSaveNotifications = () => {
+    toast.success('Notification preferences saved!');
+  };
+
+  if (isLoading) {
+    return (
+      <MainLayout title="Settings" subtitle="Manage your school settings and preferences">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout title="Settings" subtitle="Manage your school settings and preferences">
       <div className="max-w-4xl animate-fade-in">
@@ -51,23 +224,44 @@ export default function Settings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="schoolName">School Name</Label>
-                    <Input id="schoolName" defaultValue="EduManage School" />
+                    <Input 
+                      id="schoolName" 
+                      value={schoolName}
+                      onChange={(e) => setSchoolName(e.target.value)}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="motto">School Motto</Label>
-                    <Input id="motto" defaultValue="Excellence in Education" />
+                    <Input 
+                      id="motto" 
+                      value={motto}
+                      onChange={(e) => setMotto(e.target.value)}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="email">School Email</Label>
-                    <Input id="email" type="email" defaultValue="info@edumanage.edu" />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      value={schoolEmail}
+                      onChange={(e) => setSchoolEmail(e.target.value)}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" defaultValue="+234 801 234 5678" />
+                    <Input 
+                      id="phone" 
+                      value={schoolPhone}
+                      onChange={(e) => setSchoolPhone(e.target.value)}
+                    />
                   </div>
                   <div className="md:col-span-2">
                     <Label htmlFor="address">Address</Label>
-                    <Input id="address" defaultValue="123 Education Street, Lagos, Nigeria" />
+                    <Input 
+                      id="address" 
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                    />
                   </div>
                 </div>
 
@@ -78,18 +272,34 @@ export default function Settings() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="academicYear">Current Academic Year</Label>
-                      <Input id="academicYear" defaultValue="2024/2025" />
+                      <Input 
+                        id="academicYear" 
+                        value={academicYear}
+                        onChange={(e) => setAcademicYear(e.target.value)}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="term">Current Term</Label>
-                      <Input id="term" defaultValue="Second Term" />
+                      <Input 
+                        id="term" 
+                        value={term}
+                        onChange={(e) => setTerm(e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
 
                 <div className="flex justify-end">
-                  <Button className="bg-gradient-primary hover:opacity-90">
-                    <Save className="mr-2 h-4 w-4" />
+                  <Button 
+                    className="bg-gradient-primary hover:opacity-90"
+                    onClick={handleSaveSchoolSettings}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
                     Save Changes
                   </Button>
                 </div>
@@ -109,7 +319,9 @@ export default function Settings() {
               <CardContent className="space-y-6">
                 <div className="flex items-center gap-6">
                   <div className="h-20 w-20 rounded-full bg-gradient-primary flex items-center justify-center">
-                    <span className="text-2xl font-bold text-primary-foreground">AD</span>
+                    <span className="text-2xl font-bold text-primary-foreground">
+                      {fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'AD'}
+                    </span>
                   </div>
                   <div>
                     <Button variant="outline" size="sm">Change Photo</Button>
@@ -120,11 +332,20 @@ export default function Settings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="fullName">Full Name</Label>
-                    <Input id="fullName" defaultValue="Admin User" />
+                    <Input 
+                      id="fullName" 
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="adminEmail">Email</Label>
-                    <Input id="adminEmail" type="email" defaultValue="admin@school.edu" />
+                    <Input 
+                      id="adminEmail" 
+                      type="email" 
+                      value={adminEmail}
+                      disabled
+                    />
                   </div>
                   <div>
                     <Label htmlFor="role">Role</Label>
@@ -132,13 +353,25 @@ export default function Settings() {
                   </div>
                   <div>
                     <Label htmlFor="adminPhone">Phone</Label>
-                    <Input id="adminPhone" defaultValue="+234 800 000 0000" />
+                    <Input 
+                      id="adminPhone" 
+                      value={adminPhone}
+                      onChange={(e) => setAdminPhone(e.target.value)}
+                    />
                   </div>
                 </div>
 
                 <div className="flex justify-end">
-                  <Button className="bg-gradient-primary hover:opacity-90">
-                    <Save className="mr-2 h-4 w-4" />
+                  <Button 
+                    className="bg-gradient-primary hover:opacity-90"
+                    onClick={handleSaveAccountSettings}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
                     Save Changes
                   </Button>
                 </div>
@@ -161,18 +394,42 @@ export default function Settings() {
                   <div className="grid grid-cols-1 gap-4 max-w-md">
                     <div>
                       <Label htmlFor="currentPassword">Current Password</Label>
-                      <Input id="currentPassword" type="password" />
+                      <Input 
+                        id="currentPassword" 
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="newPassword">New Password</Label>
-                      <Input id="newPassword" type="password" />
+                      <Input 
+                        id="newPassword" 
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                      <Input id="confirmPassword" type="password" />
+                      <Input 
+                        id="confirmPassword" 
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                      />
                     </div>
                   </div>
-                  <Button variant="outline">Update Password</Button>
+                  <Button 
+                    variant="outline"
+                    onClick={handleUpdatePassword}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Update Password
+                  </Button>
                 </div>
 
                 <Separator />
@@ -214,7 +471,10 @@ export default function Settings() {
                         Receive updates about admissions and payments
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch 
+                      checked={emailNotifications}
+                      onCheckedChange={setEmailNotifications}
+                    />
                   </div>
                   <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                     <div>
@@ -223,7 +483,10 @@ export default function Settings() {
                         Get SMS for urgent notifications
                       </p>
                     </div>
-                    <Switch />
+                    <Switch 
+                      checked={smsAlerts}
+                      onCheckedChange={setSmsAlerts}
+                    />
                   </div>
                   <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                     <div>
@@ -232,7 +495,10 @@ export default function Settings() {
                         Automatic reminders for pending fees
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch 
+                      checked={feeReminders}
+                      onCheckedChange={setFeeReminders}
+                    />
                   </div>
                   <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                     <div>
@@ -241,12 +507,18 @@ export default function Settings() {
                         Daily attendance summary reports
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch 
+                      checked={attendanceReports}
+                      onCheckedChange={setAttendanceReports}
+                    />
                   </div>
                 </div>
 
                 <div className="flex justify-end">
-                  <Button className="bg-gradient-primary hover:opacity-90">
+                  <Button 
+                    className="bg-gradient-primary hover:opacity-90"
+                    onClick={handleSaveNotifications}
+                  >
                     <Save className="mr-2 h-4 w-4" />
                     Save Preferences
                   </Button>
