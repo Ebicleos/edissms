@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useStudents, AdmissionFormData } from '@/hooks/useStudents';
-import { CLASS_LIST, ACADEMIC_YEARS, Term, Gender } from '@/types';
+import { CLASS_LIST_DETAILED, ACADEMIC_YEARS, Term, Gender } from '@/types';
 import { UserPlus, Check, Printer } from 'lucide-react';
 import {
   Dialog,
@@ -47,7 +47,7 @@ export default function Admission() {
   };
 
   const handleClassChange = (classId: string) => {
-    const selectedClass = CLASS_LIST.find((c) => c.id === classId);
+    const selectedClass = CLASS_LIST_DETAILED.find((c) => c.id === classId);
     if (selectedClass) {
       setFormData((prev) => ({
         ...prev,
@@ -167,7 +167,7 @@ export default function Admission() {
                     <SelectValue placeholder="Select class" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CLASS_LIST.map((cls) => (
+                    {CLASS_LIST_DETAILED.map((cls) => (
                       <SelectItem key={cls.id} value={cls.id}>
                         {cls.name}
                       </SelectItem>

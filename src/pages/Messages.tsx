@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CLASS_LIST } from '@/types';
+import { CLASS_LIST_DETAILED } from '@/types';
 import { Mail, MessageSquare, Phone, Send, Users, CheckCircle } from 'lucide-react';
 
 const messageHistory = [
@@ -102,7 +102,7 @@ export default function Messages() {
                       <SelectValue placeholder="Choose a class" />
                     </SelectTrigger>
                     <SelectContent>
-                      {CLASS_LIST.map((cls) => (
+                      {CLASS_LIST_DETAILED.map((cls) => (
                         <SelectItem key={cls.id} value={cls.id}>
                           {cls.name}
                         </SelectItem>

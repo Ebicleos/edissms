@@ -82,7 +82,27 @@ export interface DashboardStats {
   attendanceRate: number;
 }
 
-export const CLASS_LIST: { id: string; name: string; level: string }[] = [
+export const CLASS_LIST: string[] = [
+  'Crèche',
+  'Pre-Nursery',
+  'Nursery 1',
+  'Nursery 2',
+  'Nursery 3',
+  'Primary 1',
+  'Primary 2',
+  'Primary 3',
+  'Primary 4',
+  'Primary 5',
+  'Primary 6',
+  'JSS 1',
+  'JSS 2',
+  'JSS 3',
+  'SSS 1',
+  'SSS 2',
+  'SSS 3',
+];
+
+export const CLASS_LIST_DETAILED: { id: string; name: string; level: string }[] = [
   { id: 'creche', name: 'Crèche', level: 'Early Years' },
   { id: 'prenursery', name: 'Pre-Nursery', level: 'Early Years' },
   { id: 'nursery1', name: 'Nursery 1', level: 'Nursery' },

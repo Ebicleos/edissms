@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useStudents } from '@/hooks/useStudents';
-import { CLASS_LIST } from '@/types';
+import { CLASS_LIST_DETAILED } from '@/types';
 import { Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Printer, IdCard } from 'lucide-react';
 
 export default function Students() {
@@ -77,7 +77,7 @@ export default function Students() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Classes</SelectItem>
-                {CLASS_LIST.map((cls) => (
+                {CLASS_LIST_DETAILED.map((cls) => (
                   <SelectItem key={cls.id} value={cls.id}>
                     {cls.name}
                   </SelectItem>
