@@ -7,15 +7,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SchoolLogoUpload } from '@/components/settings/SchoolLogoUpload';
-import { School, Building2, Loader2, CheckCircle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { School, Building2, Loader2, CheckCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { addMonths, format } from 'date-fns';
 
 export default function RegisterSchool() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+
+  const handleCancel = async () => {
+    await signOut();
+    navigate('/auth', { replace: true });
+  };
   
   const [formData, setFormData] = useState({
     schoolName: '',
@@ -302,16 +308,41 @@ export default function RegisterSchool() {
                 </p>
               </div>
 
-              <Button type="submit" className="w-full bg-gradient-primary" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Registering...
-                  </>
-                ) : (
-                  'Complete Registration'
-                )}
-              </Button>
+              <div className="flex gap-3">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="outline" className="flex-1" disabled={isLoading}>
+                      <X className="mr-2 h-4 w-4" />
+                      Cancel
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancel Registration?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to cancel? You will be logged out and will need to sign in again to continue registration.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Continue Registration</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleCancel}>
+                        Yes, Cancel
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                
+                <Button type="submit" className="flex-1 bg-gradient-primary" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Registering...
+                    </>
+                  ) : (
+                    'Complete Registration'
+                  )}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>

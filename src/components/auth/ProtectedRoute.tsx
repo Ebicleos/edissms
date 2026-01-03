@@ -32,7 +32,13 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/admin/register-school" replace />;
   }
 
-  if (allowedRoles && role && !allowedRoles.includes(role)) {
+  // Superadmins can access admin routes as well
+  const effectiveAllowedRoles = allowedRoles ? [...allowedRoles] : undefined;
+  const hasAccess = !effectiveAllowedRoles || 
+    (role && effectiveAllowedRoles.includes(role)) ||
+    (role === 'superadmin' && effectiveAllowedRoles.includes('admin'));
+
+  if (!hasAccess) {
     // Redirect to appropriate dashboard based on role
     if (role === 'superadmin') {
       return <Navigate to="/superadmin" replace />;
