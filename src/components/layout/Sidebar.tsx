@@ -19,6 +19,8 @@ import {
   Plus,
   FileText,
   ArrowUpRight,
+  Megaphone,
+  CalendarDays,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, AppRole } from '@/contexts/AuthContext';
@@ -44,7 +46,10 @@ const menuItems: MenuItem[] = [
   { icon: Video, label: 'Online Classes', path: '/online-classes', roles: ['admin', 'teacher', 'student'] },
   { icon: Calendar, label: 'Attendance', path: '/attendance', roles: ['admin', 'teacher'] },
   { icon: IdCard, label: 'ID Cards', path: '/id-cards', roles: ['admin'] },
+  { icon: Megaphone, label: 'Announcements', path: '/announcements', roles: ['admin'] },
+  { icon: CalendarDays, label: 'Events', path: '/events', roles: ['admin', 'teacher'] },
   { icon: Mail, label: 'Messages', path: '/messages', roles: ['admin', 'teacher'] },
+  { icon: UserCog, label: 'User Management', path: '/user-management', roles: ['admin'] },
   { icon: Settings, label: 'Settings', path: '/settings', roles: ['admin'] },
   { icon: GraduationCap, label: 'Subjects', path: '/subjects', roles: ['admin'] },
   

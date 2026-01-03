@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          expiry_date: string | null
+          id: string
+          is_published: boolean | null
+          publish_date: string | null
+          target_audience: string | null
+          title: string
+          type: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_published?: boolean | null
+          publish_date?: string | null
+          target_audience?: string | null
+          title: string
+          type?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_published?: boolean | null
+          publish_date?: string | null
+          target_audience?: string | null
+          title?: string
+          type?: string | null
+        }
+        Relationships: []
+      }
       assignments: {
         Row: {
           class_id: string
@@ -143,6 +182,51 @@ export type Database = {
           id?: string
           level?: string
           name?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_time: string | null
+          event_date: string
+          event_type: string | null
+          id: string
+          is_all_day: boolean | null
+          is_published: boolean | null
+          location: string | null
+          start_time: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_time?: string | null
+          event_date: string
+          event_type?: string | null
+          id?: string
+          is_all_day?: boolean | null
+          is_published?: boolean | null
+          location?: string | null
+          start_time?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_time?: string | null
+          event_date?: string
+          event_type?: string | null
+          id?: string
+          is_all_day?: boolean | null
+          is_published?: boolean | null
+          location?: string | null
+          start_time?: string | null
+          title?: string
         }
         Relationships: []
       }
@@ -730,6 +814,7 @@ export type Database = {
           phone: string | null
           principal_name: string | null
           report_card_config: Json | null
+          school_initials: string | null
           school_name: string | null
           term: string | null
           updated_at: string | null
@@ -748,6 +833,7 @@ export type Database = {
           phone?: string | null
           principal_name?: string | null
           report_card_config?: Json | null
+          school_initials?: string | null
           school_name?: string | null
           term?: string | null
           updated_at?: string | null
@@ -766,6 +852,7 @@ export type Database = {
           phone?: string | null
           principal_name?: string | null
           report_card_config?: Json | null
+          school_initials?: string | null
           school_name?: string | null
           term?: string | null
           updated_at?: string | null
@@ -1032,6 +1119,36 @@ export type Database = {
           phone?: string | null
           subject?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_password_resets: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_used: boolean | null
+          requested_by: string
+          reset_token: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean | null
+          requested_by: string
+          reset_token?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean | null
+          requested_by?: string
+          reset_token?: string | null
+          user_id?: string
         }
         Relationships: []
       }
