@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.grade-exam]
 verify_jwt = true
+
+[functions.subscription-payment]
+verify_jwt = true
+
+[functions.subscription-webhook]
+verify_jwt = false

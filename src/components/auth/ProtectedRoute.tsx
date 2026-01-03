@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, role, isLoading } = useAuth();
+  const { user, role, profile, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -24,6 +24,12 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // If user is admin but has no school_id, redirect to school registration
+  // (except when already on the registration page)
+  if (role === 'admin' && profile && !profile.school_id && location.pathname !== '/admin/register-school') {
+    return <Navigate to="/admin/register-school" replace />;
   }
 
   if (allowedRoles && role && !allowedRoles.includes(role)) {

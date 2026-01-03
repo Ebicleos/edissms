@@ -107,7 +107,11 @@ export default function IDCards() {
                 {/* Header */}
                 <div className="bg-gradient-primary p-4 text-center text-primary-foreground">
                   <div className="flex items-center justify-center gap-2 mb-1">
-                    <School className="h-6 w-6" />
+                    {schoolSettings.logo_url ? (
+                      <img src={schoolSettings.logo_url} alt="School Logo" className="h-8 w-8 object-contain rounded" />
+                    ) : (
+                      <School className="h-6 w-6" />
+                    )}
                     <span className="font-bold text-lg">{schoolSettings.school_name}</span>
                   </div>
                   <p className="text-xs opacity-90">{schoolSettings.motto}</p>

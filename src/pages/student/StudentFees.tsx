@@ -30,6 +30,21 @@ export default function StudentFees() {
   useEffect(() => {
     if (user) {
       fetchFeePayments();
+      
+      // Check for payment callback
+      const urlParams = new URLSearchParams(window.location.search);
+      const reference = urlParams.get('reference');
+      const trxref = urlParams.get('trxref');
+      
+      if (reference || trxref) {
+        // Clear URL params
+        window.history.replaceState({}, '', window.location.pathname);
+        toast.success('Payment received!', {
+          description: 'Your payment is being processed. Please refresh in a moment to see the updated balance.',
+        });
+        // Refetch after a delay to allow webhook processing
+        setTimeout(() => fetchFeePayments(), 3000);
+      }
     }
   }, [user]);
 

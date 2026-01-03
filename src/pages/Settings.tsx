@@ -14,10 +14,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { PasswordInput } from '@/components/ui/password-input';
-import { School, User, Lock, Bell, Shield, Save, Loader2, FileText, KeyRound, Mail } from 'lucide-react';
+import { School, User, Lock, Bell, Shield, Save, Loader2, FileText, KeyRound, Mail, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { SchoolLogoUpload } from '@/components/settings/SchoolLogoUpload';
 
 export default function Settings() {
   const { user, profile } = useAuth();
@@ -37,6 +38,7 @@ export default function Settings() {
   const [principalName, setPrincipalName] = useState('');
   const [closingDate, setClosingDate] = useState('');
   const [nextTermBegins, setNextTermBegins] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
 
   // Account settings
   const [fullName, setFullName] = useState('');
@@ -79,6 +81,7 @@ export default function Settings() {
       setPrincipalName(schoolData.principal_name || '');
       setClosingDate(schoolData.closing_date || '');
       setNextTermBegins(schoolData.next_term_begins || '');
+      setLogoUrl(schoolData.logo_url || '');
     }
 
     // Set account settings from profile
@@ -110,6 +113,7 @@ export default function Settings() {
       principal_name: principalName,
       closing_date: closingDate || null,
       next_term_begins: nextTermBegins || null,
+      logo_url: logoUrl || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -237,6 +241,18 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Logo Upload */}
+                <div className="space-y-2">
+                  <Label>School Logo</Label>
+                  <SchoolLogoUpload
+                    currentLogoUrl={logoUrl}
+                    onUploadComplete={(url) => setLogoUrl(url)}
+                    schoolId={profile?.school_id || undefined}
+                  />
+                </div>
+
+                <Separator />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="schoolName">School Name</Label>

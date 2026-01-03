@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PasswordInput } from '@/components/ui/password-input';
+import { SchoolLogoUpload } from '@/components/settings/SchoolLogoUpload';
 import { School, Building2, User, CreditCard, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -41,6 +42,7 @@ export default function SchoolRegistration() {
     schoolPhone: '',
     schoolAddress: '',
     schoolInitials: '',
+    logoUrl: '',
     adminName: '',
     adminEmail: '',
     adminPassword: '',
@@ -109,6 +111,7 @@ export default function SchoolRegistration() {
           phone: formData.schoolPhone,
           address: formData.schoolAddress,
           initials: formData.schoolInitials,
+          logo_url: formData.logoUrl,
           created_by: authData.user.id,
         })
         .select()
@@ -250,6 +253,15 @@ export default function SchoolRegistration() {
               {/* Step 1: School Information */}
               {step === 1 && (
                 <>
+                  {/* Logo Upload */}
+                  <div className="space-y-2">
+                    <Label>School Logo</Label>
+                    <SchoolLogoUpload
+                      currentLogoUrl={formData.logoUrl}
+                      onUploadComplete={(url) => setFormData(prev => ({ ...prev, logoUrl: url }))}
+                    />
+                  </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="schoolName">School Name *</Label>
                     <Input
