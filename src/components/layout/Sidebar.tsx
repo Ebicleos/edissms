@@ -58,6 +58,7 @@ const menuItems: MenuItem[] = [
   { icon: UserCog, label: 'Teachers', path: '/teachers', roles: ['admin'] },
   { icon: Wallet, label: 'Fees', path: '/fees', roles: ['admin'] },
   { icon: ClipboardList, label: 'Exams', path: '/exams', roles: ['admin'] },
+  { icon: PenTool, label: 'CBT Portal', path: '/admin/cbt', roles: ['admin'] },
   { icon: FileText, label: 'Report Cards', path: '/report-cards', roles: ['admin'] },
   { icon: ArrowUpRight, label: 'Promotion', path: '/promotion', roles: ['admin'] },
   { icon: Video, label: 'Online Classes', path: '/online-classes', roles: ['admin', 'teacher', 'student'] },
@@ -123,7 +124,7 @@ export function Sidebar() {
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar border-r border-sidebar-border">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border flex-shrink-0">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-primary">
             <School className="h-6 w-6 text-sidebar-primary-foreground" />
           </div>
@@ -134,7 +135,7 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto scrollbar-thin">
           {filteredItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -154,7 +155,7 @@ export function Sidebar() {
         </nav>
 
         {/* User Section */}
-        <div className="border-t border-sidebar-border p-4">
+        <div className="flex-shrink-0 border-t border-sidebar-border p-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="h-10 w-10 rounded-full bg-sidebar-primary flex items-center justify-center">
               <span className="text-sm font-semibold text-sidebar-primary-foreground">

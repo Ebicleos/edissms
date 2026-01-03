@@ -142,6 +142,18 @@ export function useStudents() {
   const addStudent = useCallback(async (data: AdmissionFormData & { photoUrl?: string }): Promise<Student | null> => {
     const admissionNumber = await generateAdmissionNumber();
     
+    // Fetch current user's school_id
+    const { data: { user } } = await supabase.auth.getUser();
+    let schoolId = null;
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('school_id')
+        .eq('id', user.id)
+        .single();
+      schoolId = profile?.school_id;
+    }
+    
     const { data: inserted, error } = await supabase
       .from('students')
       .insert({
@@ -158,6 +170,7 @@ export function useStudents() {
         phone_contact: data.phoneContact,
         email: data.email || null,
         photo_url: data.photoUrl || null,
+        school_id: schoolId,
       })
       .select()
       .single();

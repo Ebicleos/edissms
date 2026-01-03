@@ -38,6 +38,7 @@ import Events from "./pages/Events";
 import UserManagement from "./pages/admin/UserManagement";
 import SubscriptionPayment from "./pages/admin/SubscriptionPayment";
 import RegisterSchool from "./pages/admin/RegisterSchool";
+import CBTManagement from "./pages/admin/CBTManagement";
 import NotFound from "./pages/NotFound";
 
 // Teacher pages
@@ -171,6 +172,11 @@ const App = () => (
             <Route path="/admin/subscription" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <SubscriptionPayment />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/cbt" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <CBTManagement />
               </ProtectedRoute>
             } />
             <Route path="/admin/register-school" element={
