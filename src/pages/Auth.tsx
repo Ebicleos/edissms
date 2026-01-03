@@ -49,7 +49,7 @@ const roleDescriptions = {
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { signIn, signUp, user, role } = useAuth();
+  const { signIn, signUp, user, role, isLoading: authLoading } = useAuth();
   const [selectedRole, setSelectedRole] = useState<AppRole>('student');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedClass, setSelectedClass] = useState('');
@@ -103,6 +103,9 @@ export default function Auth() {
 
   // Redirect if already logged in
   useEffect(() => {
+    // Don't redirect while auth is still loading
+    if (authLoading) return;
+    
     if (user && role) {
       if (role === 'superadmin') {
         navigate('/superadmin', { replace: true });
@@ -114,7 +117,7 @@ export default function Auth() {
         navigate('/student', { replace: true });
       }
     }
-  }, [user, role, navigate]);
+  }, [user, role, authLoading, navigate]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();

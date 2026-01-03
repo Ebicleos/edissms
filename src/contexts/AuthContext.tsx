@@ -32,15 +32,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchUserData = async (userId: string, userEmail?: string | null) => {
-    // Fetch role
+    // Fetch all roles for user to handle multiple roles
     const { data: roleData } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', userId)
-      .maybeSingle();
+      .eq('user_id', userId);
     
-    if (roleData) {
-      setRole(roleData.role as AppRole);
+    let assignedRole: AppRole | null = null;
+    if (roleData && roleData.length > 0) {
+      // Priority: superadmin > admin > teacher > student
+      const rolePriority: AppRole[] = ['superadmin', 'admin', 'teacher', 'student'];
+      const userRoles = roleData.map(r => r.role as AppRole);
+      assignedRole = rolePriority.find(r => userRoles.includes(r)) || null;
+      setRole(assignedRole);
     }
 
     // Fetch profile
@@ -65,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Fetch class if student
-    if (roleData?.role === 'student') {
+    if (assignedRole === 'student') {
       const { data: classData } = await supabase
         .from('student_classes')
         .select('class_id')
@@ -78,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Fetch classes if teacher
-    if (roleData?.role === 'teacher') {
+    if (assignedRole === 'teacher') {
       const { data: classData } = await supabase
         .from('teacher_classes')
         .select('class_id')
@@ -100,25 +104,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer Supabase calls with setTimeout
-          setTimeout(() => {
-            fetchUserData(session.user.id, session.user.email);
+          // Defer Supabase calls with setTimeout and wait for completion
+          setTimeout(async () => {
+            await fetchUserData(session.user.id, session.user.email);
+            setIsLoading(false);
           }, 0);
         } else {
           setRole(null);
           setProfile(null);
           setUserClass(null);
+          setIsLoading(false);
         }
-        setIsLoading(false);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserData(session.user.id, session.user.email);
+        await fetchUserData(session.user.id, session.user.email);
       }
       setIsLoading(false);
     });
