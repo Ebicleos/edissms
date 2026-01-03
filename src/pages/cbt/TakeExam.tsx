@@ -122,9 +122,10 @@ export default function TakeExam() {
       setTimeLeft(examData.duration_minutes * 60);
 
       // Fetch questions
+      // Security: Explicitly select only needed fields, excluding correct_option to prevent cheating
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
-        .select('*')
+        .select('id, question_text, option_a, option_b, option_c, option_d, marks, order_index')
         .eq('exam_id', examId)
         .order('order_index', { ascending: true });
 
