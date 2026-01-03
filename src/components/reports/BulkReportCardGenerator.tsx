@@ -132,6 +132,17 @@ export function BulkReportCardGenerator() {
     printWindow.print();
   };
 
+  // Security: HTML escape function to prevent XSS attacks
+  const escapeHtml = (unsafe: string | null | undefined): string => {
+    if (unsafe == null) return '';
+    return String(unsafe)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+
   const generateReportCardHTML = (data: ReportCardData, settings: SchoolSettings) => {
     const totalCa = data.grades.reduce((sum, g) => sum + g.caScore, 0);
     const totalExam = data.grades.reduce((sum, g) => sum + g.examScore, 0);
@@ -139,37 +150,37 @@ export function BulkReportCardGenerator() {
 
     const gradesRows = data.grades.map((grade, i) => `
       <tr style="background-color: ${i % 2 === 0 ? 'white' : '#f9fafb'}">
-        <td class="border p-2">${grade.subjectName}</td>
-        <td class="border p-2 text-center">${grade.caScore}</td>
-        <td class="border p-2 text-center">${grade.examScore}</td>
-        <td class="border p-2 text-center font-bold">${grade.totalScore}</td>
-        <td class="border p-2 text-center font-bold">${grade.grade}</td>
-        <td class="border p-2 text-center">${grade.subjectPosition}</td>
-        <td class="border p-2">${grade.remarks}</td>
+        <td class="border p-2">${escapeHtml(grade.subjectName)}</td>
+        <td class="border p-2 text-center">${escapeHtml(String(grade.caScore))}</td>
+        <td class="border p-2 text-center">${escapeHtml(String(grade.examScore))}</td>
+        <td class="border p-2 text-center font-bold">${escapeHtml(String(grade.totalScore))}</td>
+        <td class="border p-2 text-center font-bold">${escapeHtml(grade.grade)}</td>
+        <td class="border p-2 text-center">${escapeHtml(String(grade.subjectPosition))}</td>
+        <td class="border p-2">${escapeHtml(grade.remarks)}</td>
       </tr>
     `).join('');
 
     return `
       <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 16px; margin-bottom: 16px;">
-        <h1 style="font-size: 24px; font-weight: bold; text-transform: uppercase;">${settings.schoolName}</h1>
-        <p style="font-style: italic;">${settings.motto}</p>
-        <p>${settings.address}</p>
-        <p>Contact: ${settings.phone}; ${settings.email}</p>
+        <h1 style="font-size: 24px; font-weight: bold; text-transform: uppercase;">${escapeHtml(settings.schoolName)}</h1>
+        <p style="font-style: italic;">${escapeHtml(settings.motto)}</p>
+        <p>${escapeHtml(settings.address)}</p>
+        <p>Contact: ${escapeHtml(settings.phone)}; ${escapeHtml(settings.email)}</p>
       </div>
       <h2 style="text-align: center; text-decoration: underline; margin-bottom: 16px;">STUDENT TERMLY REPORT CARD</h2>
       <div class="grid grid-cols-2 border p-3 mb-4">
-        <div><strong>Student Name:</strong> ${data.studentName.toUpperCase()}</div>
-        <div><strong>Next term begins:</strong> ${settings.nextTermBegins || 'TBA'}</div>
-        <div><strong>Admission No.:</strong> ${data.admissionNumber}</div>
-        <div><strong>Attendance:</strong> ${data.attendancePresent} out of ${data.attendanceTotal}</div>
-        <div><strong>Class/Form:</strong> ${data.className.toUpperCase()}</div>
-        <div><strong>Number in Class:</strong> ${data.totalStudents}</div>
-        <div><strong>Gender:</strong> ${data.gender.toUpperCase()}</div>
-        <div><strong>Position in Class:</strong> ${data.classPosition}</div>
-        <div><strong>Term:</strong> ${data.term.toUpperCase()} TERM</div>
-        <div><strong>Average Score:</strong> ${data.averageScore.toFixed(2)}</div>
-        <div><strong>Closing Date:</strong> ${settings.closingDate || ''}</div>
-        <div><strong>Academic Year:</strong> ${data.academicYear}</div>
+        <div><strong>Student Name:</strong> ${escapeHtml(data.studentName.toUpperCase())}</div>
+        <div><strong>Next term begins:</strong> ${escapeHtml(settings.nextTermBegins) || 'TBA'}</div>
+        <div><strong>Admission No.:</strong> ${escapeHtml(data.admissionNumber)}</div>
+        <div><strong>Attendance:</strong> ${escapeHtml(String(data.attendancePresent))} out of ${escapeHtml(String(data.attendanceTotal))}</div>
+        <div><strong>Class/Form:</strong> ${escapeHtml(data.className.toUpperCase())}</div>
+        <div><strong>Number in Class:</strong> ${escapeHtml(String(data.totalStudents))}</div>
+        <div><strong>Gender:</strong> ${escapeHtml(data.gender.toUpperCase())}</div>
+        <div><strong>Position in Class:</strong> ${escapeHtml(String(data.classPosition))}</div>
+        <div><strong>Term:</strong> ${escapeHtml(data.term.toUpperCase())} TERM</div>
+        <div><strong>Average Score:</strong> ${escapeHtml(data.averageScore.toFixed(2))}</div>
+        <div><strong>Closing Date:</strong> ${escapeHtml(settings.closingDate) || ''}</div>
+        <div><strong>Academic Year:</strong> ${escapeHtml(data.academicYear)}</div>
       </div>
       <table class="mb-4">
         <thead>
@@ -187,9 +198,9 @@ export function BulkReportCardGenerator() {
           ${gradesRows}
           <tr class="bg-gray-300 font-bold">
             <td class="border p-2">Total</td>
-            <td class="border p-2 text-center">${totalCa}</td>
-            <td class="border p-2 text-center">${totalExam}</td>
-            <td class="border p-2 text-center">${totalScore}</td>
+            <td class="border p-2 text-center">${escapeHtml(String(totalCa))}</td>
+            <td class="border p-2 text-center">${escapeHtml(String(totalExam))}</td>
+            <td class="border p-2 text-center">${escapeHtml(String(totalScore))}</td>
             <td class="border p-2 text-center">-</td>
             <td class="border p-2 text-center">-</td>
             <td class="border p-2">-</td>
@@ -197,19 +208,19 @@ export function BulkReportCardGenerator() {
         </tbody>
       </table>
       <div class="grid grid-cols-3 gap-4 mb-4">
-        <div><strong>Attitude:</strong> ${data.attitude || '-'}</div>
-        <div><strong>Interest:</strong> ${data.interest || '-'}</div>
-        <div><strong>Conduct:</strong> ${data.conduct || '-'}</div>
+        <div><strong>Attitude:</strong> ${escapeHtml(data.attitude) || '-'}</div>
+        <div><strong>Interest:</strong> ${escapeHtml(data.interest) || '-'}</div>
+        <div><strong>Conduct:</strong> ${escapeHtml(data.conduct) || '-'}</div>
       </div>
       <div class="border p-2 mb-4">
-        <strong>Class Teacher's Remarks:</strong> ${data.teacherRemarks || '-'}
+        <strong>Class Teacher's Remarks:</strong> ${escapeHtml(data.teacherRemarks) || '-'}
       </div>
       <div class="border p-2 mb-4">
-        <strong>Head Teacher's Remarks:</strong> ${data.principalRemarks || '-'}
+        <strong>Head Teacher's Remarks:</strong> ${escapeHtml(data.principalRemarks) || '-'}
       </div>
       ${data.promotionStatus ? `
         <div style="text-align: center; font-weight: bold; font-size: 18px; padding: 8px; background-color: #d1fae5; border: 2px solid #10b981; border-radius: 4px; margin-bottom: 16px;">
-          STATUS: ${data.promotionStatus}
+          STATUS: ${escapeHtml(data.promotionStatus)}
         </div>
       ` : ''}
       <div class="grid grid-cols-2 gap-4" style="margin-top: 32px;">
@@ -217,7 +228,7 @@ export function BulkReportCardGenerator() {
           Class Teacher's Signature
         </div>
         <div style="text-align: center; border-top: 1px solid black; padding-top: 4px; margin: 0 32px;">
-          ${settings.principalName ? `${settings.principalName}'s Signature` : "Proprietor's Signature"}
+          ${escapeHtml(settings.principalName) ? `${escapeHtml(settings.principalName)}'s Signature` : "Proprietor's Signature"}
         </div>
       </div>
     `;
