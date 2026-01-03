@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userClass, setUserClass] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUserData = async (userId: string) => {
+  const fetchUserData = async (userId: string, userEmail?: string | null) => {
     // Fetch role
     const { data: roleData } = await supabase
       .from('user_roles')
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Fetch profile
-    const { data: profileData } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('full_name, email, photo_url')
       .eq('id', userId)
@@ -51,6 +51,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     if (profileData) {
       setProfile(profileData);
+    } else if (profileError || !profileData) {
+      // Profile missing - create a basic one to prevent login issues
+      console.warn('Profile missing for user, creating default profile');
+      const defaultProfile = {
+        full_name: userEmail?.split('@')[0] || 'User',
+        email: userEmail || null,
+        photo_url: null,
+      };
+      setProfile(defaultProfile);
     }
 
     // Fetch class if student
@@ -91,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           // Defer Supabase calls with setTimeout
           setTimeout(() => {
-            fetchUserData(session.user.id);
+            fetchUserData(session.user.id, session.user.email);
           }, 0);
         } else {
           setRole(null);
@@ -107,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserData(session.user.id);
+        fetchUserData(session.user.id, session.user.email);
       }
       setIsLoading(false);
     });

@@ -85,6 +85,21 @@ export default function Auth() {
     checkAdminExists();
   }, []);
 
+  // Reset form fields when role changes
+  useEffect(() => {
+    // Reset login form
+    setLoginIdentifier('');
+    setLoginPassword('');
+    
+    // Reset signup form
+    setSignupFullName('');
+    setSignupEmail('');
+    setSignupPassword('');
+    setSignupConfirmPassword('');
+    setSelectedClass('');
+    setStudentAdmissionNumber('');
+  }, [selectedRole]);
+
   // Redirect if already logged in
   useEffect(() => {
     if (user && role) {

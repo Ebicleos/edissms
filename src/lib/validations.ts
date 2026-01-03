@@ -35,6 +35,11 @@ export const studentAdmissionSchema = z.object({
   admissionFee: z.number()
     .min(0, 'Admission fee cannot be negative')
     .max(10000000, 'Admission fee exceeds maximum'),
+  amountPaid: z.number()
+    .min(0, 'Amount paid cannot be negative')
+    .max(100000000, 'Amount paid exceeds maximum')
+    .optional()
+    .default(0),
   academicYear: z.string()
     .min(1, 'Please select an academic year'),
   term: z.enum(['first', 'second', 'third'], {
