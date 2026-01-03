@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useStudents, AdmissionFormData } from '@/hooks/useStudents';
 import { CLASS_LIST_DETAILED, ACADEMIC_YEARS, Term, Gender } from '@/types';
 import { PhotoUpload } from '@/components/students/PhotoUpload';
-import { UserPlus, Check, Printer } from 'lucide-react';
+import { UserPlus, Check, Printer, Wallet } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,7 @@ export default function Admission() {
     phoneContact: '',
     email: '',
     admissionFee: 25000,
+    amountPaid: 0,
     academicYear: '2024/2025',
     term: 'second',
   });
@@ -114,6 +115,7 @@ export default function Admission() {
         phoneContact: '',
         email: '',
         admissionFee: 25000,
+        amountPaid: 0,
         academicYear: '2024/2025',
         term: 'second',
       });
@@ -136,6 +138,8 @@ export default function Admission() {
       minimumFractionDigits: 0,
     }).format(amount);
   };
+
+  const balance = formData.admissionFee - formData.amountPaid;
 
   return (
     <MainLayout title="Student Admission" subtitle="Register a new student">
@@ -290,18 +294,6 @@ export default function Admission() {
                   className="input-focus"
                 />
               </div>
-              <div>
-                <Label htmlFor="admissionFee">Admission Fee (₦) *</Label>
-                <Input
-                  id="admissionFee"
-                  type="number"
-                  value={formData.admissionFee}
-                  onChange={(e) => handleInputChange('admissionFee', Number(e.target.value))}
-                  placeholder="25000"
-                  required
-                  className="input-focus"
-                />
-              </div>
               <div className="md:col-span-2">
                 <Label htmlFor="address">Address *</Label>
                 <Textarea
@@ -314,6 +306,54 @@ export default function Admission() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Fee Payment Section */}
+          <div className="form-section">
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" />
+              Fee Payment
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="admissionFee">Total Fee Payable (₦) *</Label>
+                <Input
+                  id="admissionFee"
+                  type="number"
+                  value={formData.admissionFee}
+                  onChange={(e) => handleInputChange('admissionFee', Number(e.target.value))}
+                  placeholder="25000"
+                  required
+                  className="input-focus"
+                />
+              </div>
+              <div>
+                <Label htmlFor="amountPaid">Amount Paid (₦)</Label>
+                <Input
+                  id="amountPaid"
+                  type="number"
+                  value={formData.amountPaid}
+                  onChange={(e) => handleInputChange('amountPaid', Number(e.target.value))}
+                  placeholder="0"
+                  min={0}
+                  max={formData.admissionFee}
+                  className="input-focus"
+                />
+              </div>
+              <div>
+                <Label>Balance (₦)</Label>
+                <Input
+                  value={formatCurrency(balance)}
+                  readOnly
+                  className={`input-focus ${balance > 0 ? 'text-destructive' : 'text-green-600'} font-semibold`}
+                />
+              </div>
+            </div>
+            {balance > 0 && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Remaining balance of {formatCurrency(balance)} will be recorded for future payment.
+              </p>
+            )}
           </div>
 
           {/* Submit Button */}
@@ -364,9 +404,19 @@ export default function Admission() {
                 <span className="font-medium">{newStudent.className}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Admission Fee:</span>
+                <span className="text-muted-foreground">Total Fee:</span>
                 <span className="font-medium">{formatCurrency(newStudent.admissionFee)}</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Amount Paid:</span>
+                <span className="font-medium text-green-600">{formatCurrency(formData.amountPaid)}</span>
+              </div>
+              {balance > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Balance:</span>
+                  <span className="font-medium text-destructive">{formatCurrency(balance)}</span>
+                </div>
+              )}
             </div>
           )}
 

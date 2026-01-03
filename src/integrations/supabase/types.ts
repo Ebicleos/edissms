@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignments: {
+        Row: {
+          class_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          file_url: string | null
+          id: string
+          is_published: boolean | null
+          subject: string
+          title: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          file_url?: string | null
+          id?: string
+          is_published?: boolean | null
+          subject: string
+          title: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          file_url?: string | null
+          id?: string
+          is_published?: boolean | null
+          subject?: string
+          title?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           class_id: string
@@ -813,6 +852,7 @@ export type Database = {
           subject_name: string
           subject_position: number | null
           term: string
+          theory_score: number | null
           total_score: number | null
         }
         Insert: {
@@ -831,6 +871,7 @@ export type Database = {
           subject_name: string
           subject_position?: number | null
           term: string
+          theory_score?: number | null
           total_score?: number | null
         }
         Update: {
@@ -849,6 +890,7 @@ export type Database = {
           subject_name?: string
           subject_position?: number | null
           term?: string
+          theory_score?: number | null
           total_score?: number | null
         }
         Relationships: [

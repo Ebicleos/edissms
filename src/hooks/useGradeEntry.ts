@@ -11,6 +11,7 @@ export interface StudentGradeEntry {
   ca1_score: number;
   ca2_score: number;
   ca3_score: number;
+  theory_score: number;
   exam_score: number;
   total_score: number;
   grade: string;
@@ -116,6 +117,7 @@ export function useGradeEntry() {
             ca1_score: Number(existingGrade.ca1_score) || 0,
             ca2_score: Number(existingGrade.ca2_score) || 0,
             ca3_score: Number(existingGrade.ca3_score) || 0,
+            theory_score: Number(existingGrade.theory_score) || 0,
             exam_score: Number(existingGrade.exam_score) || 0,
             total_score: Number(existingGrade.total_score) || 0,
             grade: existingGrade.grade || '',
@@ -130,6 +132,7 @@ export function useGradeEntry() {
           ca1_score: 0,
           ca2_score: 0,
           ca3_score: 0,
+          theory_score: 0,
           exam_score: 0,
           total_score: 0,
           grade: '',
@@ -151,9 +154,10 @@ export function useGradeEntry() {
     ca1: number,
     ca2: number,
     ca3: number,
+    theory: number,
     exam: number
   ): { total: number; grade: string; remarks: string } => {
-    const total = ca1 + ca2 + ca3 + exam;
+    const total = ca1 + ca2 + ca3 + theory + exam;
     const { grade, remarks } = calculateGrade(total, gradingScale);
     return { total, grade, remarks };
   }, [gradingScale]);
@@ -161,7 +165,7 @@ export function useGradeEntry() {
   // Update a student's scores locally
   const updateStudentScore = useCallback((
     studentId: string,
-    field: 'ca1_score' | 'ca2_score' | 'ca3_score' | 'exam_score',
+    field: 'ca1_score' | 'ca2_score' | 'ca3_score' | 'theory_score' | 'exam_score',
     value: number
   ) => {
     setStudents(prev => prev.map(student => {
@@ -172,6 +176,7 @@ export function useGradeEntry() {
         updated.ca1_score,
         updated.ca2_score,
         updated.ca3_score,
+        updated.theory_score,
         updated.exam_score
       );
       
@@ -203,6 +208,7 @@ export function useGradeEntry() {
         ca1_score: student.ca1_score,
         ca2_score: student.ca2_score,
         ca3_score: student.ca3_score,
+        theory_score: student.theory_score,
         exam_score: student.exam_score,
         total_score: student.total_score,
         grade: student.grade,
@@ -221,6 +227,7 @@ export function useGradeEntry() {
             ca1_score: grade.ca1_score,
             ca2_score: grade.ca2_score,
             ca3_score: grade.ca3_score,
+            theory_score: grade.theory_score,
             exam_score: grade.exam_score,
             total_score: grade.total_score,
             grade: grade.grade,

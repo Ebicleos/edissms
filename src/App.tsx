@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Auth
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 // Admin pages
 import Dashboard from "./pages/Dashboard";
@@ -33,6 +34,7 @@ import TeacherExams from "./pages/teacher/TeacherExams";
 import CreateExam from "./pages/teacher/CreateExam";
 import EditExam from "./pages/teacher/EditExam";
 import GradeEntry from "./pages/teacher/GradeEntry";
+import Assignments from "./pages/teacher/Assignments";
 
 // Student pages
 import StudentDashboard from "./pages/student/StudentDashboard";
@@ -55,8 +57,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Public route */}
+            {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
 
             {/* Admin routes */}
             <Route path="/" element={
@@ -154,18 +157,23 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/teacher/exams/create" element={
-              <ProtectedRoute allowedRoles={['teacher']}>
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
                 <CreateExam />
               </ProtectedRoute>
             } />
             <Route path="/teacher/exams/:examId/edit" element={
-              <ProtectedRoute allowedRoles={['teacher']}>
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
                 <EditExam />
               </ProtectedRoute>
             } />
             <Route path="/teacher/grades" element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <GradeEntry />
+              </ProtectedRoute>
+            } />
+            <Route path="/teacher/assignments" element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <Assignments />
               </ProtectedRoute>
             } />
 

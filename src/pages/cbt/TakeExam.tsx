@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Clock, ChevronLeft, ChevronRight, Flag, Send, Loader2 } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Flag, Send, Loader2, ChevronsLeft, ChevronsRight, AlertTriangle, BookOpen, Shield, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -58,6 +59,46 @@ export default function TakeExam() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [showTabWarning, setShowTabWarning] = useState(false);
+  
+  const warningAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Anti-cheating: Disable right-click
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      if (!showInstructions) {
+        e.preventDefault();
+        toast.warning('Right-click is disabled during the exam');
+      }
+    };
+    
+    document.addEventListener('contextmenu', handleContextMenu);
+    return () => document.removeEventListener('contextmenu', handleContextMenu);
+  }, [showInstructions]);
+
+  // Anti-cheating: Tab visibility detection
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && !showInstructions && !isSubmitting) {
+        setTabSwitchCount(prev => {
+          const newCount = prev + 1;
+          if (newCount >= 3) {
+            toast.error('Too many tab switches! Your exam will be submitted.');
+            handleSubmit();
+          } else {
+            setShowTabWarning(true);
+          }
+          return newCount;
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [showInstructions, isSubmitting]);
 
   // Fetch exam and questions
   useEffect(() => {
@@ -112,6 +153,7 @@ export default function TakeExam() {
           return;
         }
         setSubmissionId(existingSubmission.id);
+        setShowInstructions(false); // Resume exam
         
         // Load existing answers
         const { data: existingAnswers } = await supabase
@@ -131,21 +173,6 @@ export default function TakeExam() {
           });
           setAnswers(loadedAnswers);
         }
-      } else {
-        // Create new submission
-        const { data: newSubmission, error: submitError } = await supabase
-          .from('exam_submissions')
-          .insert({
-            exam_id: examId,
-            student_id: user.id,
-            total_marks: questionsData?.reduce((sum, q) => sum + (q.marks || 1), 0) || 0,
-          })
-          .select('id')
-          .single();
-
-        if (!submitError && newSubmission) {
-          setSubmissionId(newSubmission.id);
-        }
       }
 
       setIsLoading(false);
@@ -156,10 +183,23 @@ export default function TakeExam() {
 
   // Timer countdown
   useEffect(() => {
-    if (timeLeft <= 0 || isLoading) return;
+    if (timeLeft <= 0 || isLoading || showInstructions) return;
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
+        // Warning at 10 minutes
+        if (prev === 600) {
+          toast.warning('10 minutes remaining!', { duration: 5000 });
+        }
+        // Warning at 5 minutes
+        if (prev === 300) {
+          toast.error('5 minutes remaining!', { duration: 5000 });
+        }
+        // Warning at 1 minute
+        if (prev === 60) {
+          toast.error('1 minute remaining!', { duration: 5000 });
+        }
+        
         if (prev <= 1) {
           handleSubmit();
           return 0;
@@ -169,7 +209,28 @@ export default function TakeExam() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, isLoading]);
+  }, [timeLeft, isLoading, showInstructions]);
+
+  const startExam = async () => {
+    if (!examId || !user) return;
+    
+    // Create submission
+    const { data: newSubmission, error: submitError } = await supabase
+      .from('exam_submissions')
+      .insert({
+        exam_id: examId,
+        student_id: user.id,
+        total_marks: questions.reduce((sum, q) => sum + (q.marks || 1), 0),
+      })
+      .select('id')
+      .single();
+
+    if (!submitError && newSubmission) {
+      setSubmissionId(newSubmission.id);
+    }
+    
+    setShowInstructions(false);
+  };
 
   // Auto-save answer
   const saveAnswer = useCallback(async (questionId: string, option: string) => {
@@ -245,6 +306,21 @@ export default function TakeExam() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const getTimerColor = () => {
+    if (timeLeft <= 300) return 'bg-destructive/10 text-destructive'; // < 5 min
+    if (timeLeft <= 600) return 'bg-yellow-500/10 text-yellow-600'; // < 10 min
+    return 'bg-primary/10 text-primary';
+  };
+
+  const goToFirstUnanswered = () => {
+    const unansweredIndex = questions.findIndex(q => !answers.get(q.id)?.selected_option);
+    if (unansweredIndex !== -1) {
+      setCurrentIndex(unansweredIndex);
+    } else {
+      toast.info('All questions are answered!');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -256,13 +332,126 @@ export default function TakeExam() {
     );
   }
 
+  // Instructions Screen
+  if (showInstructions) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl shadow-xl">
+          <CardHeader className="text-center border-b">
+            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <BookOpen className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">{exam?.title}</CardTitle>
+            <p className="text-muted-foreground">{exam?.subject}</p>
+          </CardHeader>
+          <CardContent className="p-6 space-y-6">
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-primary">{questions.length}</p>
+                <p className="text-sm text-muted-foreground">Questions</p>
+              </div>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-primary">{exam?.duration_minutes}</p>
+                <p className="text-sm text-muted-foreground">Minutes</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Exam Rules & Instructions
+              </h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  Do not switch tabs or leave this page during the exam
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  Right-click is disabled during the exam
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  Your answers are auto-saved as you progress
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  The exam will auto-submit when time expires
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  Switching tabs 3 times will auto-submit your exam
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  Use the flag button to mark questions for review
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex items-start gap-3 p-4 bg-destructive/10 rounded-lg">
+              <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-destructive">Warning</p>
+                <p className="text-muted-foreground">
+                  Any form of malpractice will result in immediate disqualification. 
+                  Your session is being monitored.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Checkbox 
+                id="terms" 
+                checked={agreedToTerms}
+                onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+              />
+              <label htmlFor="terms" className="text-sm cursor-pointer">
+                I have read and agree to abide by the exam rules and regulations
+              </label>
+            </div>
+
+            <Button 
+              className="w-full" 
+              size="lg"
+              disabled={!agreedToTerms}
+              onClick={startExam}
+            >
+              Start Exam
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const currentQuestion = questions[currentIndex];
   const currentAnswer = currentQuestion ? answers.get(currentQuestion.id) : null;
   const answeredCount = Array.from(answers.values()).filter(a => a.selected_option).length;
+  const flaggedCount = Array.from(answers.values()).filter(a => a.flagged).length;
   const progress = (answeredCount / questions.length) * 100;
 
   return (
     <div className="min-h-screen bg-muted/30">
+      {/* Tab Warning Dialog */}
+      <AlertDialog open={showTabWarning} onOpenChange={setShowTabWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Eye className="h-5 w-5" />
+              Tab Switch Detected!
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You have switched tabs {tabSwitchCount} time(s). Switching tabs 3 times will 
+              automatically submit your exam. Please stay on this page.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>I Understand</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Fixed Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b shadow-sm">
         <div className="container mx-auto px-4 py-3">
@@ -274,7 +463,7 @@ export default function TakeExam() {
             <div className="flex items-center gap-4">
               <div className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-lg font-bold",
-                timeLeft < 300 ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
+                getTimerColor()
               )}>
                 <Clock className="h-5 w-5" />
                 {formatTime(timeLeft)}
@@ -288,7 +477,12 @@ export default function TakeExam() {
               </Button>
             </div>
           </div>
-          <Progress value={progress} className="mt-3 h-2" />
+          <div className="flex items-center gap-2 mt-3">
+            <Progress value={progress} className="flex-1 h-2" />
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {answeredCount}/{questions.length}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -300,6 +494,7 @@ export default function TakeExam() {
               <CardTitle className="text-sm">Questions</CardTitle>
               <p className="text-xs text-muted-foreground">
                 {answeredCount}/{questions.length} answered
+                {flaggedCount > 0 && ` • ${flaggedCount} flagged`}
               </p>
             </CardHeader>
             <CardContent>
@@ -324,19 +519,29 @@ export default function TakeExam() {
                   );
                 })}
               </div>
-              <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded bg-primary" />
-                  Answered
+              <div className="mt-4 space-y-2">
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded bg-primary" />
+                    Answered
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded bg-muted" />
+                    Unanswered
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded ring-2 ring-orange-500" />
+                    Flagged
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded bg-muted" />
-                  Not answered
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded ring-2 ring-orange-500" />
-                  Flagged
-                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={goToFirstUnanswered}
+                >
+                  Go to Unanswered
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -403,22 +608,45 @@ export default function TakeExam() {
 
       {/* Fixed Navigation Footer */}
       <footer className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
-        <div className="container mx-auto flex justify-between">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
-            disabled={currentIndex === 0}
-          >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Previous
-          </Button>
-          <Button
-            onClick={() => setCurrentIndex(prev => Math.min(questions.length - 1, prev + 1))}
-            disabled={currentIndex === questions.length - 1}
-          >
-            Next
-            <ChevronRight className="h-4 w-4 ml-2" />
-          </Button>
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentIndex(0)}
+              disabled={currentIndex === 0}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+              disabled={currentIndex === 0}
+            >
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Previous
+            </Button>
+          </div>
+          <span className="text-sm text-muted-foreground">
+            {currentIndex + 1} / {questions.length}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setCurrentIndex(prev => Math.min(questions.length - 1, prev + 1))}
+              disabled={currentIndex === questions.length - 1}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentIndex(questions.length - 1)}
+              disabled={currentIndex === questions.length - 1}
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </footer>
 
@@ -427,12 +655,17 @@ export default function TakeExam() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Submit Exam?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have answered {answeredCount} out of {questions.length} questions.
+            <AlertDialogDescription className="space-y-2">
+              <p>You have answered {answeredCount} out of {questions.length} questions.</p>
               {answeredCount < questions.length && (
-                <span className="block mt-2 text-destructive">
+                <p className="text-destructive font-medium">
                   Warning: {questions.length - answeredCount} questions are unanswered!
-                </span>
+                </p>
+              )}
+              {flaggedCount > 0 && (
+                <p className="text-orange-500">
+                  You have {flaggedCount} flagged questions for review.
+                </p>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>

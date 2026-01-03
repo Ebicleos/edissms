@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth, AppRole } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { School, ShieldCheck, GraduationCap, Users, Loader2 } from 'lucide-react';
+import { School, ShieldCheck, GraduationCap, Users, Loader2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { CLASS_LIST } from '@/types';
 import { z } from 'zod';
@@ -52,6 +52,12 @@ export default function Auth() {
   const [selectedRole, setSelectedRole] = useState<AppRole>('student');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedClass, setSelectedClass] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [adminExists, setAdminExists] = useState(false);
+  
+  // Student signup fields
+  const [studentAdmissionNumber, setStudentAdmissionNumber] = useState('');
   
   // Login form
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -63,7 +69,23 @@ export default function Auth() {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
 
-  // Redirect if already logged in - using useEffect to properly react to role changes
+  // Check if admin exists
+  useEffect(() => {
+    const checkAdminExists = async () => {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('role', 'admin')
+        .limit(1);
+      
+      if (!error && data && data.length > 0) {
+        setAdminExists(true);
+      }
+    };
+    checkAdminExists();
+  }, []);
+
+  // Redirect if already logged in
   useEffect(() => {
     if (user && role) {
       if (role === 'admin') {
@@ -75,6 +97,34 @@ export default function Auth() {
       }
     }
   }, [user, role, navigate]);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!forgotPasswordEmail || !forgotPasswordEmail.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast.error('Failed to send reset email', { description: error.message });
+      return;
+    }
+
+    toast.success('Password reset email sent!', {
+      description: 'Check your inbox for the reset link.',
+    });
+    setShowForgotPassword(false);
+    setForgotPasswordEmail('');
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,9 +205,58 @@ export default function Auth() {
       return;
     }
 
+    // Check if admin signup is allowed
+    if (selectedRole === 'admin' && adminExists) {
+      toast.error('Admin account already exists. Please contact the existing admin.');
+      return;
+    }
+
     setIsLoading(true);
+
+    // For students, validate against existing student records
+    if (selectedRole === 'student') {
+      // Check if student already has an account
+      const { data: existingStudentClass } = await supabase
+        .from('student_classes')
+        .select('student_id')
+        .eq('admission_number', studentAdmissionNumber)
+        .maybeSingle();
+
+      if (existingStudentClass) {
+        setIsLoading(false);
+        toast.error('This student already has an account. Please login instead.');
+        return;
+      }
+
+      // Check if student record exists in students table
+      const { data: studentRecord } = await supabase
+        .from('students')
+        .select('id, full_name, class_id')
+        .eq('admission_number', studentAdmissionNumber)
+        .maybeSingle();
+
+      if (!studentRecord) {
+        setIsLoading(false);
+        toast.error('No student record found with this admission number. Please contact admin.');
+        return;
+      }
+
+      // Validate name matches (case-insensitive)
+      if (studentRecord.full_name.toLowerCase().trim() !== signupFullName.toLowerCase().trim()) {
+        setIsLoading(false);
+        toast.error('Name does not match the student record. Please use your registered name.');
+        return;
+      }
+
+      // Validate class matches
+      if (studentRecord.class_id !== selectedClass) {
+        setIsLoading(false);
+        toast.error('Class does not match the student record. Please select the correct class.');
+        return;
+      }
+    }
     
-    // Check if email already exists with a different role
+    // Check if email already exists
     const { data: existingProfiles } = await supabase
       .from('profiles')
       .select('id')
@@ -177,9 +276,9 @@ export default function Auth() {
       selectedRole,
       selectedRole !== 'admin' ? selectedClass : undefined
     );
-    setIsLoading(false);
 
     if (error) {
+      setIsLoading(false);
       if (error.message.includes('already registered')) {
         toast.error('An account with this email already exists');
       } else {
@@ -188,10 +287,83 @@ export default function Auth() {
       return;
     }
 
+    // For students, update the student_classes with admission number
+    if (selectedRole === 'student' && studentAdmissionNumber) {
+      // This will be handled by the AuthContext signUp function
+      // The student_classes entry is created there
+    }
+
+    setIsLoading(false);
     toast.success('Account created successfully!');
   };
 
   const RoleIcon = roleIcons[selectedRole];
+
+  // Filter roles for signup (hide admin if one already exists)
+  const availableRoles = adminExists 
+    ? (['teacher', 'student'] as AppRole[])
+    : (['admin', 'teacher', 'student'] as AppRole[]);
+
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
+              <School className="h-7 w-7 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="font-bold text-2xl">EduManage</h1>
+              <p className="text-sm text-muted-foreground">Password Recovery</p>
+            </div>
+          </div>
+
+          <Card className="shadow-xl">
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <KeyRound className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle>Reset Password</CardTitle>
+              <CardDescription>Enter your email to receive a password reset link</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="forgot-email">Email Address</Label>
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    'Send Reset Link'
+                  )}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={() => setShowForgotPassword(false)}
+                >
+                  Back to Login
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
@@ -261,7 +433,7 @@ export default function Auth() {
                     />
                     {selectedRole === 'student' && (
                       <p className="text-xs text-muted-foreground">
-                        Students can login with their admission number (e.g., ADM-2025-0001)
+                        Students can login with their admission number (e.g., 0001)
                       </p>
                     )}
                   </div>
@@ -286,11 +458,41 @@ export default function Auth() {
                       'Sign In'
                     )}
                   </Button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="w-full text-sm text-primary hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
                 </form>
               </TabsContent>
               
               <TabsContent value="signup">
                 <form onSubmit={handleSignup} className="space-y-4">
+                  {selectedRole === 'admin' && adminExists && (
+                    <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                      An admin account already exists. Please contact the existing admin for access.
+                    </div>
+                  )}
+                  
+                  {selectedRole === 'student' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="admission-number">Admission Number *</Label>
+                      <Input
+                        id="admission-number"
+                        type="text"
+                        placeholder="Enter your admission number (e.g., 0001)"
+                        value={studentAdmissionNumber}
+                        onChange={(e) => setStudentAdmissionNumber(e.target.value)}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Your admission number was provided during registration
+                      </p>
+                    </div>
+                  )}
+                  
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Full Name</Label>
                     <Input
@@ -301,6 +503,11 @@ export default function Auth() {
                       onChange={(e) => setSignupFullName(e.target.value)}
                       required
                     />
+                    {selectedRole === 'student' && (
+                      <p className="text-xs text-muted-foreground">
+                        Must match the name on your student record
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
@@ -352,7 +559,11 @@ export default function Auth() {
                       required
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={isLoading || (selectedRole === 'admin' && adminExists)}
+                  >
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
