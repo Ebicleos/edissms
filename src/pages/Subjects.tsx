@@ -89,10 +89,23 @@ export default function Subjects() {
 
     setIsSubmitting(true);
     try {
+      // Fetch current user's school_id
+      const { data: { user } } = await supabase.auth.getUser();
+      let schoolId = null;
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('school_id')
+          .eq('id', user.id)
+          .single();
+        schoolId = profile?.school_id;
+      }
+      
       const { error } = await supabase.from('subjects').insert({
         name: validData.name,
         code: validData.code || null,
         class_id: validData.class_id || null,
+        school_id: schoolId,
       });
 
       if (error) throw error;
@@ -127,10 +140,23 @@ export default function Subjects() {
   const handleSeedSubjects = async () => {
     setIsSubmitting(true);
     try {
+      // Fetch current user's school_id
+      const { data: { user } } = await supabase.auth.getUser();
+      let schoolId = null;
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('school_id')
+          .eq('id', user.id)
+          .single();
+        schoolId = profile?.school_id;
+      }
+      
       const subjectsToInsert = DEFAULT_SUBJECTS.map(s => ({
         name: s.name,
         code: s.code,
         class_id: null, // General subjects for all classes
+        school_id: schoolId,
       }));
 
       const { error } = await supabase.from('subjects').insert(subjectsToInsert);

@@ -45,7 +45,7 @@ export const studentAdmissionSchema = z.object({
   term: z.enum(['first', 'second', 'third'], {
     errorMap: () => ({ message: 'Please select a valid term' })
   }),
-  photoUrl: z.string().url().optional().or(z.literal('')),
+  photoUrl: z.string().optional().or(z.literal('')),
 });
 
 export type StudentAdmissionInput = z.infer<typeof studentAdmissionSchema>;

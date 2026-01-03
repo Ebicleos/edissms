@@ -168,17 +168,32 @@ export default function Teachers() {
     }
 
     setIsSaving(true);
+    
+    // Fetch current user's school_id
+    const { data: { user } } = await supabase.auth.getUser();
+    let schoolId = null;
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('school_id')
+        .eq('id', user.id)
+        .single();
+      schoolId = profile?.school_id;
+    }
+    
     const { error } = await supabase.from('teachers').insert({
       full_name: formName,
       email: formEmail,
       phone: formPhone || null,
       subject: formSubject,
+      school_id: schoolId,
     });
 
     setIsSaving(false);
 
     if (error) {
       toast.error('Failed to add teacher');
+      console.error('Error adding teacher:', error);
       return;
     }
 
