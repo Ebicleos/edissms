@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -43,13 +43,17 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useStudents } from '@/hooks/useStudents';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 import { CLASS_LIST_DETAILED, Student } from '@/types';
 import { EditStudentDialog } from '@/components/students/EditStudentDialog';
+import { printReceipt } from '@/utils/printReceipt';
 import { Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Printer, IdCard, Camera } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Students() {
   const { students, deleteStudent, updateStudent } = useStudents();
+  const { settings: schoolSettings } = useSchoolSettings();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('all');
@@ -97,10 +101,36 @@ export default function Students() {
     setSelectedStudent(null);
   };
 
-  const handlePrintReceipt = (student: Student) => {
-    toast.success(`Printing receipt for ${student.fullName}`, {
-      description: 'Receipt is being generated...',
-    });
+  const handlePrintReceipt = async (student: Student) => {
+    // Fetch fee payment data for this student
+    const { data: feeData } = await supabase
+      .from('fee_payments')
+      .select('*')
+      .eq('student_id', student.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!feeData) {
+      toast.error('No fee record found for this student');
+      return;
+    }
+
+    printReceipt({
+      studentName: student.fullName,
+      admissionNumber: student.admissionNumber,
+      className: student.className,
+      guardianName: student.guardianName,
+      phoneContact: student.phoneContact,
+      amountPaid: Number(feeData.amount_paid),
+      totalFee: Number(feeData.amount_payable),
+      balance: Number(feeData.balance),
+      term: feeData.term,
+      academicYear: feeData.academic_year,
+      paymentDate: feeData.last_payment_date || undefined,
+    }, schoolSettings);
+    
+    toast.success(`Printing receipt for ${student.fullName}`);
   };
 
   const handleGenerateIDCard = (student: Student) => {

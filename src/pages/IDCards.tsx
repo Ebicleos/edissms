@@ -13,9 +13,12 @@ import {
 import { CLASS_LIST_DETAILED } from '@/types';
 import { Search, Printer, Download, User, QrCode, School } from 'lucide-react';
 import { useStudents } from '@/hooks/useStudents';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
+import { useSignedPhotoUrl } from '@/hooks/useSignedPhotoUrl';
 
 export default function IDCards() {
   const { students, isLoading } = useStudents();
+  const { settings: schoolSettings } = useSchoolSettings();
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('all');
@@ -32,6 +35,8 @@ export default function IDCards() {
   const selectedStudent = useMemo(() => {
     return students.find((s) => s.id === selectedStudentId) || null;
   }, [students, selectedStudentId]);
+
+  const { signedUrl: studentPhotoUrl } = useSignedPhotoUrl(selectedStudent?.photoUrl || null);
 
   return (
     <MainLayout title="Student ID Cards" subtitle="Generate and manage student identification cards">
@@ -103,18 +108,18 @@ export default function IDCards() {
                 <div className="bg-gradient-primary p-4 text-center text-primary-foreground">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <School className="h-6 w-6" />
-                    <span className="font-bold text-lg">EduManage School</span>
+                    <span className="font-bold text-lg">{schoolSettings.school_name}</span>
                   </div>
-                  <p className="text-xs opacity-90">Excellence in Education</p>
+                  <p className="text-xs opacity-90">{schoolSettings.motto}</p>
                 </div>
 
                 {/* Body */}
                 <div className="p-6 text-center">
                   {/* Photo */}
-                  <div className="h-28 w-28 mx-auto rounded-full bg-muted border-4 border-primary/20 flex items-center justify-center mb-4">
-                    {selectedStudent.photoUrl ? (
+                  <div className="h-28 w-28 mx-auto rounded-full bg-muted border-4 border-primary/20 flex items-center justify-center mb-4 overflow-hidden">
+                    {studentPhotoUrl ? (
                       <img
-                        src={selectedStudent.photoUrl}
+                        src={studentPhotoUrl}
                         alt={selectedStudent.fullName}
                         className="h-full w-full rounded-full object-cover"
                       />
@@ -140,8 +145,9 @@ export default function IDCards() {
 
                 {/* Footer */}
                 <div className="bg-muted/50 p-3 text-center text-xs text-muted-foreground">
-                  <p>Valid for Academic Year 2024/2025</p>
+                  <p>Valid for Academic Year {schoolSettings.academic_year}</p>
                   <p>If found, please return to school</p>
+                  {schoolSettings.phone && <p>Tel: {schoolSettings.phone}</p>}
                 </div>
               </div>
 

@@ -13,7 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { School, User, Lock, Bell, Shield, Save, Loader2, FileText } from 'lucide-react';
+import { PasswordInput } from '@/components/ui/password-input';
+import { School, User, Lock, Bell, Shield, Save, Loader2, FileText, KeyRound, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -409,27 +410,24 @@ export default function Settings() {
                   <div className="grid grid-cols-1 gap-4 max-w-md">
                     <div>
                       <Label htmlFor="currentPassword">Current Password</Label>
-                      <Input 
+                      <PasswordInput 
                         id="currentPassword" 
-                        type="password"
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                       />
                     </div>
                     <div>
                       <Label htmlFor="newPassword">New Password</Label>
-                      <Input 
+                      <PasswordInput 
                         id="newPassword" 
-                        type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                       />
                     </div>
                     <div>
                       <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                      <Input 
+                      <PasswordInput 
                         id="confirmPassword" 
-                        type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                       />

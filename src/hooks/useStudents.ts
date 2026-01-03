@@ -37,19 +37,63 @@ const calculateAge = (dateOfBirth: string | null): number => {
   return age;
 };
 
-// Generate next admission number
+// Generate next admission number with format: XXXX20262001
+// Format: SchoolInitials + Year + Term + SequenceNumber
 const generateAdmissionNumber = async (): Promise<string> => {
-  const { data } = await supabase
+  // Fetch school settings for initials
+  const { data: schoolData } = await supabase
+    .from('school_settings')
+    .select('school_name, term, academic_year')
+    .limit(1)
+    .maybeSingle();
+  
+  // Get school initials (first letters of each word, max 4)
+  let initials = 'EDMS'; // Default initials
+  if (schoolData?.school_name) {
+    const words = schoolData.school_name.split(' ').filter((w: string) => w.length > 0);
+    if (words.length === 1) {
+      initials = words[0].substring(0, 4).toUpperCase();
+    } else {
+      initials = words.map((w: string) => w[0]).join('').toUpperCase().substring(0, 4);
+    }
+  }
+  
+  // Get current year from academic year (e.g., "2024/2025" -> "2024")
+  let year = new Date().getFullYear().toString();
+  if (schoolData?.academic_year) {
+    year = schoolData.academic_year.split('/')[0] || year;
+  }
+  
+  // Get term number (1, 2, or 3)
+  let termNum = '1';
+  if (schoolData?.term) {
+    const term = schoolData.term.toLowerCase();
+    if (term.includes('first') || term.includes('1')) termNum = '1';
+    else if (term.includes('second') || term.includes('2')) termNum = '2';
+    else if (term.includes('third') || term.includes('3')) termNum = '3';
+  }
+  
+  // Get the last admission number to determine sequence
+  const prefix = `${initials}${year}${termNum}`;
+  const { data: existingStudents } = await supabase
     .from('students')
     .select('admission_number')
+    .ilike('admission_number', `${prefix}%`)
     .order('admission_number', { ascending: false })
     .limit(1);
   
-  if (data && data.length > 0) {
-    const lastNum = parseInt(data[0].admission_number.replace(/\D/g, ''), 10);
-    return String(lastNum + 1).padStart(4, '0');
+  let sequence = 1;
+  if (existingStudents && existingStudents.length > 0) {
+    const lastNum = existingStudents[0].admission_number;
+    // Extract sequence number (last 3 digits)
+    const lastSequence = parseInt(lastNum.slice(-3), 10);
+    if (!isNaN(lastSequence)) {
+      sequence = lastSequence + 1;
+    }
   }
-  return '0001';
+  
+  // Format: ESFS20262001 (initials + year + term + 3-digit sequence)
+  return `${prefix}${String(sequence).padStart(3, '0')}`;
 };
 
 export function useStudents() {
