@@ -1,5 +1,11 @@
 project_id = "pylfykpcqugkqsnssfsa"
 
+[functions.send-sms]
+verify_jwt = true
+
+[functions.send-email-notification]
+verify_jwt = true
+
 [functions.paystack-initialize]
 verify_jwt = true
 

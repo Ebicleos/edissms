@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,10 +13,11 @@ import {
   CheckCircle, 
   Clock, 
   AlertTriangle,
-  Calendar,
-  Building2
+  Building2,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { generatePaymentReceipt } from '@/utils/generatePaymentReceipt';
 
 interface Subscription {
   id: string;
@@ -27,6 +29,7 @@ interface Subscription {
   amount: number;
   max_students: number;
   max_teachers: number;
+  payment_reference?: string;
 }
 
 const PLAN_PRICES = {
@@ -36,16 +39,44 @@ const PLAN_PRICES = {
 
 export default function SubscriptionPayment() {
   const { profile } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [schoolInfo, setSchoolInfo] = useState<{ name: string; address?: string; phone?: string; email?: string; logo_url?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'termly' | 'yearly'>('termly');
 
+  // Check for payment callback
+  useEffect(() => {
+    const reference = searchParams.get('reference') || searchParams.get('trxref');
+    if (reference) {
+      toast.success('Payment successful!', { description: 'Your subscription has been activated.' });
+      setSearchParams({});
+      if (profile?.school_id) {
+        setTimeout(() => fetchSubscription(), 2000);
+      }
+    }
+  }, [searchParams, profile?.school_id]);
+
   useEffect(() => {
     if (profile?.school_id) {
       fetchSubscription();
+      fetchSchoolInfo();
     }
   }, [profile?.school_id]);
+
+  const fetchSchoolInfo = async () => {
+    try {
+      const { data } = await supabase
+        .from('schools')
+        .select('name, address, phone, email, logo_url')
+        .eq('id', profile?.school_id)
+        .single();
+      setSchoolInfo(data);
+    } catch (error) {
+      console.error('Error fetching school info:', error);
+    }
+  };
 
   const fetchSubscription = async () => {
     try {
@@ -175,6 +206,30 @@ export default function SubscriptionPayment() {
                   <p className="font-semibold">{formatCurrency(subscription.amount)}</p>
                 </div>
               </div>
+              {subscription.amount > 0 && subscription.payment_reference && (
+                <div className="mt-4 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => generatePaymentReceipt({
+                      type: 'subscription',
+                      schoolName: schoolInfo?.name || 'School',
+                      schoolAddress: schoolInfo?.address,
+                      schoolPhone: schoolInfo?.phone,
+                      schoolEmail: schoolInfo?.email,
+                      logoUrl: schoolInfo?.logo_url,
+                      amount: subscription.amount,
+                      reference: subscription.payment_reference || 'N/A',
+                      paymentDate: new Date(subscription.start_date),
+                      planType: subscription.plan_type,
+                      description: `${subscription.plan_type} Subscription`,
+                    })}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Receipt
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

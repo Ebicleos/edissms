@@ -108,6 +108,57 @@ serve(async (req) => {
 
     console.log('Subscription updated successfully for school:', metadata.school_id);
 
+    // Send SMS and email notifications (non-blocking)
+    try {
+      // Get school details for notifications
+      const { data: schoolData } = await supabaseAdmin
+        .from('schools')
+        .select('name, email, phone')
+        .eq('id', metadata.school_id)
+        .single();
+
+      if (schoolData) {
+        // Send SMS notification
+        if (schoolData.phone) {
+          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-sms`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            },
+            body: JSON.stringify({
+              to: schoolData.phone,
+              message: `Your ${metadata.plan_type} subscription for ${schoolData.name} has been activated. Thank you for subscribing to EduManage!`,
+              type: 'subscription_activated',
+            }),
+          });
+        }
+
+        // Send email notification
+        if (schoolData.email) {
+          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email-notification`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            },
+            body: JSON.stringify({
+              to: schoolData.email,
+              type: 'subscription_activated',
+              data: {
+                schoolName: schoolData.name,
+                planType: metadata.plan_type,
+                amount: amount / 100,
+                expiryDate: endDate.toISOString().split('T')[0],
+              },
+            }),
+          });
+        }
+      }
+    } catch (notifError) {
+      console.warn('Failed to send notifications:', notifError);
+    }
+
     return new Response(
       JSON.stringify({ success: true, message: 'Subscription activated' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

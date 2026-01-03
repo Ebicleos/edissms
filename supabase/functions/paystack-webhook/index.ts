@@ -100,6 +100,63 @@ serve(async (req) => {
         }
 
         console.log('Payment processed successfully:', { feePaymentId, amountPaid, newStatus });
+
+        // Send SMS and email notifications (non-blocking)
+        try {
+          // Get student details for notifications
+          const { data: studentData } = await supabase
+            .from('students')
+            .select('full_name, phone_contact, email, school_id')
+            .eq('id', feePayment.student_id)
+            .single();
+
+          if (studentData) {
+            // Get school details
+            const { data: schoolData } = await supabase
+              .from('schools')
+              .select('name, phone, email')
+              .eq('id', studentData.school_id)
+              .single();
+
+            // Send SMS to student/guardian
+            if (studentData.phone_contact) {
+              await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${supabaseServiceKey}`,
+                },
+                body: JSON.stringify({
+                  to: studentData.phone_contact,
+                  message: `Payment of ₦${amountPaid.toLocaleString()} received for ${studentData.full_name}. Ref: ${reference}. Thank you! - ${schoolData?.name || 'EduManage'}`,
+                  type: 'payment_confirmation',
+                }),
+              });
+            }
+
+            // Send email notification
+            if (studentData.email || customer?.email) {
+              await fetch(`${supabaseUrl}/functions/v1/send-email-notification`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${supabaseServiceKey}`,
+                },
+                body: JSON.stringify({
+                  to: studentData.email || customer?.email,
+                  type: 'payment_confirmation',
+                  data: {
+                    name: studentData.full_name,
+                    amount: amountPaid,
+                    reference: reference,
+                  },
+                }),
+              });
+            }
+          }
+        } catch (notifError) {
+          console.warn('Failed to send notifications:', notifError);
+        }
       }
     }
 

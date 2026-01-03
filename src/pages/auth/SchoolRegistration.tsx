@@ -136,13 +136,20 @@ export default function SchoolRegistration() {
 
       if (subError) throw subError;
 
-      // 4. Update the profile with school_id
+      // 4. Create the profile explicitly (trigger might not work)
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ school_id: schoolData.id })
-        .eq('id', authData.user.id);
+        .upsert({
+          id: authData.user.id,
+          full_name: formData.adminName,
+          email: formData.adminEmail,
+          school_id: schoolData.id,
+        }, { onConflict: 'id' });
 
-      if (profileError) console.warn('Failed to update profile with school_id:', profileError);
+      if (profileError) {
+        console.error('Failed to create/update profile:', profileError);
+        // Don't throw - profile might already exist from trigger
+      }
 
       // 5. Add admin role with school_id
       const { error: roleError } = await supabase
@@ -154,6 +161,22 @@ export default function SchoolRegistration() {
         });
 
       if (roleError) throw roleError;
+
+      // 6. Send welcome notifications (non-blocking)
+      try {
+        await supabase.functions.invoke('send-email-notification', {
+          body: {
+            to: formData.adminEmail,
+            type: 'welcome',
+            data: {
+              name: formData.adminName,
+              schoolName: formData.schoolName,
+            },
+          },
+        });
+      } catch (e) {
+        console.warn('Failed to send welcome email:', e);
+      }
 
       setIsComplete(true);
       toast.success('School registered successfully!');
