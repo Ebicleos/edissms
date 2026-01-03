@@ -206,14 +206,14 @@ export default function Subjects() {
                   <div className="space-y-2">
                     <Label>Class (Optional)</Label>
                     <Select
-                      value={newSubject.class_id}
-                      onValueChange={(value) => setNewSubject(prev => ({ ...prev, class_id: value }))}
+                      value={newSubject.class_id || "all-classes"}
+                      onValueChange={(value) => setNewSubject(prev => ({ ...prev, class_id: value === "all-classes" ? "" : value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="All Classes (General)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Classes (General)</SelectItem>
+                        <SelectItem value="all-classes">All Classes (General)</SelectItem>
                         {CLASS_LIST_DETAILED.map((cls) => (
                           <SelectItem key={cls.id} value={cls.id}>
                             {cls.name}
