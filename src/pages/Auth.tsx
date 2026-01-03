@@ -262,10 +262,15 @@ export default function Auth() {
         return;
       }
 
-      // Validate name matches (case-insensitive)
-      if (studentRecord.full_name.toLowerCase().trim() !== signupFullName.toLowerCase().trim()) {
+      // Validate name matches (case-insensitive with normalized whitespace)
+      const normalizedDbName = studentRecord.full_name.toLowerCase().replace(/\s+/g, ' ').trim();
+      const normalizedInputName = signupFullName.toLowerCase().replace(/\s+/g, ' ').trim();
+      
+      if (normalizedDbName !== normalizedInputName) {
         setIsLoading(false);
-        toast.error('Name does not match the student record. Please use your registered name.');
+        toast.error('Name does not match the student record', {
+          description: `Expected: "${studentRecord.full_name}". Please use your exact registered name.`,
+        });
         return;
       }
 
