@@ -21,9 +21,21 @@ import {
   ArrowUpRight,
   Megaphone,
   CalendarDays,
+  ChevronDown,
+  Shield,
+  ShieldCheck,
+  Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, AppRole } from '@/contexts/AuthContext';
+import { useViewMode } from '@/contexts/ViewModeContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 interface MenuItem {
   icon: React.ComponentType<{ className?: string }>;
@@ -77,10 +89,21 @@ const menuItems: MenuItem[] = [
 export function Sidebar() {
   const location = useLocation();
   const { role, profile, signOut } = useAuth();
+  const { viewMode, setViewMode, canSwitchView } = useViewMode();
+
+  // For superadmins, use viewMode to determine which menu items to show
+  const effectiveRole = (role === 'superadmin' && viewMode === 'admin') 
+    ? 'admin' 
+    : role;
 
   const filteredItems = menuItems.filter(item => 
-    role ? item.roles.includes(role) : false
+    effectiveRole ? item.roles.includes(effectiveRole) : false
   );
+
+  const handleViewModeChange = (mode: 'superadmin' | 'admin') => {
+    setViewMode(mode);
+    toast.success(`Switched to ${mode === 'superadmin' ? 'SuperAdmin' : 'Admin'} view`);
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -142,12 +165,44 @@ export function Sidebar() {
               <p className="text-sm font-medium text-sidebar-foreground truncate">
                 {profile?.full_name || 'User'}
               </p>
-              <span className={cn(
-                "text-xs px-2 py-0.5 rounded-full text-white capitalize",
-                getRoleBadgeColor(role)
-              )}>
-                {role || 'Guest'}
-              </span>
+              {canSwitchView ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className={cn(
+                      "text-xs px-2 py-0.5 rounded-full text-white capitalize inline-flex items-center gap-1 hover:opacity-90 transition-opacity",
+                      getRoleBadgeColor(viewMode === 'admin' ? 'admin' : 'superadmin')
+                    )}>
+                      {viewMode === 'admin' ? 'Admin View' : 'SuperAdmin'}
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48 bg-popover border border-border z-50">
+                    <DropdownMenuItem 
+                      onClick={() => handleViewModeChange('superadmin')}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <Shield className="h-4 w-4" />
+                      <span>SuperAdmin View</span>
+                      {viewMode === 'superadmin' && <Check className="h-4 w-4 ml-auto" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleViewModeChange('admin')}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      <span>Admin View</span>
+                      {viewMode === 'admin' && <Check className="h-4 w-4 ml-auto" />}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <span className={cn(
+                  "text-xs px-2 py-0.5 rounded-full text-white capitalize",
+                  getRoleBadgeColor(role)
+                )}>
+                  {role || 'Guest'}
+                </span>
+              )}
             </div>
           </div>
           <button 
