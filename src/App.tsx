@@ -24,6 +24,7 @@ import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
 import ReportCards from "./pages/ReportCards";
 import StudentPromotion from "./pages/StudentPromotion";
+import Subjects from "./pages/Subjects";
 import NotFound from "./pages/NotFound";
 
 // Teacher pages
@@ -31,6 +32,7 @@ import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherExams from "./pages/teacher/TeacherExams";
 import CreateExam from "./pages/teacher/CreateExam";
 import EditExam from "./pages/teacher/EditExam";
+import GradeEntry from "./pages/teacher/GradeEntry";
 
 // Student pages
 import StudentDashboard from "./pages/student/StudentDashboard";
@@ -112,6 +114,11 @@ const App = () => (
                 <StudentPromotion />
               </ProtectedRoute>
             } />
+            <Route path="/subjects" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Subjects />
+              </ProtectedRoute>
+            } />
 
             {/* Shared routes */}
             <Route path="/online-classes" element={
@@ -154,6 +161,11 @@ const App = () => (
             <Route path="/teacher/exams/:examId/edit" element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <EditExam />
+              </ProtectedRoute>
+            } />
+            <Route path="/teacher/grades" element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <GradeEntry />
               </ProtectedRoute>
             } />
 

@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/contexts/AuthContext';
+import { Wallet, CreditCard, Download, Loader2, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { CreditCard, Download, CheckCircle, AlertCircle, Clock, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 interface FeePayment {
@@ -18,30 +18,38 @@ interface FeePayment {
   academic_year: string;
   installment: string;
   last_payment_date: string | null;
+  class_id: string;
 }
 
 export default function StudentFees() {
-  const { user, userClass } = useAuth();
+  const { user } = useAuth();
   const [feePayments, setFeePayments] = useState<FeePayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [payingFeeId, setPayingFeeId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchFeePayments();
+    if (user) {
+      fetchFeePayments();
+    }
   }, [user]);
 
   const fetchFeePayments = async () => {
-    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('fee_payments')
+        .select('*')
+        .eq('student_id', user?.id)
+        .order('academic_year', { ascending: false })
+        .order('term', { ascending: false });
 
-    const { data, error } = await supabase
-      .from('fee_payments')
-      .select('*')
-      .eq('student_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setFeePayments(data);
+      if (error) throw error;
+      setFeePayments(data || []);
+    } catch (error) {
+      console.error('Error fetching fee payments:', error);
+      toast.error('Failed to load fee records');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const formatCurrency = (amount: number) => {
@@ -55,50 +63,81 @@ export default function StudentFees() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return (
-          <Badge className="bg-green-500">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Paid
-          </Badge>
-        );
+        return <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Paid</Badge>;
       case 'partial':
-        return (
-          <Badge className="bg-yellow-500">
-            <Clock className="h-3 w-3 mr-1" />
-            Partial
-          </Badge>
-        );
-      case 'unpaid':
-        return (
-          <Badge variant="destructive">
-            <AlertCircle className="h-3 w-3 mr-1" />
-            Unpaid
-          </Badge>
-        );
+        return <Badge className="bg-yellow-500"><Clock className="h-3 w-3 mr-1" />Partial</Badge>;
       default:
-        return <Badge>{status}</Badge>;
+        return <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" />Unpaid</Badge>;
     }
   };
 
-  const handlePayFees = (payment: FeePayment) => {
-    toast.info('Payment Gateway', {
-      description: 'Online payment integration coming soon. Please visit the school bursary to make payments.',
-    });
-  };
-
-  const handleDownloadReceipt = (payment: FeePayment) => {
-    if (payment.status === 'unpaid') {
-      toast.error('No receipt available for unpaid fees');
+  const handlePayFees = async (feePayment: FeePayment) => {
+    if (feePayment.balance <= 0) {
+      toast.info('This fee is already fully paid');
       return;
     }
-    toast.success('Generating receipt...', {
-      description: 'Your receipt will be downloaded shortly.',
-    });
+
+    setPayingFeeId(feePayment.id);
+
+    try {
+      // Generate a unique reference
+      const reference = `FEE-${feePayment.id.slice(0, 8)}-${Date.now()}`;
+
+      // Get user email
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', user?.id)
+        .single();
+
+      if (!profile?.email) {
+        toast.error('Unable to get your email address');
+        return;
+      }
+
+      // Initialize Paystack payment
+      const { data, error } = await supabase.functions.invoke('paystack-initialize', {
+        body: {
+          email: profile.email,
+          amount: feePayment.balance,
+          reference,
+          metadata: {
+            fee_payment_id: feePayment.id,
+            student_id: user?.id,
+            student_name: profile.full_name,
+            callback_url: window.location.origin + '/student/fees',
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.authorization_url) {
+        // Redirect to Paystack payment page
+        window.location.href = data.authorization_url;
+      } else {
+        throw new Error(data?.error || 'Failed to initialize payment');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error('Failed to initialize payment. Please try again.');
+    } finally {
+      setPayingFeeId(null);
+    }
   };
 
-  const totalPayable = feePayments.reduce((sum, p) => sum + Number(p.amount_payable), 0);
-  const totalPaid = feePayments.reduce((sum, p) => sum + Number(p.amount_paid), 0);
-  const totalBalance = totalPayable - totalPaid;
+  const handleDownloadReceipt = (feePayment: FeePayment) => {
+    if (feePayment.status === 'unpaid') {
+      toast.error('No payment has been made yet');
+      return;
+    }
+    toast.info('Receipt download feature coming soon');
+  };
+
+  // Calculate totals
+  const totalPayable = feePayments.reduce((sum, fp) => sum + Number(fp.amount_payable), 0);
+  const totalPaid = feePayments.reduce((sum, fp) => sum + Number(fp.amount_paid), 0);
+  const totalBalance = feePayments.reduce((sum, fp) => sum + Number(fp.balance), 0);
 
   if (isLoading) {
     return (
@@ -115,7 +154,7 @@ export default function StudentFees() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">School Fees</h1>
-          <p className="text-muted-foreground">View your fee status and make payments</p>
+          <p className="text-muted-foreground">View and pay your school fees online</p>
         </div>
 
         {/* Summary Cards */}
@@ -129,84 +168,94 @@ export default function StudentFees() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Total Paid</CardDescription>
-              <CardTitle className="text-2xl text-success">{formatCurrency(totalPaid)}</CardTitle>
+              <CardTitle className="text-2xl text-green-600">{formatCurrency(totalPaid)}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Outstanding Balance</CardDescription>
-              <CardTitle className="text-2xl text-warning">{formatCurrency(totalBalance)}</CardTitle>
+              <CardTitle className="text-2xl text-destructive">{formatCurrency(totalBalance)}</CardTitle>
             </CardHeader>
           </Card>
         </div>
 
         {/* Fee Records */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Fee Records</h2>
-          
-          {feePayments.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <CreditCard className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No fee records found</p>
-                <p className="text-sm text-muted-foreground">Contact the school bursary for your fee information.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            feePayments.map((payment) => (
-              <Card key={payment.id}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">
-                        {payment.term} - {payment.academic_year}
-                      </CardTitle>
-                      <CardDescription>{payment.installment}</CardDescription>
-                    </div>
-                    {getStatusBadge(payment.status)}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Amount Payable</p>
-                      <p className="font-semibold">{formatCurrency(payment.amount_payable)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Amount Paid</p>
-                      <p className="font-semibold text-success">{formatCurrency(payment.amount_paid)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Balance</p>
-                      <p className={`font-semibold ${payment.balance > 0 ? 'text-warning' : 'text-muted-foreground'}`}>
-                        {formatCurrency(payment.balance)}
+        {feePayments.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              <Wallet className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No fee records found</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {feePayments.map((fee) => (
+              <Card key={fee.id}>
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{fee.term}</h3>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="text-muted-foreground">{fee.academic_year}</span>
+                        {getStatusBadge(fee.status)}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {fee.installment}
                       </p>
+                      {fee.last_payment_date && (
+                        <p className="text-xs text-muted-foreground">
+                          Last payment: {new Date(fee.last_payment_date).toLocaleDateString()}
+                        </p>
+                      )}
                     </div>
-                  </div>
-                  
-                  {payment.last_payment_date && (
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Last payment: {new Date(payment.last_payment_date).toLocaleDateString()}
-                    </p>
-                  )}
-                  
-                  <div className="flex gap-2">
-                    {payment.status !== 'paid' && (
-                      <Button onClick={() => handlePayFees(payment)}>
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Pay Now
-                      </Button>
-                    )}
-                    <Button variant="outline" onClick={() => handleDownloadReceipt(payment)}>
-                      <Download className="mr-2 h-4 w-4" />
-                      Download Receipt
-                    </Button>
+
+                    <div className="flex flex-col md:flex-row md:items-center gap-4">
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Payable</p>
+                          <p className="font-semibold">{formatCurrency(Number(fee.amount_payable))}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Paid</p>
+                          <p className="font-semibold text-green-600">{formatCurrency(Number(fee.amount_paid))}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Balance</p>
+                          <p className="font-semibold text-destructive">{formatCurrency(Number(fee.balance))}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        {fee.status !== 'paid' && (
+                          <Button 
+                            onClick={() => handlePayFees(fee)}
+                            disabled={payingFeeId === fee.id}
+                          >
+                            {payingFeeId === fee.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                              <CreditCard className="h-4 w-4 mr-2" />
+                            )}
+                            Pay Now
+                          </Button>
+                        )}
+                        <Button 
+                          variant="outline" 
+                          onClick={() => handleDownloadReceipt(fee)}
+                          disabled={fee.status === 'unpaid'}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Receipt
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </MainLayout>
   );
