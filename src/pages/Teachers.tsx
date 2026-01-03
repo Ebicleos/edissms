@@ -69,26 +69,52 @@ export default function Teachers() {
   }, []);
 
   const fetchTeachers = async () => {
-    const { data, error } = await supabase
+    // Fetch all teachers first
+    const { data: teachersData, error: teachersError } = await supabase
       .from('teachers')
-      .select(`
-        *,
-        teacher_classes (class_id)
-      `)
+      .select('*')
       .order('full_name');
 
-    if (!error && data) {
-      const formattedTeachers = data.map((t: any) => ({
-        id: t.id,
-        user_id: t.user_id,
-        full_name: t.full_name,
-        email: t.email,
-        phone: t.phone,
-        subject: t.subject,
-        classes: t.teacher_classes?.map((tc: any) => tc.class_id) || [],
-      }));
-      setTeachers(formattedTeachers);
+    if (teachersError || !teachersData) {
+      console.error('Error fetching teachers:', teachersError);
+      setIsLoading(false);
+      return;
     }
+
+    // Fetch class assignments separately using user_id
+    const teacherUserIds = teachersData
+      .map(t => t.user_id)
+      .filter((id): id is string => id !== null);
+
+    let classAssignments: Record<string, string[]> = {};
+
+    if (teacherUserIds.length > 0) {
+      const { data: classesData } = await supabase
+        .from('teacher_classes')
+        .select('teacher_id, class_id')
+        .in('teacher_id', teacherUserIds);
+
+      if (classesData) {
+        classesData.forEach(tc => {
+          if (!classAssignments[tc.teacher_id]) {
+            classAssignments[tc.teacher_id] = [];
+          }
+          classAssignments[tc.teacher_id].push(tc.class_id);
+        });
+      }
+    }
+
+    const formattedTeachers = teachersData.map(t => ({
+      id: t.id,
+      user_id: t.user_id,
+      full_name: t.full_name,
+      email: t.email,
+      phone: t.phone,
+      subject: t.subject,
+      classes: t.user_id ? (classAssignments[t.user_id] || []) : [],
+    }));
+
+    setTeachers(formattedTeachers);
     setIsLoading(false);
   };
 
