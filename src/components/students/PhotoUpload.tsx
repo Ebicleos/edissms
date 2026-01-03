@@ -52,11 +52,8 @@ export function PhotoUpload({ currentPhotoUrl, onPhotoChange, studentId }: Photo
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('student-photos')
-        .getPublicUrl(filePath);
-
-      onPhotoChange(urlData.publicUrl);
+      // Store the file path instead of public URL - we'll generate signed URLs when displaying
+      onPhotoChange(filePath);
       toast.success('Photo uploaded successfully');
     } catch (error: any) {
       toast.error('Failed to upload photo', { description: error.message });

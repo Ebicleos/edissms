@@ -217,50 +217,26 @@ export default function TakeExam() {
     
     setIsSubmitting(true);
 
-    // Calculate score
-    let score = 0;
-    for (const question of questions) {
-      const answer = answers.get(question.id);
-      
-      // Fetch correct answer
-      const { data: correctData } = await supabase
-        .from('questions')
-        .select('correct_option, marks')
-        .eq('id', question.id)
-        .single();
+    try {
+      // Call the secure server-side grading function
+      const { data, error } = await supabase.functions.invoke('grade-exam', {
+        body: { submission_id: submissionId }
+      });
 
-      if (correctData && answer?.selected_option === correctData.correct_option) {
-        score += correctData.marks || 1;
+      if (error) {
+        console.error('Grading error:', error);
+        toast.error('Failed to submit exam');
+        setIsSubmitting(false);
+        return;
       }
 
-      // Update is_correct in student_answers
-      if (answer?.selected_option) {
-        await supabase
-          .from('student_answers')
-          .update({ is_correct: answer.selected_option === correctData?.correct_option })
-          .eq('submission_id', submissionId)
-          .eq('question_id', question.id);
-      }
-    }
-
-    // Update submission
-    const { error } = await supabase
-      .from('exam_submissions')
-      .update({
-        is_submitted: true,
-        submitted_at: new Date().toISOString(),
-        score,
-      })
-      .eq('id', submissionId);
-
-    if (error) {
+      toast.success('Exam submitted successfully!');
+      navigate(`/cbt/results/${submissionId}`);
+    } catch (err) {
+      console.error('Submit error:', err);
       toast.error('Failed to submit exam');
       setIsSubmitting(false);
-      return;
     }
-
-    toast.success('Exam submitted successfully!');
-    navigate(`/cbt/results/${submissionId}`);
   };
 
   const formatTime = (seconds: number) => {
