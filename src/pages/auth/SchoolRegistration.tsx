@@ -156,7 +156,20 @@ export default function SchoolRegistration() {
       toast.success('School registered successfully!');
     } catch (error: any) {
       console.error('Registration error:', error);
-      toast.error('Registration failed', { description: error.message });
+      
+      // Handle user already exists error
+      if (error.message?.includes('already registered') || error.code === 'user_already_exists') {
+        toast.error('Email already registered', {
+          description: 'This email is already in use. Please log in first, then register your school from the dashboard.',
+          action: {
+            label: 'Go to Login',
+            onClick: () => navigate('/auth'),
+          },
+          duration: 10000,
+        });
+      } else {
+        toast.error('Registration failed', { description: error.message });
+      }
     } finally {
       setIsLoading(false);
     }
