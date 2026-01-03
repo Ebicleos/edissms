@@ -37,6 +37,9 @@ import { PaymentStatus } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { feePaymentSchema, paymentAmountSchema, validateInput } from '@/lib/validations';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
+import { printReceipt } from '@/utils/printReceipt';
+import { generateBillSheet } from '@/utils/generateBillSheet';
 
 interface FeePayment {
   id: string;
@@ -62,6 +65,7 @@ interface Student {
 }
 
 export default function Fees() {
+  const { settings: schoolSettings } = useSchoolSettings();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [feePayments, setFeePayments] = useState<FeePayment[]>([]);
@@ -222,10 +226,24 @@ export default function Fees() {
   };
 
   const handlePrintReceipt = (payment: FeePayment) => {
+    // Get student details
+    const student = students.find(s => s.id === payment.student_id);
+    
+    printReceipt({
+      studentName: payment.student_name || 'Unknown',
+      admissionNumber: payment.admission_number || 'N/A',
+      className: payment.class_id,
+      amountPaid: Number(payment.amount_paid),
+      totalFee: Number(payment.amount_payable),
+      balance: Number(payment.balance),
+      term: payment.term,
+      academicYear: payment.academic_year,
+      paymentDate: payment.last_payment_date || undefined,
+    }, schoolSettings);
+    
     toast.success('Generating receipt...', {
       description: `Receipt for ${payment.student_name}`,
     });
-    // In a real app, this would generate a PDF receipt
   };
 
   const handlePaymentHistory = (payment: FeePayment) => {
@@ -241,8 +259,22 @@ export default function Fees() {
   };
 
   const handleGenerateBillSheet = () => {
+    const billData = filteredPayments.map(p => ({
+      student_name: p.student_name || 'Unknown',
+      admission_number: p.admission_number || 'N/A',
+      class_id: p.class_id,
+      amount_payable: Number(p.amount_payable),
+      amount_paid: Number(p.amount_paid),
+      balance: Number(p.balance),
+      status: p.status,
+      term: p.term,
+      academic_year: p.academic_year,
+    }));
+    
+    generateBillSheet(billData, schoolSettings);
+    
     toast.success('Generating bill sheet...', {
-      description: 'Your bill sheet will be downloaded shortly.',
+      description: 'Your bill sheet is being generated.',
     });
   };
 

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PasswordInput } from '@/components/ui/password-input';
 import { School, ShieldCheck, GraduationCap, Users, Loader2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { CLASS_LIST } from '@/types';
@@ -454,9 +455,8 @@ export default function Auth() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="login-password">Password</Label>
-                    <Input
+                    <PasswordInput
                       id="login-password"
-                      type="password"
                       placeholder="Enter your password"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
@@ -473,13 +473,10 @@ export default function Auth() {
                       'Sign In'
                     )}
                   </Button>
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotPassword(true)}
-                    className="w-full text-sm text-primary hover:underline"
-                  >
-                    Forgot Password?
-                  </button>
+                  {/* Password reset is handled by admin only */}
+                  <p className="text-xs text-center text-muted-foreground">
+                    Forgot your password? Contact your school administrator.
+                  </p>
                 </form>
               </TabsContent>
               
@@ -554,9 +551,8 @@ export default function Auth() {
                   )}
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
-                    <Input
+                    <PasswordInput
                       id="signup-password"
-                      type="password"
                       placeholder="Create a password"
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
@@ -565,9 +561,8 @@ export default function Auth() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-confirm">Confirm Password</Label>
-                    <Input
+                    <PasswordInput
                       id="signup-confirm"
-                      type="password"
                       placeholder="Confirm your password"
                       value={signupConfirmPassword}
                       onChange={(e) => setSignupConfirmPassword(e.target.value)}
