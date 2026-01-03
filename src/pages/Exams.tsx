@@ -115,7 +115,7 @@ export default function Exams() {
               </Button>
               <Button 
                 className="bg-gradient-primary hover:opacity-90"
-                onClick={() => navigate('/teacher/create-exam')}
+                onClick={() => navigate('/teacher/exams/create')}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Create Exam
@@ -133,7 +133,7 @@ export default function Exams() {
                 <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Exams Yet</h3>
                 <p className="text-muted-foreground mb-4">Create your first exam to get started</p>
-                <Button onClick={() => navigate('/teacher/create-exam')} className="bg-gradient-primary">
+                <Button onClick={() => navigate('/teacher/exams/create')} className="bg-gradient-primary">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Exam
                 </Button>
@@ -181,7 +181,7 @@ export default function Exams() {
                           variant="outline" 
                           size="sm" 
                           className="flex-1"
-                          onClick={() => navigate(`/teacher/exams?id=${exam.id}`)}
+                          onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
                         >
                           <Eye className="mr-2 h-4 w-4" />
                           View
@@ -189,7 +189,7 @@ export default function Exams() {
                         <Button 
                           size="sm" 
                           className="flex-1 bg-gradient-primary"
-                          onClick={() => navigate(`/teacher/exams?id=${exam.id}&manage=true`)}
+                          onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
                         >
                           Manage
                         </Button>

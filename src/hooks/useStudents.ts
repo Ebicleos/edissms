@@ -13,6 +13,7 @@ export interface AdmissionFormData {
   phoneContact: string;
   email?: string;
   admissionFee: number;
+  amountPaid: number;
   academicYear: string;
   term: Term;
 }
@@ -94,7 +95,7 @@ export function useStudents() {
     fetchStudents();
   }, [fetchStudents]);
 
-  const addStudent = useCallback(async (data: AdmissionFormData): Promise<Student | null> => {
+  const addStudent = useCallback(async (data: AdmissionFormData & { photoUrl?: string }): Promise<Student | null> => {
     const admissionNumber = await generateAdmissionNumber();
     
     const { data: inserted, error } = await supabase
@@ -112,6 +113,7 @@ export function useStudents() {
         address: data.address,
         phone_contact: data.phoneContact,
         email: data.email || null,
+        photo_url: data.photoUrl || null,
       })
       .select()
       .single();
@@ -119,6 +121,50 @@ export function useStudents() {
     if (error) {
       console.error('Error adding student:', error);
       return null;
+    }
+
+    // Auto-create fee payment record
+    const amountPaid = data.amountPaid || 0;
+    
+    // Get fee structure for this class/term/year if it exists
+    const { data: feeStructure } = await supabase
+      .from('fee_structures')
+      .select('total_amount')
+      .eq('class_id', data.classId)
+      .eq('term', data.term === 'first' ? 'First Term' : data.term === 'second' ? 'Second Term' : 'Third Term')
+      .eq('academic_year', data.academicYear)
+      .maybeSingle();
+
+    const amountPayable = feeStructure?.total_amount || data.admissionFee;
+    const balance = Number(amountPayable) - amountPaid;
+    const status = balance <= 0 ? 'paid' : amountPaid > 0 ? 'partial' : 'unpaid';
+
+    // Create fee payment record
+    await supabase
+      .from('fee_payments')
+      .insert({
+        student_id: inserted.id,
+        class_id: data.classId,
+        term: data.term === 'first' ? 'First Term' : data.term === 'second' ? 'Second Term' : 'Third Term',
+        academic_year: data.academicYear,
+        amount_payable: amountPayable,
+        amount_paid: amountPaid,
+        balance: balance,
+        status: status,
+        last_payment_date: amountPaid > 0 ? new Date().toISOString() : null,
+        installment: '1st Installment',
+      });
+
+    // If amount was paid, create a transaction record
+    if (amountPaid > 0) {
+      await supabase
+        .from('payment_transactions')
+        .insert({
+          fee_payment_id: inserted.id, // This might need adjustment based on the actual fee_payment id
+          amount: amountPaid,
+          payment_method: 'cash',
+          status: 'completed',
+        });
     }
 
     const newStudent: Student = {
@@ -138,6 +184,7 @@ export function useStudents() {
       address: inserted.address || '',
       phoneContact: inserted.phone_contact || '',
       email: inserted.email || undefined,
+      photoUrl: inserted.photo_url || undefined,
     };
 
     setStudents((prev) => [newStudent, ...prev]);

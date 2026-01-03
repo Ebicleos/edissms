@@ -44,10 +44,14 @@ export default function GradeEntry() {
 
   const handleScoreChange = (
     studentId: string,
-    field: 'ca1_score' | 'ca2_score' | 'ca3_score' | 'exam_score',
+    field: 'ca1_score' | 'ca2_score' | 'ca3_score' | 'theory_score' | 'exam_score',
     value: string
   ) => {
-    const numValue = Math.max(0, Math.min(field === 'exam_score' ? 70 : 10, Number(value) || 0));
+    let maxValue = 10;
+    if (field === 'exam_score') maxValue = 60;
+    if (field === 'theory_score') maxValue = 10;
+    
+    const numValue = Math.max(0, Math.min(maxValue, Number(value) || 0));
     updateStudentScore(studentId, field, numValue);
   };
 
@@ -74,7 +78,7 @@ export default function GradeEntry() {
           <div>
             <h1 className="text-3xl font-bold">Grade Entry</h1>
             <p className="text-muted-foreground">
-              Enter CA scores and exam marks for students
+              Enter CA scores, theory and exam marks for students
             </p>
           </div>
           <Button onClick={handleSave} disabled={!canSave || isSaving}>
@@ -185,7 +189,7 @@ export default function GradeEntry() {
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1">
                   <Calculator className="h-4 w-4" />
-                  CA1, CA2, CA3: Max 10 each | Exam: Max 70
+                  CA1, CA2, CA3, Theory: Max 10 each | Exam: Max 60
                 </span>
               </div>
             </CardDescription>
@@ -211,12 +215,13 @@ export default function GradeEntry() {
                       <TableHead className="w-[50px]">S/N</TableHead>
                       <TableHead>Student Name</TableHead>
                       <TableHead>Adm. No.</TableHead>
-                      <TableHead className="text-center w-[80px]">CA1 (10)</TableHead>
-                      <TableHead className="text-center w-[80px]">CA2 (10)</TableHead>
-                      <TableHead className="text-center w-[80px]">CA3 (10)</TableHead>
-                      <TableHead className="text-center w-[80px]">Exam (70)</TableHead>
-                      <TableHead className="text-center w-[80px]">Total</TableHead>
-                      <TableHead className="text-center w-[80px]">Grade</TableHead>
+                      <TableHead className="text-center w-[70px]">CA1</TableHead>
+                      <TableHead className="text-center w-[70px]">CA2</TableHead>
+                      <TableHead className="text-center w-[70px]">CA3</TableHead>
+                      <TableHead className="text-center w-[70px]">Theory</TableHead>
+                      <TableHead className="text-center w-[70px]">Exam</TableHead>
+                      <TableHead className="text-center w-[70px]">Total</TableHead>
+                      <TableHead className="text-center w-[70px]">Grade</TableHead>
                       <TableHead>Remarks</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -233,7 +238,7 @@ export default function GradeEntry() {
                             max={10}
                             value={student.ca1_score || ''}
                             onChange={(e) => handleScoreChange(student.student_id, 'ca1_score', e.target.value)}
-                            className="w-16 text-center"
+                            className="w-14 text-center"
                           />
                         </TableCell>
                         <TableCell>
@@ -243,7 +248,7 @@ export default function GradeEntry() {
                             max={10}
                             value={student.ca2_score || ''}
                             onChange={(e) => handleScoreChange(student.student_id, 'ca2_score', e.target.value)}
-                            className="w-16 text-center"
+                            className="w-14 text-center"
                           />
                         </TableCell>
                         <TableCell>
@@ -253,17 +258,27 @@ export default function GradeEntry() {
                             max={10}
                             value={student.ca3_score || ''}
                             onChange={(e) => handleScoreChange(student.student_id, 'ca3_score', e.target.value)}
-                            className="w-16 text-center"
+                            className="w-14 text-center"
                           />
                         </TableCell>
                         <TableCell>
                           <Input
                             type="number"
                             min={0}
-                            max={70}
+                            max={10}
+                            value={student.theory_score || ''}
+                            onChange={(e) => handleScoreChange(student.student_id, 'theory_score', e.target.value)}
+                            className="w-14 text-center"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={60}
                             value={student.exam_score || ''}
                             onChange={(e) => handleScoreChange(student.student_id, 'exam_score', e.target.value)}
-                            className="w-16 text-center"
+                            className="w-14 text-center"
                           />
                         </TableCell>
                         <TableCell className="text-center font-bold">
@@ -276,7 +291,7 @@ export default function GradeEntry() {
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="text-muted-foreground text-sm">
                           {student.remarks}
                         </TableCell>
                       </TableRow>
