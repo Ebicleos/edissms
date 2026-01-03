@@ -12,6 +12,7 @@ interface AuthContextType {
     full_name: string;
     email: string | null;
     photo_url: string | null;
+    school_id: string | null;
   } | null;
   userClass: string | null;
   isLoading: boolean;
@@ -45,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Fetch profile
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('full_name, email, photo_url')
+      .select('full_name, email, photo_url, school_id')
       .eq('id', userId)
       .maybeSingle();
     
@@ -58,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         full_name: userEmail?.split('@')[0] || 'User',
         email: userEmail || null,
         photo_url: null,
+        school_id: null,
       };
       setProfile(defaultProfile);
     }
