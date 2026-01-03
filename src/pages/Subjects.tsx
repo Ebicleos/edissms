@@ -12,6 +12,7 @@ import { Plus, Trash2, BookOpen, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CLASS_LIST_DETAILED } from '@/types';
+import { subjectSchema, validateInput } from '@/lib/validations';
 
 interface Subject {
   id: string;
@@ -77,17 +78,21 @@ export default function Subjects() {
   }, []);
 
   const handleAddSubject = async () => {
-    if (!newSubject.name) {
-      toast.error('Please enter a subject name');
+    // Validate input using Zod schema
+    const validation = validateInput(subjectSchema, newSubject);
+    if (!validation.success) {
+      toast.error((validation as { success: false; error: string }).error);
       return;
     }
+
+    const validData = (validation as { success: true; data: typeof newSubject }).data;
 
     setIsSubmitting(true);
     try {
       const { error } = await supabase.from('subjects').insert({
-        name: newSubject.name,
-        code: newSubject.code || null,
-        class_id: newSubject.class_id || null,
+        name: validData.name,
+        code: validData.code || null,
+        class_id: validData.class_id || null,
       });
 
       if (error) throw error;
