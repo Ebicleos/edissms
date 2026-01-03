@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { CLASS_LIST_DETAILED, Student, Gender } from '@/types';
 import { toast } from 'sonner';
+import { PhotoUpload } from './PhotoUpload';
 
 interface EditStudentDialogProps {
   open: boolean;
@@ -71,6 +72,13 @@ export function EditStudentDialog({ open, onOpenChange, student, onSave }: EditS
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Photo Upload */}
+          <PhotoUpload
+            currentPhotoUrl={formData.photoUrl}
+            onPhotoChange={(url) => setFormData((prev) => ({ ...prev, photoUrl: url || undefined }))}
+            studentId={student.id}
+          />
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <Label htmlFor="fullName">Full Name *</Label>
