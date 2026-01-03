@@ -33,6 +33,11 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
+  // Super Admin items
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/superadmin', roles: ['superadmin'] },
+  { icon: School, label: 'Schools', path: '/superadmin/schools', roles: ['superadmin'] },
+  { icon: Wallet, label: 'Subscriptions', path: '/superadmin/subscriptions', roles: ['superadmin'] },
+  
   // Admin items
   { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['admin'] },
   { icon: UserPlus, label: 'Admission', path: '/admission', roles: ['admin'] },
@@ -58,6 +63,7 @@ const menuItems: MenuItem[] = [
   { icon: Users, label: 'My Students', path: '/teacher/students', roles: ['teacher'] },
   { icon: ClipboardList, label: 'My Exams', path: '/teacher/exams', roles: ['teacher'] },
   { icon: Plus, label: 'Create Exam', path: '/teacher/exams/create', roles: ['teacher'] },
+  { icon: FileText, label: 'Assignments', path: '/teacher/assignments', roles: ['teacher'] },
   { icon: FileText, label: 'Grade Entry', path: '/teacher/grades', roles: ['teacher'] },
   
   // Student items
@@ -82,6 +88,7 @@ export function Sidebar() {
 
   const getRoleBadgeColor = (r: AppRole | null) => {
     switch (r) {
+      case 'superadmin': return 'bg-purple-600';
       case 'admin': return 'bg-red-500';
       case 'teacher': return 'bg-blue-500';
       case 'student': return 'bg-green-500';

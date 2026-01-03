@@ -104,7 +104,9 @@ export default function Auth() {
   // Redirect if already logged in
   useEffect(() => {
     if (user && role) {
-      if (role === 'admin') {
+      if (role === 'superadmin') {
+        navigate('/superadmin', { replace: true });
+      } else if (role === 'admin') {
         navigate('/', { replace: true });
       } else if (role === 'teacher') {
         navigate('/teacher', { replace: true });
@@ -588,6 +590,16 @@ export default function Auth() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* School Registration Link */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            Want to register your school?{' '}
+            <Link to="/auth/register-school" className="text-primary hover:underline font-medium">
+              Register School
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -9,6 +9,12 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 // Auth
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/auth/ResetPassword";
+import SchoolRegistration from "./pages/auth/SchoolRegistration";
+
+// Super Admin pages
+import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
+import SchoolManagement from "./pages/superadmin/SchoolManagement";
+import SubscriptionManagement from "./pages/superadmin/SubscriptionManagement";
 
 // Admin pages
 import Dashboard from "./pages/Dashboard";
@@ -63,6 +69,24 @@ const App = () => (
             {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
+            <Route path="/auth/register-school" element={<SchoolRegistration />} />
+
+            {/* Super Admin routes */}
+            <Route path="/superadmin" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <SuperAdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/superadmin/schools" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <SchoolManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/superadmin/subscriptions" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <SubscriptionManagement />
+              </ProtectedRoute>
+            } />
 
             {/* Admin routes */}
             <Route path="/" element={

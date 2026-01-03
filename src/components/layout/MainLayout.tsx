@@ -1,5 +1,6 @@
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
 
 export interface MainLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ export function MainLayout({ children, title, subtitle }: MainLayoutProps) {
     <div className="min-h-screen bg-background">
       <Sidebar />
       <div className="pl-64">
+        <SubscriptionBanner />
         {title && <Header title={title} subtitle={subtitle} />}
         <main className="p-6">
           {children}
