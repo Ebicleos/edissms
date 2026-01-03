@@ -7,10 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { CBTControlPanel } from '@/components/exams/CBTControlPanel';
+import { QuestionUploadDialog } from '@/components/exams/QuestionUploadDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Plus, Upload, FileText, ClipboardList, Download, Eye, Clock, Users, Power } from 'lucide-react';
+import { Plus, Upload, FileText, ClipboardList, Download, Eye, Clock, Power, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface Exam {
   id: string;
@@ -24,15 +26,29 @@ interface Exam {
   teacher_id: string | null;
 }
 
+interface Assignment {
+  id: string;
+  title: string;
+  subject: string;
+  class_id: string;
+  description: string | null;
+  due_date: string | null;
+  is_published: boolean;
+  created_at: string;
+}
+
 export default function Exams() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const [exams, setExams] = useState<Exam[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [globalExamActive, setGlobalExamActive] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchExams();
+    fetchAssignments();
   }, []);
 
   const fetchExams = async () => {
@@ -52,6 +68,20 @@ export default function Exams() {
       toast.error('Failed to load exams', { description: error.message });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchAssignments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('assignments')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAssignments(data || []);
+    } catch (error: any) {
+      console.error('Failed to load assignments:', error);
     }
   };
 
@@ -109,7 +139,7 @@ export default function Exams() {
               </TabsTrigger>
             </TabsList>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => toast.info('Upload feature coming soon')}>
+              <Button variant="outline" onClick={() => setIsUploadDialogOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" />
                 Upload Questions
               </Button>
@@ -121,6 +151,13 @@ export default function Exams() {
                 Create Exam
               </Button>
             </div>
+
+            <QuestionUploadDialog
+              open={isUploadDialogOpen}
+              onOpenChange={setIsUploadDialogOpen}
+              exams={exams.map(e => ({ id: e.id, title: e.title, subject: e.subject }))}
+              onSuccess={fetchExams}
+            />
           </div>
 
           <TabsContent value="exams" className="space-y-4">
@@ -202,13 +239,64 @@ export default function Exams() {
           </TabsContent>
 
           <TabsContent value="assignments" className="space-y-4">
-            <Card className="p-12 text-center">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Assignments Coming Soon</h3>
-              <p className="text-muted-foreground">
-                Assignment management will be available in a future update
-              </p>
-            </Card>
+            {assignments.length === 0 ? (
+              <Card className="p-12 text-center">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Assignments Yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Create assignments for your students
+                </p>
+                <Button onClick={() => navigate('/teacher/assignments')} className="bg-gradient-primary">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Assignment
+                </Button>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {assignments.map((assignment) => (
+                  <Card key={assignment.id} className="card-hover">
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <Badge variant={assignment.is_published ? 'default' : 'secondary'}>
+                          {assignment.is_published ? 'Published' : 'Draft'}
+                        </Badge>
+                        <Badge variant="outline">{assignment.class_id}</Badge>
+                      </div>
+                      <CardTitle className="mt-2">{assignment.title}</CardTitle>
+                      <CardDescription>{assignment.subject}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {assignment.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {assignment.description}
+                        </p>
+                      )}
+                      {assignment.due_date && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          Due: {format(new Date(assignment.due_date), 'MMM d, yyyy')}
+                        </div>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={() => navigate('/teacher/assignments')}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        Manage
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={() => navigate('/teacher/assignments')}>
+                <Plus className="mr-2 h-4 w-4" />
+                Go to Assignment Manager
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="results">

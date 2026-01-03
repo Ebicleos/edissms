@@ -2,7 +2,7 @@ export type Gender = 'male' | 'female';
 
 export type Term = 'first' | 'second' | 'third';
 
-export type UserRole = 'admin' | 'teacher' | 'student';
+export type UserRole = 'admin' | 'teacher' | 'student' | 'superadmin';
 
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid';
 
