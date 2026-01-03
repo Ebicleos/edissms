@@ -46,18 +46,21 @@ const menuItems: MenuItem[] = [
   { icon: IdCard, label: 'ID Cards', path: '/id-cards', roles: ['admin'] },
   { icon: Mail, label: 'Messages', path: '/messages', roles: ['admin', 'teacher'] },
   { icon: Settings, label: 'Settings', path: '/settings', roles: ['admin'] },
+  { icon: GraduationCap, label: 'Subjects', path: '/subjects', roles: ['admin'] },
   
   // Teacher items
   { icon: LayoutDashboard, label: 'Dashboard', path: '/teacher', roles: ['teacher'] },
   { icon: Users, label: 'My Students', path: '/teacher/students', roles: ['teacher'] },
   { icon: ClipboardList, label: 'My Exams', path: '/teacher/exams', roles: ['teacher'] },
   { icon: Plus, label: 'Create Exam', path: '/teacher/exams/create', roles: ['teacher'] },
+  { icon: FileText, label: 'Grade Entry', path: '/teacher/grades', roles: ['teacher'] },
   
   // Student items
   { icon: LayoutDashboard, label: 'Dashboard', path: '/student', roles: ['student'] },
   { icon: PenTool, label: 'CBT Portal', path: '/cbt', roles: ['student'] },
   { icon: Trophy, label: 'My Results', path: '/student/results', roles: ['student'] },
   { icon: IdCard, label: 'My ID Card', path: '/student/id-card', roles: ['student'] },
+  { icon: Wallet, label: 'School Fees', path: '/student/fees', roles: ['student'] },
 ];
 
 export function Sidebar() {
