@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Plus, Trash2, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CLASS_LIST } from '@/types';
+import { examDetailsSchema, examQuestionSchema, validateInput, validateArray } from '@/lib/validations';
 
 interface Question {
   id: string;
@@ -82,17 +83,18 @@ export default function CreateExam() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!examData.title || !examData.subject || !examData.class_id) {
-      toast.error('Please fill in all exam details');
+    // Validate exam details using Zod schema
+    const examValidation = validateInput(examDetailsSchema, examData);
+    if (!examValidation.success) {
+      toast.error((examValidation as { success: false; error: string }).error);
       return;
     }
 
-    const invalidQuestions = questions.filter(
-      q => !q.question_text || !q.option_a || !q.option_b
-    );
-
-    if (invalidQuestions.length > 0) {
-      toast.error('Please fill in all required question fields');
+    // Validate all questions
+    const questionsValidation = validateArray(examQuestionSchema, questions);
+    if (!questionsValidation.success) {
+      const failed = questionsValidation as { success: false; error: string; index: number };
+      toast.error(`Question ${failed.index + 1}: ${failed.error}`);
       return;
     }
 

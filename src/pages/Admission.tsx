@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Student } from '@/types';
+import { studentAdmissionSchema, validateInput } from '@/lib/validations';
 
 export default function Admission() {
   const navigate = useNavigate();
@@ -61,6 +62,22 @@ export default function Admission() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data using Zod schema
+    const validation = validateInput(studentAdmissionSchema, {
+      ...formData,
+      photoUrl: photoUrl || '',
+    });
+
+    if (!validation.success) {
+      toast({
+        title: 'Validation Error',
+        description: (validation as { success: false; error: string }).error,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {

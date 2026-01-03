@@ -36,6 +36,7 @@ import { Search, Filter, MoreVertical, Receipt, FileSpreadsheet, CheckCircle, Al
 import { PaymentStatus } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { feePaymentSchema, paymentAmountSchema, validateInput } from '@/lib/validations';
 
 interface FeePayment {
   id: string;
@@ -177,10 +178,26 @@ export default function Fees() {
   };
 
   const handleSubmitPayment = async () => {
-    if (!selectedPayment || !paymentAmount) return;
+    if (!selectedPayment) return;
+
+    // Validate payment amount
+    const amountValidation = validateInput(paymentAmountSchema, { amount: Number(paymentAmount) });
+    if (!amountValidation.success) {
+      toast.error((amountValidation as { success: false; error: string }).error);
+      return;
+    }
+
+    const validData = (amountValidation as { success: true; data: { amount: number } }).data;
+    const paymentAmountNum = validData.amount;
+    
+    // Check if payment exceeds balance
+    if (paymentAmountNum > selectedPayment.balance) {
+      toast.error('Payment amount cannot exceed the balance');
+      return;
+    }
 
     setIsSubmitting(true);
-    const newAmountPaid = Number(selectedPayment.amount_paid) + Number(paymentAmount);
+    const newAmountPaid = Number(selectedPayment.amount_paid) + paymentAmountNum;
     const newStatus = newAmountPaid >= selectedPayment.amount_payable ? 'paid' : 'partial';
 
     const { error } = await supabase
@@ -231,26 +248,38 @@ export default function Fees() {
 
   const handleRecordNewPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPaymentStudentId || !newPaymentAmount) {
-      toast.error('Please select a student and enter an amount');
-      return;
-    }
-
+    
     const selectedStudent = students.find((s) => s.id === newPaymentStudentId);
     if (!selectedStudent) {
-      toast.error('Invalid student selected');
+      toast.error('Please select a valid student');
       return;
     }
 
-    setIsSubmitting(true);
-    const { error } = await supabase.from('fee_payments').insert({
+    // Validate fee payment data
+    const validation = validateInput(feePaymentSchema, {
       student_id: newPaymentStudentId,
       class_id: selectedStudent.class_id,
       amount_payable: Number(newPaymentAmount),
-      amount_paid: 0,
-      status: 'unpaid',
       term: newPaymentTerm,
       academic_year: newPaymentYear,
+    });
+
+    if (!validation.success) {
+      toast.error((validation as { success: false; error: string }).error);
+      return;
+    }
+
+    const validData = validation as { success: true; data: { student_id: string; class_id: string; amount_payable: number; term: string; academic_year: string } };
+
+    setIsSubmitting(true);
+    const { error } = await supabase.from('fee_payments').insert({
+      student_id: validData.data.student_id,
+      class_id: validData.data.class_id,
+      amount_payable: validData.data.amount_payable,
+      amount_paid: 0,
+      status: 'unpaid',
+      term: validData.data.term,
+      academic_year: validData.data.academic_year,
     });
 
     setIsSubmitting(false);
