@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,9 +13,54 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('Missing authorization header');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify the user's token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('Invalid token:', authError?.message);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { email, amount, reference, metadata } = await req.json();
     
-    console.log('Initializing Paystack payment:', { email, amount, reference });
+    console.log('Initializing Paystack payment for user:', user.id, { email, amount, reference });
+
+    // Authorization check: user can only pay for themselves OR must be admin
+    if (metadata?.student_id && metadata.student_id !== user.id) {
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (!roleData) {
+        console.error('User not authorized to initiate payment for another student');
+        return new Response(
+          JSON.stringify({ success: false, error: 'Forbidden: Cannot initiate payment for another student' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     const paystackSecretKey = Deno.env.get('PAYSTACK_SECRET_KEY');
     if (!paystackSecretKey) {
@@ -39,6 +85,7 @@ serve(async (req) => {
           fee_payment_id: metadata?.fee_payment_id,
           student_id: metadata?.student_id,
           student_name: metadata?.student_name,
+          initiated_by: user.id,
         },
       }),
     });
