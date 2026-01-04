@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -47,8 +47,10 @@ interface Answer {
 
 export default function TakeExam() {
   const { examId } = useParams<{ examId: string }>();
+  const [searchParams] = useSearchParams();
+  const isTestMode = searchParams.get('testMode') === 'true';
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   
   const [exam, setExam] = useState<Exam | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -66,8 +68,10 @@ export default function TakeExam() {
   
   const warningAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Anti-cheating: Disable right-click
+  // Anti-cheating: Disable right-click (not in test mode)
   useEffect(() => {
+    if (isTestMode) return; // Disable anti-cheating in test mode
+    
     const handleContextMenu = (e: MouseEvent) => {
       if (!showInstructions) {
         e.preventDefault();
@@ -77,10 +81,12 @@ export default function TakeExam() {
     
     document.addEventListener('contextmenu', handleContextMenu);
     return () => document.removeEventListener('contextmenu', handleContextMenu);
-  }, [showInstructions]);
+  }, [showInstructions, isTestMode]);
 
-  // Anti-cheating: Tab visibility detection
+  // Anti-cheating: Tab visibility detection (not in test mode)
   useEffect(() => {
+    if (isTestMode) return; // Disable anti-cheating in test mode
+    
     const handleVisibilityChange = () => {
       if (document.hidden && !showInstructions && !isSubmitting) {
         setTabSwitchCount(prev => {
@@ -98,7 +104,7 @@ export default function TakeExam() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [showInstructions, isSubmitting]);
+  }, [showInstructions, isSubmitting, isTestMode]);
 
   // Fetch exam and questions
   useEffect(() => {
@@ -140,39 +146,42 @@ export default function TakeExam() {
         setAnswers(initialAnswers);
       }
 
-      // Check for existing submission or create new one
-      const { data: existingSubmission } = await supabase
-        .from('exam_submissions')
-        .select('id, is_submitted')
-        .eq('exam_id', examId)
-        .eq('student_id', user.id)
-        .maybeSingle();
+      // Skip submission check in test mode for admins
+      if (!isTestMode) {
+        // Check for existing submission or create new one
+        const { data: existingSubmission } = await supabase
+          .from('exam_submissions')
+          .select('id, is_submitted')
+          .eq('exam_id', examId)
+          .eq('student_id', user.id)
+          .maybeSingle();
 
-      if (existingSubmission) {
-        if (existingSubmission.is_submitted) {
-          navigate(`/cbt/results/${existingSubmission.id}`);
-          return;
-        }
-        setSubmissionId(existingSubmission.id);
-        setShowInstructions(false); // Resume exam
-        
-        // Load existing answers
-        const { data: existingAnswers } = await supabase
-          .from('student_answers')
-          .select('question_id, selected_option')
-          .eq('submission_id', existingSubmission.id);
+        if (existingSubmission) {
+          if (existingSubmission.is_submitted) {
+            navigate(`/cbt/results/${existingSubmission.id}`);
+            return;
+          }
+          setSubmissionId(existingSubmission.id);
+          setShowInstructions(false); // Resume exam
+          
+          // Load existing answers
+          const { data: existingAnswers } = await supabase
+            .from('student_answers')
+            .select('question_id, selected_option')
+            .eq('submission_id', existingSubmission.id);
 
-        if (existingAnswers) {
-          const loadedAnswers = new Map(answers);
-          existingAnswers.forEach(a => {
-            if (loadedAnswers.has(a.question_id)) {
-              loadedAnswers.set(a.question_id, {
-                ...loadedAnswers.get(a.question_id)!,
-                selected_option: a.selected_option,
-              });
-            }
-          });
-          setAnswers(loadedAnswers);
+          if (existingAnswers) {
+            const loadedAnswers = new Map(answers);
+            existingAnswers.forEach(a => {
+              if (loadedAnswers.has(a.question_id)) {
+                loadedAnswers.set(a.question_id, {
+                  ...loadedAnswers.get(a.question_id)!,
+                  selected_option: a.selected_option,
+                });
+              }
+            });
+            setAnswers(loadedAnswers);
+          }
         }
       }
 
@@ -215,6 +224,13 @@ export default function TakeExam() {
   const startExam = async () => {
     if (!examId || !user) return;
     
+    // In test mode, don't create a real submission
+    if (isTestMode) {
+      setSubmissionId('test-mode-submission');
+      setShowInstructions(false);
+      return;
+    }
+    
     // Create submission
     const { data: newSubmission, error: submitError } = await supabase
       .from('exam_submissions')
@@ -222,6 +238,7 @@ export default function TakeExam() {
         exam_id: examId,
         student_id: user.id,
         total_marks: questions.reduce((sum, q) => sum + (q.marks || 1), 0),
+        is_test: isTestMode,
       })
       .select('id')
       .single();
@@ -233,9 +250,9 @@ export default function TakeExam() {
     setShowInstructions(false);
   };
 
-  // Auto-save answer
+  // Auto-save answer (skip in test mode)
   const saveAnswer = useCallback(async (questionId: string, option: string) => {
-    if (!submissionId) return;
+    if (!submissionId || isTestMode) return;
 
     await supabase
       .from('student_answers')
@@ -244,7 +261,7 @@ export default function TakeExam() {
         question_id: questionId,
         selected_option: option,
       }, { onConflict: 'submission_id,question_id' });
-  }, [submissionId]);
+  }, [submissionId, isTestMode]);
 
   const handleSelectOption = (option: string) => {
     const currentQuestion = questions[currentIndex];
@@ -275,6 +292,13 @@ export default function TakeExam() {
   };
 
   const handleSubmit = async () => {
+    // In test mode, just show completion message and redirect
+    if (isTestMode) {
+      toast.success('Test completed! Returning to CBT Management...');
+      navigate('/admin/cbt');
+      return;
+    }
+    
     if (!submissionId || !user) return;
     
     setIsSubmitting(true);
@@ -339,6 +363,11 @@ export default function TakeExam() {
       <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl shadow-xl">
           <CardHeader className="text-center border-b">
+            {isTestMode && (
+              <Badge className="mb-4 mx-auto bg-amber-500 text-amber-950">
+                🧪 TEST MODE
+              </Badge>
+            )}
             <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <BookOpen className="h-8 w-8 text-primary" />
             </div>
@@ -346,6 +375,14 @@ export default function TakeExam() {
             <p className="text-muted-foreground">{exam?.subject}</p>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
+            {isTestMode && (
+              <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <p className="text-sm font-medium text-amber-700">Admin Test Mode</p>
+                <p className="text-sm text-amber-600">
+                  You're previewing this exam. Anti-cheating measures are disabled and no submissions will be recorded.
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4 text-center">
               <div className="p-4 bg-muted rounded-lg">
                 <p className="text-2xl font-bold text-primary">{questions.length}</p>
@@ -434,6 +471,12 @@ export default function TakeExam() {
 
   return (
     <div className="min-h-screen bg-muted/30">
+      {/* Test Mode Banner */}
+      {isTestMode && (
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-amber-500 text-amber-950 text-center py-2 font-bold text-sm">
+          🧪 TEST MODE - No submissions will be saved. Anti-cheating measures disabled.
+        </div>
+      )}
       {/* Tab Warning Dialog */}
       <AlertDialog open={showTabWarning} onOpenChange={setShowTabWarning}>
         <AlertDialogContent>
@@ -454,7 +497,10 @@ export default function TakeExam() {
       </AlertDialog>
 
       {/* Fixed Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b shadow-sm">
+      <header className={cn(
+        "fixed left-0 right-0 z-50 bg-background border-b shadow-sm",
+        isTestMode ? "top-8" : "top-0"
+      )}>
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div>
@@ -487,10 +533,10 @@ export default function TakeExam() {
         </div>
       </header>
 
-      <div className="pt-28 pb-24 container mx-auto px-4">
+      <div className={cn("pb-24 container mx-auto px-4", isTestMode ? "pt-36" : "pt-28")}>
         <div className="grid lg:grid-cols-4 gap-6">
           {/* Question Navigation Sidebar */}
-          <Card className="lg:col-span-1 h-fit sticky top-28">
+          <Card className={cn("lg:col-span-1 h-fit sticky", isTestMode ? "top-36" : "top-28")}>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Questions</CardTitle>
               <p className="text-xs text-muted-foreground">

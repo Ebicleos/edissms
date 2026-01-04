@@ -85,6 +85,26 @@ export default function SchoolRegistration() {
     setIsLoading(true);
 
     try {
+      // Pre-check if email already exists in profiles
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', formData.adminEmail)
+        .maybeSingle();
+
+      if (existingProfile) {
+        toast.error('Email already registered', {
+          description: 'This email is already in use. Please log in first, then register your school from the dashboard.',
+          action: {
+            label: 'Go to Login',
+            onClick: () => navigate('/auth'),
+          },
+          duration: 10000,
+        });
+        setIsLoading(false);
+        return;
+      }
+
       // 1. Create the auth user
       const redirectUrl = `${window.location.origin}/`;
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -276,13 +296,9 @@ export default function SchoolRegistration() {
               {/* Step 1: School Information */}
               {step === 1 && (
                 <>
-                  {/* Logo Upload */}
-                  <div className="space-y-2">
-                    <Label>School Logo</Label>
-                    <SchoolLogoUpload
-                      currentLogoUrl={formData.logoUrl}
-                      onUploadComplete={(url) => setFormData(prev => ({ ...prev, logoUrl: url }))}
-                    />
+                  {/* Note about logo */}
+                  <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
+                    <p>💡 You can upload your school logo from Settings after registration.</p>
                   </div>
                   
                   <div className="space-y-2">
@@ -454,7 +470,13 @@ export default function SchoolRegistration() {
                 )}
                 
                 {step < 3 ? (
-                  <Button type="button" onClick={() => setStep(step + 1)}>
+                  <Button 
+                    type="button" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setStep(step + 1);
+                    }}
+                  >
                     Continue
                   </Button>
                 ) : (

@@ -249,16 +249,30 @@ export default function Auth() {
         return;
       }
 
-      // Check if student record exists in students table
-      const { data: studentRecord } = await supabase
+      // Check if student record exists in students table (case-insensitive admission number)
+      const { data: studentRecords, error: studentLookupError } = await supabase
         .from('students')
-        .select('id, full_name, class_id')
-        .eq('admission_number', studentAdmissionNumber)
-        .maybeSingle();
+        .select('id, full_name, class_id, admission_number');
+
+      if (studentLookupError) {
+        setIsLoading(false);
+        console.error('Student lookup error:', studentLookupError);
+        toast.error('Error looking up student record. Please try again.');
+        return;
+      }
+
+      // Find matching student (case-insensitive)
+      const normalizedInputAdmission = studentAdmissionNumber.trim().toUpperCase();
+      const studentRecord = studentRecords?.find(s => 
+        s.admission_number.trim().toUpperCase() === normalizedInputAdmission
+      );
 
       if (!studentRecord) {
         setIsLoading(false);
-        toast.error('No student record found with this admission number. Please contact admin.');
+        console.log('No student found. Input:', studentAdmissionNumber, 'Available records:', studentRecords?.map(s => s.admission_number));
+        toast.error('No student record found with this admission number', {
+          description: `Searched for: "${studentAdmissionNumber}". Please contact admin if this is incorrect.`,
+        });
         return;
       }
 

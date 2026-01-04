@@ -21,7 +21,8 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Loader2
+  Loader2,
+  Play
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -329,10 +330,20 @@ export default function CBTManagement() {
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
                               {exam.is_published && (
-                                <Switch
-                                  checked={exam.is_exam_active}
-                                  onCheckedChange={(checked) => handleToggleExam(exam.id, checked)}
-                                />
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/cbt/exam/${exam.id}?testMode=true`)}
+                                    title="Test this exam"
+                                  >
+                                    <Play className="h-4 w-4" />
+                                  </Button>
+                                  <Switch
+                                    checked={exam.is_exam_active}
+                                    onCheckedChange={(checked) => handleToggleExam(exam.id, checked)}
+                                  />
+                                </>
                               )}
                               <Button 
                                 variant="ghost" 

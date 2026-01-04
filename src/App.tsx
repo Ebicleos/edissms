@@ -268,7 +268,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/cbt/exam/:examId" element={
-              <ProtectedRoute allowedRoles={['student']}>
+              <ProtectedRoute allowedRoles={['student', 'admin', 'superadmin']}>
                 <TakeExam />
               </ProtectedRoute>
             } />
