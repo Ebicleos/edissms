@@ -329,6 +329,7 @@ export type Database = {
           exam_id: string
           id: string
           is_submitted: boolean | null
+          is_test: boolean | null
           score: number | null
           started_at: string | null
           student_id: string
@@ -339,6 +340,7 @@ export type Database = {
           exam_id: string
           id?: string
           is_submitted?: boolean | null
+          is_test?: boolean | null
           score?: number | null
           started_at?: string | null
           student_id: string
@@ -349,6 +351,7 @@ export type Database = {
           exam_id?: string
           id?: string
           is_submitted?: boolean | null
+          is_test?: boolean | null
           score?: number | null
           started_at?: string | null
           student_id?: string
