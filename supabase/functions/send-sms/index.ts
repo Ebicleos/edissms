@@ -1,15 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface SMSRequest {
-  to: string;
-  message: string;
-  type: 'payment_confirmation' | 'subscription_reminder' | 'subscription_expired' | 'welcome';
-}
+// Input validation schema
+const SMSRequestSchema = z.object({
+  to: z.string()
+    .min(10, "Phone number too short")
+    .max(15, "Phone number too long")
+    .regex(/^[\d+\-\s()]+$/, "Invalid phone number format"),
+  message: z.string()
+    .min(1, "Message cannot be empty")
+    .max(640, "Message exceeds SMS limit (640 characters)"),
+  type: z.enum(['payment_confirmation', 'subscription_reminder', 'subscription_expired', 'welcome'], {
+    errorMap: () => ({ message: "Invalid SMS type" })
+  }),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -26,11 +35,23 @@ serve(async (req) => {
       );
     }
 
-    const { to, message, type }: SMSRequest = await req.json();
+    // Parse and validate input
+    const body = await req.json();
+    const validationResult = SMSRequestSchema.safeParse(body);
 
-    if (!to || !message) {
-      throw new Error('Missing required fields: to, message');
+    if (!validationResult.success) {
+      console.error('Validation failed:', validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Invalid input', 
+          details: validationResult.error.errors.map(e => e.message) 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    const { to, message, type } = validationResult.data;
 
     // Format phone number for Nigerian numbers
     let formattedPhone = to.replace(/\D/g, '');
