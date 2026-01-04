@@ -26,13 +26,15 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // If user is admin but has no school_id, redirect to school registration
+  // UX-only check: If user is admin but has no school_id, redirect to school registration
+  // Note: This is a UX convenience - actual data access is enforced by RLS policies
   // (except when already on the registration page)
   if (role === 'admin' && profile && !profile.school_id && location.pathname !== '/admin/register-school') {
     return <Navigate to="/admin/register-school" replace />;
   }
 
-  // Superadmins can access admin routes as well
+  // UX-only check: Superadmins can access admin routes as well
+  // Note: Actual authorization is enforced server-side via RLS policies
   const effectiveAllowedRoles = allowedRoles ? [...allowedRoles] : undefined;
   const hasAccess = !effectiveAllowedRoles || 
     (role && effectiveAllowedRoles.includes(role)) ||
