@@ -38,6 +38,8 @@ const PaymentRequestSchema = z.object({
     student_id: z.string().uuid("Invalid student ID").optional(),
     student_name: z.string().max(255, "Student name too long").optional(),
     callback_url: z.string().url("Invalid callback URL").max(2000, "URL too long").optional(),
+    school_id: z.string().uuid("Invalid school ID").optional(),
+    type: z.string().optional(),
   }).optional(),
 });
 
@@ -115,7 +117,63 @@ serve(async (req) => {
       }
     }
 
-    const paystackSecretKey = Deno.env.get('PAYSTACK_SECRET_KEY');
+    // Determine which Paystack key to use
+    let paystackSecretKey: string | undefined;
+    let schoolId = metadata?.school_id;
+
+    // For fee payments, get the school's payment gateway settings
+    if (metadata?.type === 'fee_payment' || metadata?.fee_payment_id) {
+      // If no school_id in metadata, get it from the student
+      if (!schoolId && metadata?.student_id) {
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('school_id')
+          .eq('id', metadata.student_id)
+          .single();
+        
+        schoolId = studentData?.school_id;
+      }
+
+      // If still no school_id, try to get from user's profile
+      if (!schoolId) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('school_id')
+          .eq('id', user.id)
+          .single();
+        
+        schoolId = profileData?.school_id;
+      }
+
+      if (schoolId) {
+        // Get school's payment gateway settings
+        const { data: schoolData } = await supabase
+          .from('schools')
+          .select('payment_gateway_enabled, payment_gateway_secret_key, name')
+          .eq('id', schoolId)
+          .single();
+
+        if (schoolData?.payment_gateway_enabled && schoolData?.payment_gateway_secret_key) {
+          paystackSecretKey = schoolData.payment_gateway_secret_key;
+          console.log('Using school-specific Paystack key for:', schoolData.name);
+        } else if (!schoolData?.payment_gateway_enabled) {
+          console.error('School payment gateway not enabled');
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Payment gateway not configured. Please contact your school administrator.' 
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
+
+    // Fall back to platform key (for non-fee payments or if school key not available)
+    if (!paystackSecretKey) {
+      paystackSecretKey = Deno.env.get('PAYSTACK_SECRET_KEY');
+    }
+
     if (!paystackSecretKey) {
       throw new Error('PAYSTACK_SECRET_KEY is not configured');
     }
@@ -138,6 +196,8 @@ serve(async (req) => {
           fee_payment_id: metadata?.fee_payment_id,
           student_id: metadata?.student_id,
           student_name: metadata?.student_name,
+          school_id: schoolId,
+          type: metadata?.type || 'fee_payment',
           initiated_by: user.id,
         },
       }),
