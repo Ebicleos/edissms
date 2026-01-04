@@ -121,21 +121,49 @@ export default function SchoolRegistration() {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Failed to create user');
 
-      // 2. Create the school
-      const { data: schoolData, error: schoolError } = await supabase
-        .from('schools')
-        .insert({
-          name: formData.schoolName,
-          code: formData.schoolCode.toUpperCase(),
-          email: formData.schoolEmail,
-          phone: formData.schoolPhone,
-          address: formData.schoolAddress,
-          initials: formData.schoolInitials,
-          logo_url: formData.logoUrl,
-          created_by: authData.user.id,
-        })
-        .select()
-        .single();
+      // Wait for session to be established before proceeding
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Refresh session to ensure auth is ready
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        // Session not ready, wait a bit more
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+
+      // 2. Create the school with retry mechanism
+      let schoolData;
+      let schoolError;
+      
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const result = await supabase
+          .from('schools')
+          .insert({
+            name: formData.schoolName,
+            code: formData.schoolCode.toUpperCase(),
+            email: formData.schoolEmail,
+            phone: formData.schoolPhone,
+            address: formData.schoolAddress,
+            initials: formData.schoolInitials,
+            logo_url: formData.logoUrl,
+            created_by: authData.user.id,
+          })
+          .select()
+          .single();
+        
+        schoolData = result.data;
+        schoolError = result.error;
+        
+        if (!schoolError) break;
+        
+        // If RLS error, wait and retry
+        if (schoolError.code === '42501' || schoolError.message?.includes('row-level security')) {
+          console.log(`School insert attempt ${attempt + 1} failed, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        } else {
+          break; // Different error, don't retry
+        }
+      }
 
       if (schoolError) throw schoolError;
 
