@@ -57,14 +57,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (profileData) {
       setProfile(profileData);
     } else if (profileError || !profileData) {
-      // Profile missing - create a basic one to prevent login issues
-      console.warn('Profile missing for user, creating default profile');
+      // Profile missing - create it in database to prevent login issues
+      console.warn('Profile missing for user, creating profile in database');
       const defaultProfile = {
         full_name: userEmail?.split('@')[0] || 'User',
         email: userEmail || null,
         photo_url: null,
         school_id: null,
       };
+      
+      // Insert profile into database
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          full_name: defaultProfile.full_name,
+          email: defaultProfile.email,
+          photo_url: defaultProfile.photo_url,
+          school_id: defaultProfile.school_id,
+        }, { onConflict: 'id' });
+      
+      if (insertError) {
+        console.error('Failed to create profile:', insertError);
+      }
+      
       setProfile(defaultProfile);
     }
 

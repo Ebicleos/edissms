@@ -129,6 +129,27 @@ export default function Auth() {
 
     setIsLoading(true);
     
+    // Check if email exists in profiles before sending reset link
+    const { data: existingProfile, error: lookupError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', forgotPasswordEmail)
+      .maybeSingle();
+
+    if (lookupError) {
+      setIsLoading(false);
+      toast.error('Error checking email', { description: 'Please try again.' });
+      return;
+    }
+
+    if (!existingProfile) {
+      setIsLoading(false);
+      toast.error('Email not registered', {
+        description: 'This email is not registered in our system. Please check your email or contact your administrator.',
+      });
+      return;
+    }
+    
     const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
       redirectTo: `${window.location.origin}/auth/reset-password`,
     });

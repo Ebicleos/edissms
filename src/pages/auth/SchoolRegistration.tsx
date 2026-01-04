@@ -1,17 +1,16 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PasswordInput } from '@/components/ui/password-input';
-import { SchoolLogoUpload } from '@/components/settings/SchoolLogoUpload';
-import { School, Building2, User, CreditCard, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { School, Building2, User, CreditCard, Loader2, ArrowLeft, CheckCircle, Download, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { addMonths, format } from 'date-fns';
+import { generatePaymentReceipt } from '@/utils/generatePaymentReceipt';
 
 const registrationSchema = z.object({
   schoolName: z.string().min(3, 'School name must be at least 3 characters'),
@@ -29,11 +28,27 @@ const registrationSchema = z.object({
   path: ['confirmPassword'],
 });
 
+const PLAN_PRICES = {
+  termly: 50000,
+  yearly: 120000,
+};
+
 export default function SchoolRegistration() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<'trial' | 'pay'>('trial');
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [receiptData, setReceiptData] = useState<{
+    schoolName: string;
+    planType: string;
+    amount: number;
+    reference: string;
+    subscriptionEnd: string;
+    adminEmail: string;
+  } | null>(null);
   
   const [formData, setFormData] = useState({
     schoolName: '',
@@ -49,6 +64,55 @@ export default function SchoolRegistration() {
     confirmPassword: '',
     planType: 'termly',
   });
+
+  // Check for payment callback
+  useEffect(() => {
+    const reference = searchParams.get('reference');
+    const trxref = searchParams.get('trxref');
+    
+    if (reference || trxref) {
+      verifyPayment(reference || trxref!);
+    }
+  }, [searchParams]);
+
+  const verifyPayment = async (reference: string) => {
+    setVerifyingPayment(true);
+    
+    try {
+      const response = await supabase.functions.invoke('registration-payment', {
+        body: { reference },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Payment verification failed');
+      }
+
+      const data = response.data;
+
+      if (data.success) {
+        setReceiptData({
+          schoolName: data.school_name,
+          planType: data.plan_type,
+          amount: data.amount_paid,
+          reference: data.reference,
+          subscriptionEnd: data.subscription_end,
+          adminEmail: data.admin_email,
+        });
+        setIsComplete(true);
+        toast.success('Payment verified successfully!');
+      } else {
+        toast.error('Payment verification failed', { description: data.error });
+      }
+    } catch (error: any) {
+      console.error('Payment verification error:', error);
+      toast.error('Payment verification failed', { description: error.message });
+    } finally {
+      setVerifyingPayment(false);
+    }
+  };
 
   const updateField = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -73,7 +137,76 @@ export default function SchoolRegistration() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePayNow = async () => {
+    const result = registrationSchema.safeParse(formData);
+    if (!result.success) {
+      toast.error(result.error.errors[0].message);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Check if email already exists
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', formData.adminEmail)
+        .maybeSingle();
+
+      if (existingProfile) {
+        toast.error('Email already registered', {
+          description: 'This email is already in use. Please log in first.',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Initialize payment
+      const response = await supabase.functions.invoke('registration-payment', {
+        body: {
+          school_data: {
+            name: formData.schoolName,
+            code: formData.schoolCode.toUpperCase(),
+            email: formData.schoolEmail,
+            phone: formData.schoolPhone,
+            address: formData.schoolAddress,
+            initials: formData.schoolInitials,
+            logo_url: formData.logoUrl,
+          },
+          admin_data: {
+            name: formData.adminName,
+            email: formData.adminEmail,
+            password: formData.adminPassword,
+          },
+          plan_type: formData.planType,
+          callback_url: `${window.location.origin}/auth/register-school`,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to initialize payment');
+      }
+
+      const data = response.data;
+
+      if (data.success && data.authorization_url) {
+        // Redirect to Paystack
+        window.location.href = data.authorization_url;
+      } else {
+        throw new Error(data.error || 'Failed to initialize payment');
+      }
+    } catch (error: any) {
+      console.error('Payment initialization error:', error);
+      toast.error('Payment initialization failed', { description: error.message });
+      setIsLoading(false);
+    }
+  };
+
+  const handleTrialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const result = registrationSchema.safeParse(formData);
@@ -196,7 +329,6 @@ export default function SchoolRegistration() {
 
       if (profileError) {
         console.error('Failed to create/update profile:', profileError);
-        // Don't throw - profile might already exist from trigger
       }
 
       // 5. Add admin role with school_id
@@ -249,6 +381,40 @@ export default function SchoolRegistration() {
     }
   };
 
+  const handlePrintReceipt = () => {
+    if (!receiptData) return;
+
+    generatePaymentReceipt({
+      type: 'subscription',
+      schoolName: receiptData.schoolName,
+      schoolAddress: '',
+      schoolPhone: '',
+      schoolEmail: receiptData.adminEmail,
+      amount: receiptData.amount,
+      reference: receiptData.reference,
+      paymentDate: new Date(),
+      planType: receiptData.planType,
+      description: `School Registration - ${receiptData.planType === 'yearly' ? 'Yearly' : 'Termly'} Plan`,
+    });
+  };
+
+  // Show payment verification loading
+  if (verifyingPayment) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl text-center">
+          <CardContent className="pt-8 pb-8">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-6 text-primary" />
+            <h2 className="text-xl font-bold mb-2">Verifying Payment...</h2>
+            <p className="text-muted-foreground">
+              Please wait while we verify your payment and complete registration.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (isComplete) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
@@ -259,14 +425,40 @@ export default function SchoolRegistration() {
             </div>
             <h2 className="text-2xl font-bold mb-2">Registration Complete!</h2>
             <p className="text-muted-foreground mb-6">
-              Your school has been registered successfully. You can now log in to access your admin dashboard.
+              Your school has been registered successfully. 
+              {receiptData ? ' Your subscription is now active.' : ' You can now log in to access your admin dashboard.'}
             </p>
-            <div className="p-4 rounded-lg bg-muted/50 mb-6 text-left">
-              <p className="text-sm font-medium mb-1">Your Trial Period</p>
-              <p className="text-sm text-muted-foreground">
-                You have 30 days to explore all features. After that, you'll need to subscribe to continue using the platform.
-              </p>
-            </div>
+            
+            {receiptData ? (
+              <div className="p-4 rounded-lg bg-muted/50 mb-6 text-left">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm font-medium">Payment Receipt</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handlePrintReceipt}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p>School: {receiptData.schoolName}</p>
+                  <p>Plan: {receiptData.planType === 'yearly' ? 'Yearly' : 'Termly'}</p>
+                  <p>Amount: ₦{receiptData.amount.toLocaleString()}</p>
+                  <p>Reference: {receiptData.reference}</p>
+                  <p>Valid Until: {receiptData.subscriptionEnd}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-lg bg-muted/50 mb-6 text-left">
+                <p className="text-sm font-medium mb-1">Your Trial Period</p>
+                <p className="text-sm text-muted-foreground">
+                  You have 30 days to explore all features. After that, you'll need to subscribe to continue using the platform.
+                </p>
+              </div>
+            )}
+            
             <Button className="w-full bg-gradient-primary" onClick={() => navigate('/auth')}>
               Go to Login
             </Button>
@@ -320,7 +512,7 @@ export default function SchoolRegistration() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleTrialSubmit} className="space-y-4">
               {/* Step 1: School Information */}
               {step === 1 && (
                 <>
@@ -472,12 +664,59 @@ export default function SchoolRegistration() {
                       <p className="text-xs text-muted-foreground">per year (Save 20%)</p>
                     </div>
                   </div>
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <p className="text-sm font-medium">Start with a 30-day free trial</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      No payment required now. You'll be notified before the trial ends.
-                    </p>
+
+                  {/* Payment Mode Selection */}
+                  <div className="space-y-3 mt-4">
+                    <Label>How would you like to start?</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div 
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          paymentMode === 'trial' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                        }`}
+                        onClick={() => setPaymentMode('trial')}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <AlertCircle className="h-4 w-4 text-primary" />
+                          <h4 className="font-semibold">Free Trial</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Start with 30 days free. No payment required now.
+                        </p>
+                      </div>
+                      <div 
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          paymentMode === 'pay' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                        }`}
+                        onClick={() => setPaymentMode('pay')}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <CreditCard className="h-4 w-4 text-green-600" />
+                          <h4 className="font-semibold">Pay Now</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Pay ₦{PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()} and get instant access.
+                        </p>
+                      </div>
+                    </div>
                   </div>
+
+                  {paymentMode === 'trial' && (
+                    <div className="p-4 rounded-lg bg-muted/50">
+                      <p className="text-sm font-medium">Start with a 30-day free trial</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        No payment required now. You'll be notified before the trial ends.
+                      </p>
+                    </div>
+                  )}
+
+                  {paymentMode === 'pay' && (
+                    <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-200">Secure Payment via Paystack</p>
+                      <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                        You'll be redirected to Paystack to complete your payment of ₦{PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()}.
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -507,6 +746,25 @@ export default function SchoolRegistration() {
                   >
                     Continue
                   </Button>
+                ) : paymentMode === 'pay' ? (
+                  <Button 
+                    type="button" 
+                    className="bg-green-600 hover:bg-green-700" 
+                    disabled={isLoading}
+                    onClick={handlePayNow}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Pay ₦{PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()}
+                      </>
+                    )}
+                  </Button>
                 ) : (
                   <Button type="submit" className="bg-gradient-primary" disabled={isLoading}>
                     {isLoading ? (
@@ -515,7 +773,7 @@ export default function SchoolRegistration() {
                         Registering...
                       </>
                     ) : (
-                      'Complete Registration'
+                      'Start Free Trial'
                     )}
                   </Button>
                 )}
