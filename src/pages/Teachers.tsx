@@ -83,27 +83,30 @@ export default function Teachers() {
       return;
     }
 
-    // Fetch class assignments separately using user_id
-    const teacherUserIds = teachersData
-      .map(t => t.user_id)
-      .filter((id): id is string => id !== null);
+    // Fetch all class assignments (both by user_id and teacher_record_id)
+    const { data: classesData } = await supabase
+      .from('teacher_classes')
+      .select('teacher_id, teacher_record_id, class_id');
 
-    let classAssignments: Record<string, string[]> = {};
+    // Build maps for both types of assignments
+    const classAssignmentsByUserId: Record<string, string[]> = {};
+    const classAssignmentsByRecordId: Record<string, string[]> = {};
 
-    if (teacherUserIds.length > 0) {
-      const { data: classesData } = await supabase
-        .from('teacher_classes')
-        .select('teacher_id, class_id')
-        .in('teacher_id', teacherUserIds);
-
-      if (classesData) {
-        classesData.forEach(tc => {
-          if (!classAssignments[tc.teacher_id]) {
-            classAssignments[tc.teacher_id] = [];
+    if (classesData) {
+      classesData.forEach(tc => {
+        if (tc.teacher_id) {
+          if (!classAssignmentsByUserId[tc.teacher_id]) {
+            classAssignmentsByUserId[tc.teacher_id] = [];
           }
-          classAssignments[tc.teacher_id].push(tc.class_id);
-        });
-      }
+          classAssignmentsByUserId[tc.teacher_id].push(tc.class_id);
+        }
+        if (tc.teacher_record_id) {
+          if (!classAssignmentsByRecordId[tc.teacher_record_id]) {
+            classAssignmentsByRecordId[tc.teacher_record_id] = [];
+          }
+          classAssignmentsByRecordId[tc.teacher_record_id].push(tc.class_id);
+        }
+      });
     }
 
     const formattedTeachers = teachersData.map(t => ({
@@ -113,7 +116,10 @@ export default function Teachers() {
       email: t.email,
       phone: t.phone,
       subject: t.subject,
-      classes: t.user_id ? (classAssignments[t.user_id] || []) : [],
+      // Use user_id assignments if available, otherwise use record_id assignments
+      classes: t.user_id 
+        ? (classAssignmentsByUserId[t.user_id] || []) 
+        : (classAssignmentsByRecordId[t.id] || []),
     }));
 
     setTeachers(formattedTeachers);
@@ -247,25 +253,31 @@ export default function Teachers() {
   const handleSaveClasses = async () => {
     if (!selectedTeacher) return;
 
-    if (!selectedTeacher.user_id) {
-      toast.error('Teacher must have a linked user account to assign classes');
-      return;
-    }
-
     setIsSaving(true);
 
-    // Delete existing class assignments
-    await supabase
-      .from('teacher_classes')
-      .delete()
-      .eq('teacher_id', selectedTeacher.user_id);
+    // Determine which field to use based on whether teacher has a user_id
+    const hasUserId = !!selectedTeacher.user_id;
 
-    // Add new class assignments using proper class IDs
+    // Delete existing class assignments using the appropriate field
+    if (hasUserId) {
+      await supabase
+        .from('teacher_classes')
+        .delete()
+        .eq('teacher_id', selectedTeacher.user_id);
+    } else {
+      await supabase
+        .from('teacher_classes')
+        .delete()
+        .eq('teacher_record_id', selectedTeacher.id);
+    }
+
+    // Add new class assignments
     if (selectedClassIds.length > 0) {
-      const classInserts = selectedClassIds.map(classId => ({
-        teacher_id: selectedTeacher.user_id,
-        class_id: classId,
-      }));
+      const classInserts = selectedClassIds.map(classId => 
+        hasUserId 
+          ? { teacher_id: selectedTeacher.user_id, class_id: classId }
+          : { teacher_record_id: selectedTeacher.id, class_id: classId }
+      );
 
       const { error } = await supabase.from('teacher_classes').insert(classInserts);
       if (error) {
@@ -601,7 +613,7 @@ export default function Teachers() {
             <Button 
               className="w-full bg-gradient-primary hover:opacity-90" 
               onClick={handleSaveClasses}
-              disabled={isSaving || !selectedTeacher?.user_id}
+              disabled={isSaving}
             >
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Save Classes
