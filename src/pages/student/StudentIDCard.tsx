@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { Card, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { Download, Printer, Loader2, School, QrCode, User } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,18 +14,19 @@ interface StudentInfo {
   admissionNumber: string;
   className: string;
   photoUrl: string | null;
-  email: string | null;
 }
 
 export default function StudentIDCard() {
-  const { user, profile, userClass } = useAuth();
+  const { user } = useAuth();
+  const { settings: schoolSettings, isLoading: settingsLoading } = useSchoolSettings();
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [signedPhotoUrl, setSignedPhotoUrl] = useState<string | null>(null);
+  const [photoLoading, setPhotoLoading] = useState(false);
 
   useEffect(() => {
     fetchStudentInfo();
-  }, [user, profile, userClass]);
+  }, [user]);
 
   const fetchStudentInfo = async () => {
     if (!user) {
@@ -31,32 +34,66 @@ export default function StudentIDCard() {
       return;
     }
 
-    // Get admission number from student_classes
-    const { data: studentClass } = await supabase
-      .from('student_classes')
-      .select('admission_number')
-      .eq('student_id', user.id)
-      .maybeSingle();
+    try {
+      // Get admission number from student_classes for current user
+      const { data: studentClass } = await supabase
+        .from('student_classes')
+        .select('admission_number, class_id')
+        .eq('student_id', user.id)
+        .maybeSingle();
 
-    const info = {
-      fullName: profile?.full_name || 'Student',
-      admissionNumber: studentClass?.admission_number || 'N/A',
-      className: userClass || 'N/A',
-      photoUrl: profile?.photo_url || null,
-      email: profile?.email || null,
-    };
-    
-    setStudentInfo(info);
-
-    // Get signed URL for photo
-    if (info.photoUrl) {
-      const { data } = await supabase.storage
-        .from('student-photos')
-        .createSignedUrl(info.photoUrl, 3600);
-      
-      if (data?.signedUrl) {
-        setSignedPhotoUrl(data.signedUrl);
+      if (!studentClass?.admission_number) {
+        setIsLoading(false);
+        return;
       }
+
+      // Fetch student data from students table using admission number
+      const { data: studentData } = await supabase
+        .from('students')
+        .select('full_name, admission_number, photo_url, class_id')
+        .eq('admission_number', studentClass.admission_number)
+        .maybeSingle();
+
+      // Fetch class name
+      const { data: classData } = await supabase
+        .from('classes')
+        .select('name')
+        .eq('id', studentClass.class_id)
+        .maybeSingle();
+
+      const info: StudentInfo = {
+        fullName: studentData?.full_name || 'Student',
+        admissionNumber: studentData?.admission_number || studentClass.admission_number,
+        className: classData?.name || 'N/A',
+        photoUrl: studentData?.photo_url || null,
+      };
+      
+      setStudentInfo(info);
+
+      // Get signed URL for photo
+      if (info.photoUrl) {
+        setPhotoLoading(true);
+        if (info.photoUrl.startsWith('http')) {
+          setSignedPhotoUrl(info.photoUrl);
+        } else {
+          const { data } = await supabase.storage
+            .from('student-photos')
+            .createSignedUrl(info.photoUrl, 3600);
+          
+          if (data?.signedUrl) {
+            // Preload image
+            const img = new Image();
+            img.src = data.signedUrl;
+            img.onload = () => setPhotoLoading(false);
+            img.onerror = () => setPhotoLoading(false);
+            setSignedPhotoUrl(data.signedUrl);
+          } else {
+            setPhotoLoading(false);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching student info:', error);
     }
 
     setIsLoading(false);
@@ -73,7 +110,7 @@ export default function StudentIDCard() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || settingsLoading) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center h-64">
@@ -120,17 +157,23 @@ export default function StudentIDCard() {
             {/* Header */}
             <div className="bg-gradient-primary p-4 text-center text-primary-foreground">
               <div className="flex items-center justify-center gap-2 mb-1">
-                <School className="h-6 w-6" />
-                <span className="font-bold text-lg">EduManage School</span>
+                {schoolSettings.logo_url ? (
+                  <img src={schoolSettings.logo_url} alt="School Logo" className="h-8 w-8 object-contain rounded" />
+                ) : (
+                  <School className="h-6 w-6" />
+                )}
+                <span className="font-bold text-lg">{schoolSettings.school_name}</span>
               </div>
-              <p className="text-xs opacity-90">Excellence in Education</p>
+              <p className="text-xs opacity-90">{schoolSettings.motto}</p>
             </div>
 
             {/* Body */}
             <CardContent className="p-6 text-center">
               {/* Photo */}
               <div className="h-28 w-28 mx-auto rounded-full bg-muted border-4 border-primary/20 flex items-center justify-center mb-4 overflow-hidden">
-                {signedPhotoUrl ? (
+                {photoLoading ? (
+                  <Skeleton className="h-full w-full rounded-full" />
+                ) : signedPhotoUrl ? (
                   <img
                     src={signedPhotoUrl}
                     alt={studentInfo.fullName}
@@ -160,14 +203,15 @@ export default function StudentIDCard() {
 
             {/* Footer */}
             <div className="bg-muted/50 p-3 text-center text-xs text-muted-foreground">
-              <p>Valid for Academic Year 2024/2025</p>
+              <p>Valid for Academic Year {schoolSettings.academic_year}</p>
               <p>If found, please return to school</p>
+              {schoolSettings.phone && <p>Tel: {schoolSettings.phone}</p>}
             </div>
           </div>
         </div>
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>This ID card is the property of EduManage School.</p>
+          <p>This ID card is the property of {schoolSettings.school_name}.</p>
           <p>If found, please return to the school administration.</p>
         </div>
       </div>

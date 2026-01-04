@@ -34,6 +34,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { CLASS_LIST_DETAILED } from '@/types';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Teacher {
   id: string;
@@ -62,7 +64,7 @@ export default function Teachers() {
   const [formEmail, setFormEmail] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formSubject, setFormSubject] = useState('');
-  const [formClasses, setFormClasses] = useState('');
+  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchTeachers();
@@ -143,8 +145,21 @@ export default function Teachers() {
 
   const handleAssignClasses = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
-    setFormClasses(teacher.classes.join(', '));
+    setSelectedClassIds(teacher.classes);
     setAssignClassesOpen(true);
+  };
+
+  const toggleClassSelection = (classId: string) => {
+    setSelectedClassIds(prev => 
+      prev.includes(classId) 
+        ? prev.filter(id => id !== classId)
+        : [...prev, classId]
+    );
+  };
+
+  const getClassNameById = (classId: string) => {
+    const cls = CLASS_LIST_DETAILED.find(c => c.id === classId);
+    return cls?.name || classId;
   };
 
   const handleDeleteClick = (teacher: Teacher) => {
@@ -232,23 +247,33 @@ export default function Teachers() {
   const handleSaveClasses = async () => {
     if (!selectedTeacher) return;
 
+    if (!selectedTeacher.user_id) {
+      toast.error('Teacher must have a linked user account to assign classes');
+      return;
+    }
+
     setIsSaving(true);
 
     // Delete existing class assignments
     await supabase
       .from('teacher_classes')
       .delete()
-      .eq('teacher_id', selectedTeacher.user_id || selectedTeacher.id);
+      .eq('teacher_id', selectedTeacher.user_id);
 
-    // Add new class assignments
-    const classes = formClasses.split(',').map(c => c.trim()).filter(c => c);
-    if (classes.length > 0 && selectedTeacher.user_id) {
-      const classInserts = classes.map(classId => ({
+    // Add new class assignments using proper class IDs
+    if (selectedClassIds.length > 0) {
+      const classInserts = selectedClassIds.map(classId => ({
         teacher_id: selectedTeacher.user_id,
         class_id: classId,
       }));
 
-      await supabase.from('teacher_classes').insert(classInserts);
+      const { error } = await supabase.from('teacher_classes').insert(classInserts);
+      if (error) {
+        console.error('Error assigning classes:', error);
+        toast.error('Failed to assign classes');
+        setIsSaving(false);
+        return;
+      }
     }
 
     setIsSaving(false);
@@ -376,7 +401,7 @@ export default function Teachers() {
                       {teacher.classes.length > 0 ? (
                         teacher.classes.map((cls) => (
                           <Badge key={cls} variant="outline" className="text-xs">
-                            {cls}
+                            {getClassNameById(cls)}
                           </Badge>
                         ))
                       ) : (
@@ -425,7 +450,7 @@ export default function Teachers() {
                   <div className="flex flex-wrap gap-2 mt-1">
                     {selectedTeacher.classes.length > 0 ? (
                       selectedTeacher.classes.map((cls) => (
-                        <Badge key={cls} variant="secondary">{cls}</Badge>
+                        <Badge key={cls} variant="secondary">{getClassNameById(cls)}</Badge>
                       ))
                     ) : (
                       <span className="text-muted-foreground">No classes assigned</span>
@@ -548,23 +573,35 @@ export default function Teachers() {
           <DialogHeader>
             <DialogTitle>Assign Classes</DialogTitle>
             <DialogDescription>
-              Enter class names separated by commas (e.g., Primary 5, Primary 6)
+              Select the classes this teacher will be assigned to
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="classes">Classes</Label>
-              <Input
-                id="classes"
-                value={formClasses}
-                onChange={(e) => setFormClasses(e.target.value)}
-                placeholder="Primary 5, Primary 6, JSS 1"
-              />
+            <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+              {CLASS_LIST_DETAILED.map((cls) => (
+                <div 
+                  key={cls.id}
+                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
+                  onClick={() => toggleClassSelection(cls.id)}
+                >
+                  <Checkbox 
+                    id={cls.id}
+                    checked={selectedClassIds.includes(cls.id)}
+                    onCheckedChange={() => toggleClassSelection(cls.id)}
+                  />
+                  <label htmlFor={cls.id} className="text-sm cursor-pointer flex-1">
+                    {cls.name}
+                  </label>
+                </div>
+              ))}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {selectedClassIds.length} class(es) selected
             </div>
             <Button 
               className="w-full bg-gradient-primary hover:opacity-90" 
               onClick={handleSaveClasses}
-              disabled={isSaving}
+              disabled={isSaving || !selectedTeacher?.user_id}
             >
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Save Classes
