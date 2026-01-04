@@ -32,7 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Search, Filter, MoreVertical, Receipt, FileSpreadsheet, CheckCircle, AlertCircle, Clock, Loader2 } from 'lucide-react';
+import { Search, Filter, MoreVertical, Receipt, FileSpreadsheet, CheckCircle, AlertCircle, Clock, Loader2, Printer } from 'lucide-react';
 import { PaymentStatus } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -76,6 +76,7 @@ export default function Fees() {
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedForBulk, setSelectedForBulk] = useState<string[]>([]);
 
   // New payment form state
   const [newPaymentStudentId, setNewPaymentStudentId] = useState('');
@@ -278,6 +279,43 @@ export default function Fees() {
     });
   };
 
+  const handleBulkPrintReceipts = () => {
+    if (!schoolSettings) {
+      toast.error('School settings not loaded');
+      return;
+    }
+
+    const paymentsToPrint = selectedForBulk.length > 0 
+      ? feePayments.filter(p => selectedForBulk.includes(p.id))
+      : filteredPayments.filter(p => p.status === 'paid' || p.status === 'partial');
+
+    if (paymentsToPrint.length === 0) {
+      toast.error('No receipts to print. Select payments or ensure there are paid/partial payments.');
+      return;
+    }
+
+    // Print each receipt with staggered timing
+    paymentsToPrint.forEach((payment, index) => {
+      setTimeout(() => {
+        printReceipt({
+          studentName: payment.student_name || 'Unknown',
+          admissionNumber: payment.admission_number || 'N/A',
+          className: payment.class_id,
+          amountPaid: Number(payment.amount_paid),
+          totalFee: Number(payment.amount_payable),
+          balance: Number(payment.balance),
+          term: payment.term,
+          academicYear: payment.academic_year,
+          paymentDate: payment.last_payment_date || new Date().toLocaleDateString(),
+          paymentMethod: 'Cash',
+        }, schoolSettings);
+      }, index * 600);
+    });
+
+    toast.success(`Printing ${paymentsToPrint.length} receipts...`);
+    setSelectedForBulk([]);
+  };
+
   const handleRecordNewPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -303,6 +341,24 @@ export default function Fees() {
 
     const validData = validation as { success: true; data: { student_id: string; class_id: string; amount_payable: number; term: string; academic_year: string } };
 
+    // Get current user's school_id
+    const { data: currentUser } = await supabase.auth.getUser();
+    if (!currentUser?.user?.id) {
+      toast.error('User not authenticated');
+      return;
+    }
+
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('school_id')
+      .eq('id', currentUser.user.id)
+      .maybeSingle();
+
+    if (!userProfile?.school_id) {
+      toast.error('School not found. Please contact admin.');
+      return;
+    }
+
     setIsSubmitting(true);
     const { error } = await supabase.from('fee_payments').insert({
       student_id: validData.data.student_id,
@@ -317,6 +373,7 @@ export default function Fees() {
     setIsSubmitting(false);
 
     if (error) {
+      console.error('Fee record error:', error);
       toast.error('Failed to create fee record');
       return;
     }
@@ -386,6 +443,10 @@ export default function Fees() {
             <Button variant="outline" onClick={handleGenerateBillSheet}>
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               Generate Bill Sheet
+            </Button>
+            <Button variant="outline" onClick={handleBulkPrintReceipts}>
+              <Printer className="mr-2 h-4 w-4" />
+              Bulk Print {selectedForBulk.length > 0 ? `(${selectedForBulk.length})` : ''}
             </Button>
             <Button className="bg-gradient-primary hover:opacity-90" onClick={() => setRecordPaymentOpen(true)}>
               <Receipt className="mr-2 h-4 w-4" />
