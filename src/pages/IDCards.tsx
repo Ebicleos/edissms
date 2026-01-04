@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -22,6 +23,7 @@ export default function IDCards() {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('all');
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
@@ -36,7 +38,22 @@ export default function IDCards() {
     return students.find((s) => s.id === selectedStudentId) || null;
   }, [students, selectedStudentId]);
 
-  const { signedUrl: studentPhotoUrl } = useSignedPhotoUrl(selectedStudent?.photoUrl || null);
+  const { signedUrl: studentPhotoUrl, isLoading: photoLoading } = useSignedPhotoUrl(selectedStudent?.photoUrl || null);
+
+  // Reset image loaded state when student changes
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [selectedStudentId]);
+
+  // Preload image when URL is available
+  useEffect(() => {
+    if (studentPhotoUrl) {
+      const img = new Image();
+      img.src = studentPhotoUrl;
+      img.onload = () => setImageLoaded(true);
+      img.onerror = () => setImageLoaded(true);
+    }
+  }, [studentPhotoUrl]);
 
   return (
     <MainLayout title="Student ID Cards" subtitle="Generate and manage student identification cards">
@@ -119,18 +136,20 @@ export default function IDCards() {
 
                 {/* Body */}
                 <div className="p-6 text-center">
-                  {/* Photo */}
-                  <div className="h-28 w-28 mx-auto rounded-full bg-muted border-4 border-primary/20 flex items-center justify-center mb-4 overflow-hidden">
-                    {studentPhotoUrl ? (
-                      <img
-                        src={studentPhotoUrl}
-                        alt={selectedStudent.fullName}
-                        className="h-full w-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-14 w-14 text-muted-foreground" />
-                    )}
-                  </div>
+                {/* Photo */}
+                <div className="h-28 w-28 mx-auto rounded-full bg-muted border-4 border-primary/20 flex items-center justify-center mb-4 overflow-hidden">
+                  {photoLoading || (studentPhotoUrl && !imageLoaded) ? (
+                    <Skeleton className="h-full w-full rounded-full" />
+                  ) : studentPhotoUrl && imageLoaded ? (
+                    <img
+                      src={studentPhotoUrl}
+                      alt={selectedStudent.fullName}
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-14 w-14 text-muted-foreground" />
+                  )}
+                </div>
 
                   {/* Details */}
                   <h4 className="font-bold text-xl text-foreground mb-1">{selectedStudent.fullName}</h4>
