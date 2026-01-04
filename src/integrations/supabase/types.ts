@@ -1281,21 +1281,32 @@ export type Database = {
           class_id: string
           created_at: string | null
           id: string
-          teacher_id: string
+          teacher_id: string | null
+          teacher_record_id: string | null
         }
         Insert: {
           class_id: string
           created_at?: string | null
           id?: string
-          teacher_id: string
+          teacher_id?: string | null
+          teacher_record_id?: string | null
         }
         Update: {
           class_id?: string
           created_at?: string | null
           id?: string
-          teacher_id?: string
+          teacher_id?: string | null
+          teacher_record_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "teacher_classes_teacher_record_id_fkey"
+            columns: ["teacher_record_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       teachers: {
         Row: {
