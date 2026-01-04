@@ -1,10 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-paystack-signature',
-};
+// Webhooks are server-to-server only - no CORS headers needed
+// This endpoint should only accept requests from Paystack's servers
 
 async function verifySignature(secret: string, body: string, signature: string): Promise<boolean> {
   const encoder = new TextEncoder();
@@ -23,9 +21,14 @@ async function verifySignature(secret: string, body: string, signature: string):
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
+  // Webhooks don't need CORS preflight - reject OPTIONS
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('Method not allowed', { status: 405 });
+  }
+
+  // Only accept POST requests
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
   }
 
   try {
@@ -38,13 +41,16 @@ serve(async (req) => {
     const rawBody = await req.text();
     const signature = req.headers.get('x-paystack-signature');
 
-    // Verify webhook signature
-    if (signature) {
-      const isValid = await verifySignature(PAYSTACK_SECRET_KEY, rawBody, signature);
-      if (!isValid) {
-        console.error('Invalid webhook signature');
-        return new Response('Invalid signature', { status: 401 });
-      }
+    // Verify webhook signature - REQUIRED for security
+    if (!signature) {
+      console.error('Missing webhook signature');
+      return new Response('Unauthorized: Missing signature', { status: 401 });
+    }
+
+    const isValid = await verifySignature(PAYSTACK_SECRET_KEY, rawBody, signature);
+    if (!isValid) {
+      console.error('Invalid webhook signature');
+      return new Response('Unauthorized: Invalid signature', { status: 401 });
     }
 
     const event = JSON.parse(rawBody);
@@ -53,7 +59,7 @@ serve(async (req) => {
     // Only process successful charges
     if (event.event !== 'charge.success') {
       return new Response(JSON.stringify({ received: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
@@ -63,7 +69,7 @@ serve(async (req) => {
     if (metadata?.type !== 'subscription' || !metadata?.school_id) {
       console.log('Not a subscription payment, ignoring');
       return new Response(JSON.stringify({ received: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
@@ -118,13 +124,16 @@ serve(async (req) => {
         .single();
 
       if (schoolData) {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
         // Send SMS notification
         if (schoolData.phone) {
-          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-sms`, {
+          await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              'Authorization': `Bearer ${supabaseServiceKey}`,
             },
             body: JSON.stringify({
               to: schoolData.phone,
@@ -136,11 +145,11 @@ serve(async (req) => {
 
         // Send email notification
         if (schoolData.email) {
-          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email-notification`, {
+          await fetch(`${supabaseUrl}/functions/v1/send-email-notification`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              'Authorization': `Bearer ${supabaseServiceKey}`,
             },
             body: JSON.stringify({
               to: schoolData.email,
@@ -161,14 +170,14 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ success: true, message: 'Subscription activated' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error: unknown) {
     console.error('Subscription webhook error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ success: false, error: message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      { headers: { 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });

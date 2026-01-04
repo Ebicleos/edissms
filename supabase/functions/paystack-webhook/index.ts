@@ -2,14 +2,18 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-paystack-signature',
-};
+// Webhooks are server-to-server only - no CORS headers needed
+// This endpoint should only accept requests from Paystack's servers
 
 serve(async (req) => {
+  // Webhooks don't need CORS preflight - reject OPTIONS
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('Method not allowed', { status: 405 });
+  }
+
+  // Only accept POST requests
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
   }
 
   try {
@@ -21,17 +25,19 @@ serve(async (req) => {
     const body = await req.text();
     const signature = req.headers.get('x-paystack-signature');
 
-    // Verify webhook signature
+    // Verify webhook signature - REQUIRED for security
+    if (!signature) {
+      console.error('Missing webhook signature');
+      return new Response('Unauthorized: Missing signature', { status: 401 });
+    }
+
     const hash = createHmac('sha512', paystackSecretKey)
       .update(body)
       .digest('hex');
 
     if (hash !== signature) {
       console.error('Invalid webhook signature');
-      return new Response(
-        JSON.stringify({ error: 'Invalid signature' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response('Unauthorized: Invalid signature', { status: 401 });
     }
 
     const event = JSON.parse(body);
@@ -103,7 +109,7 @@ serve(async (req) => {
 
         // Send SMS and email notifications (non-blocking)
         try {
-          // Get student details for notifications
+          // Get student details for notifications (only needed fields)
           const { data: studentData } = await supabase
             .from('students')
             .select('full_name, phone_contact, email, school_id')
@@ -162,14 +168,14 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ received: true }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Webhook error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 });

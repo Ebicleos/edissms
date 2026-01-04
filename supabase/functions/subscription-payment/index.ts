@@ -2,10 +2,31 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Dynamic CORS based on origin
+const getAllowedOrigin = (requestOrigin: string | null): string => {
+  const allowedOrigins = [
+    Deno.env.get('ALLOWED_ORIGIN'),
+    'https://lovable.dev',
+    'https://preview--pylfykpcqugkqsnssfsa.lovable.app',
+  ].filter(Boolean);
+  
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+  if (requestOrigin?.includes('localhost') || requestOrigin?.includes('127.0.0.1')) {
+    return requestOrigin;
+  }
+  if (requestOrigin?.endsWith('.lovable.app')) {
+    return requestOrigin;
+  }
+  return allowedOrigins[0] || '*';
 };
+
+const getCorsHeaders = (req: Request) => ({
+  'Access-Control-Allow-Origin': getAllowedOrigin(req.headers.get('origin')),
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Credentials': 'true',
+});
 
 // Input validation schema
 const SubscriptionPaymentSchema = z.object({
@@ -20,6 +41,8 @@ const SubscriptionPaymentSchema = z.object({
 });
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -72,7 +95,7 @@ serve(async (req) => {
 
     const { school_id, plan_type, amount, reference, email, callback_url } = validationResult.data;
 
-    console.log('Initializing subscription payment:', { school_id, plan_type, amount, reference });
+    console.log('Initializing subscription payment:', { school_id, plan_type, amount, reference, user: user.id });
 
     // Initialize Paystack payment
     const paystackResponse = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -115,6 +138,7 @@ serve(async (req) => {
   } catch (error: unknown) {
     console.error('Subscription payment error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
+    const corsHeaders = getCorsHeaders(req);
     return new Response(
       JSON.stringify({ success: false, error: message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
