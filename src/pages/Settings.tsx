@@ -14,11 +14,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { PasswordInput } from '@/components/ui/password-input';
-import { School, User, Lock, Bell, Shield, Save, Loader2, FileText, KeyRound, Mail, ImageIcon } from 'lucide-react';
+import { School, User, Lock, Bell, Shield, Save, Loader2, FileText, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { SchoolLogoUpload } from '@/components/settings/SchoolLogoUpload';
+import { PaymentGatewaySettings } from '@/components/settings/PaymentGatewaySettings';
 
 export default function Settings() {
   const { user, profile } = useAuth();
@@ -228,6 +229,10 @@ export default function Settings() {
             <TabsTrigger value="report-cards" className="gap-2">
               <FileText className="h-4 w-4" />
               Report Cards
+            </TabsTrigger>
+            <TabsTrigger value="payment-gateway" className="gap-2">
+              <CreditCard className="h-4 w-4" />
+              Payment Gateway
             </TabsTrigger>
           </TabsList>
 
@@ -658,6 +663,11 @@ export default function Settings() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Payment Gateway Settings */}
+          <TabsContent value="payment-gateway">
+            <PaymentGatewaySettings schoolId={profile?.school_id || undefined} />
           </TabsContent>
         </Tabs>
       </div>

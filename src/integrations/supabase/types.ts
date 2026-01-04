@@ -962,6 +962,11 @@ export type Database = {
           is_active: boolean | null
           logo_url: string | null
           name: string
+          payment_gateway_enabled: boolean | null
+          payment_gateway_provider: string | null
+          payment_gateway_public_key: string | null
+          payment_gateway_secret_key: string | null
+          payment_gateway_webhook_secret: string | null
           phone: string | null
         }
         Insert: {
@@ -975,6 +980,11 @@ export type Database = {
           is_active?: boolean | null
           logo_url?: string | null
           name: string
+          payment_gateway_enabled?: boolean | null
+          payment_gateway_provider?: string | null
+          payment_gateway_public_key?: string | null
+          payment_gateway_secret_key?: string | null
+          payment_gateway_webhook_secret?: string | null
           phone?: string | null
         }
         Update: {
@@ -988,6 +998,11 @@ export type Database = {
           is_active?: boolean | null
           logo_url?: string | null
           name?: string
+          payment_gateway_enabled?: boolean | null
+          payment_gateway_provider?: string | null
+          payment_gateway_public_key?: string | null
+          payment_gateway_secret_key?: string | null
+          payment_gateway_webhook_secret?: string | null
           phone?: string | null
         }
         Relationships: []

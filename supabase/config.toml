@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.registration-payment]
 verify_jwt = false
+
+[functions.validate-payment-gateway]
+verify_jwt = true
