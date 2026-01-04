@@ -1,10 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const PaymentRequestSchema = z.object({
+  email: z.string().email("Invalid email address").max(255, "Email too long"),
+  amount: z.number().min(1, "Amount must be positive").max(100000000, "Amount exceeds maximum"),
+  reference: z.string().min(1, "Reference is required").max(255, "Reference too long"),
+  metadata: z.object({
+    fee_payment_id: z.string().uuid("Invalid fee payment ID").optional(),
+    student_id: z.string().uuid("Invalid student ID").optional(),
+    student_name: z.string().max(255, "Student name too long").optional(),
+    callback_url: z.string().url("Invalid callback URL").max(2000, "URL too long").optional(),
+  }).optional(),
+});
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -39,7 +53,23 @@ serve(async (req) => {
       );
     }
 
-    const { email, amount, reference, metadata } = await req.json();
+    // Parse and validate input
+    const body = await req.json();
+    const validationResult = PaymentRequestSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      console.error('Validation failed:', validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Invalid input', 
+          details: validationResult.error.errors.map(e => e.message) 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { email, amount, reference, metadata } = validationResult.data;
     
     console.log('Initializing Paystack payment for user:', user.id, { email, amount, reference });
 

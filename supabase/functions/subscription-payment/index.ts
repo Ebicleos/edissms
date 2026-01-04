@@ -1,10 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const SubscriptionPaymentSchema = z.object({
+  school_id: z.string().uuid("Invalid school ID format"),
+  plan_type: z.enum(['basic', 'standard', 'premium'], { 
+    errorMap: () => ({ message: "Plan type must be basic, standard, or premium" }) 
+  }),
+  amount: z.number().min(1, "Amount must be positive").max(100000000, "Amount exceeds maximum"),
+  reference: z.string().min(1, "Reference is required").max(255, "Reference too long"),
+  email: z.string().email("Invalid email address").max(255, "Email too long"),
+  callback_url: z.string().url("Invalid callback URL").max(2000, "URL too long").optional(),
+});
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -21,7 +34,10 @@ serve(async (req) => {
     // Verify JWT token
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('Missing authorization header');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const supabaseClient = createClient(
@@ -32,14 +48,29 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
-      throw new Error('Unauthorized');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const { school_id, plan_type, amount, reference, email, callback_url } = await req.json();
+    // Parse and validate input
+    const body = await req.json();
+    const validationResult = SubscriptionPaymentSchema.safeParse(body);
 
-    if (!school_id || !plan_type || !amount || !reference || !email) {
-      throw new Error('Missing required fields: school_id, plan_type, amount, reference, email');
+    if (!validationResult.success) {
+      console.error('Validation failed:', validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Invalid input', 
+          details: validationResult.error.errors.map(e => e.message) 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    const { school_id, plan_type, amount, reference, email, callback_url } = validationResult.data;
 
     console.log('Initializing subscription payment:', { school_id, plan_type, amount, reference });
 
