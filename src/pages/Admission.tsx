@@ -20,11 +20,14 @@ import {
 } from '@/components/ui/dialog';
 import { Student } from '@/types';
 import { studentAdmissionSchema, validateInput } from '@/lib/validations';
+import { printReceipt } from '@/utils/printReceipt';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 
 export default function Admission() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { addStudent } = useStudents();
+  const { settings: schoolSettings } = useSchoolSettings();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [newStudent, setNewStudent] = useState<Student | null>(null);
@@ -137,6 +140,35 @@ export default function Admission() {
       currency: 'NGN',
       minimumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const handlePrintReceipt = () => {
+    if (!newStudent || !schoolSettings) {
+      toast({ title: "Error", description: "Unable to print receipt. Missing data.", variant: "destructive" });
+      return;
+    }
+
+    const className = CLASS_LIST_DETAILED.find(c => c.id === newStudent.classId)?.name || newStudent.className || newStudent.classId;
+    const amountPaid = formData.amountPaid || 0;
+    const totalFee = newStudent.admissionFee || formData.admissionFee || 0;
+    const balance = totalFee - amountPaid;
+
+    printReceipt({
+      studentName: newStudent.fullName,
+      admissionNumber: newStudent.admissionNumber,
+      className: className,
+      guardianName: formData.guardianName || "N/A",
+      phoneContact: formData.phoneContact || "N/A",
+      amountPaid: amountPaid,
+      totalFee: totalFee,
+      balance: balance,
+      term: schoolSettings.term || formData.term || "First Term",
+      academicYear: schoolSettings.academic_year || formData.academicYear || new Date().getFullYear().toString(),
+      paymentDate: new Date().toLocaleDateString(),
+      paymentMethod: "Cash",
+    }, schoolSettings);
+
+    toast({ title: "Receipt Printed", description: "Admission receipt has been sent to print." });
   };
 
   const balance = formData.admissionFee - formData.amountPaid;
@@ -429,11 +461,18 @@ export default function Admission() {
               Add Another
             </Button>
             <Button
-              className="flex-1 bg-gradient-primary"
+              variant="outline"
+              className="flex-1"
               onClick={() => {
                 setShowSuccess(false);
                 navigate('/students');
               }}
+            >
+              View Students
+            </Button>
+            <Button
+              className="flex-1 bg-gradient-primary"
+              onClick={handlePrintReceipt}
             >
               <Printer className="mr-2 h-4 w-4" />
               Print Receipt

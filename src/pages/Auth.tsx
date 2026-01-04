@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PasswordInput } from '@/components/ui/password-input';
 import { School, ShieldCheck, GraduationCap, Users, Loader2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
-import { CLASS_LIST } from '@/types';
+import { CLASS_LIST_DETAILED } from '@/types';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -550,9 +550,9 @@ export default function Auth() {
                           <SelectValue placeholder="Select your class" />
                         </SelectTrigger>
                         <SelectContent>
-                          {CLASS_LIST.map((cls) => (
-                            <SelectItem key={cls} value={cls}>
-                              {cls}
+                          {CLASS_LIST_DETAILED.map((cls) => (
+                            <SelectItem key={cls.id} value={cls.id}>
+                              {cls.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

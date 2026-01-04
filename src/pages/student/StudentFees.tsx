@@ -3,10 +3,12 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Wallet, CreditCard, Download, Loader2, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { Wallet, CreditCard, Loader2, CheckCircle, AlertCircle, Clock, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { printReceipt } from '@/utils/printReceipt';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 
 interface FeePayment {
   id: string;
@@ -22,7 +24,8 @@ interface FeePayment {
 }
 
 export default function StudentFees() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { settings: schoolSettings } = useSchoolSettings();
   const [feePayments, setFeePayments] = useState<FeePayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [payingFeeId, setPayingFeeId] = useState<string | null>(null);
@@ -146,7 +149,26 @@ export default function StudentFees() {
       toast.error('No payment has been made yet');
       return;
     }
-    toast.info('Receipt download feature coming soon');
+
+    if (!schoolSettings || !profile) {
+      toast.error('Unable to generate receipt. Missing data.');
+      return;
+    }
+
+    printReceipt({
+      studentName: profile.full_name || 'Student',
+      admissionNumber: 'N/A',
+      className: feePayment.class_id || 'N/A',
+      amountPaid: Number(feePayment.amount_paid),
+      totalFee: Number(feePayment.amount_payable),
+      balance: Number(feePayment.balance),
+      term: feePayment.term,
+      academicYear: feePayment.academic_year,
+      paymentDate: feePayment.last_payment_date || new Date().toLocaleDateString(),
+      paymentMethod: 'Online Payment',
+    }, schoolSettings);
+
+    toast.success('Receipt generated and sent to print');
   };
 
   // Calculate totals
@@ -260,8 +282,8 @@ export default function StudentFees() {
                           onClick={() => handleDownloadReceipt(fee)}
                           disabled={fee.status === 'unpaid'}
                         >
-                          <Download className="h-4 w-4 mr-2" />
-                          Receipt
+                          <Printer className="h-4 w-4 mr-2" />
+                          Print Receipt
                         </Button>
                       </div>
                     </div>
