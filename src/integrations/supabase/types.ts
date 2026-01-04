@@ -1426,6 +1426,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_student_for_signup: {
+        Args: { admission_num: string; student_name: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "teacher" | "student" | "superadmin"
