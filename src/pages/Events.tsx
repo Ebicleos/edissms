@@ -44,6 +44,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, isSameDay, parseISO, isAfter, isBefore, startOfToday } from 'date-fns';
+import { eventSchema, validateInput } from '@/lib/validations';
 
 interface Event {
   id: string;
@@ -144,14 +145,8 @@ export default function Events() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title.trim() || !eventDate) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    const eventData = {
+    // Validate input using schema
+    const validation = validateInput(eventSchema, {
       title,
       description: description || null,
       event_date: eventDate,
@@ -161,6 +156,26 @@ export default function Events() {
       is_all_day: isAllDay,
       event_type: eventType,
       is_published: isPublished,
+    });
+
+    if (validation.success === false) {
+      toast.error(validation.error);
+      return;
+    }
+
+    const validatedData = validation.data;
+    setIsSubmitting(true);
+
+    const eventData = {
+      title: validatedData.title,
+      description: validatedData.description,
+      event_date: validatedData.event_date,
+      start_time: validatedData.start_time,
+      end_time: validatedData.end_time,
+      location: validatedData.location,
+      is_all_day: validatedData.is_all_day,
+      event_type: validatedData.event_type,
+      is_published: validatedData.is_published,
       created_by: user?.id,
     };
 

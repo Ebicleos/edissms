@@ -1,5 +1,60 @@
 import { z } from 'zod';
 
+// ============= Announcement Validation =============
+export const announcementSchema = z.object({
+  title: z.string()
+    .trim()
+    .min(1, 'Title is required')
+    .max(200, 'Title must be less than 200 characters'),
+  content: z.string()
+    .trim()
+    .min(1, 'Content is required')
+    .max(2000, 'Content must be less than 2000 characters'),
+  type: z.enum(['general', 'urgent', 'event'], {
+    errorMap: () => ({ message: 'Please select a valid type' })
+  }),
+  target_audience: z.enum(['all', 'teachers', 'students', 'parents'], {
+    errorMap: () => ({ message: 'Please select a valid audience' })
+  }),
+  is_published: z.boolean().optional().default(false),
+  expiry_date: z.string().nullable().optional(),
+});
+
+export type AnnouncementInput = z.infer<typeof announcementSchema>;
+
+// ============= Event Validation =============
+export const eventSchema = z.object({
+  title: z.string()
+    .trim()
+    .min(1, 'Title is required')
+    .max(200, 'Title must be less than 200 characters'),
+  description: z.string()
+    .max(1000, 'Description must be less than 1000 characters')
+    .nullable()
+    .optional(),
+  event_date: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)'),
+  start_time: z.string()
+    .regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)')
+    .nullable()
+    .optional(),
+  end_time: z.string()
+    .regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)')
+    .nullable()
+    .optional(),
+  location: z.string()
+    .max(200, 'Location must be less than 200 characters')
+    .nullable()
+    .optional(),
+  is_all_day: z.boolean().optional().default(false),
+  event_type: z.enum(['general', 'academic', 'holiday', 'sports', 'cultural'], {
+    errorMap: () => ({ message: 'Please select a valid event type' })
+  }),
+  is_published: z.boolean().optional().default(true),
+});
+
+export type EventInput = z.infer<typeof eventSchema>;
+
 // ============= Student Admission Validation =============
 export const studentAdmissionSchema = z.object({
   fullName: z.string()

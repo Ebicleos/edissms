@@ -43,6 +43,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import { announcementSchema, validateInput } from '@/lib/validations';
 
 interface Announcement {
   id: string;
@@ -120,21 +121,32 @@ export default function Announcements() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title.trim() || !content.trim()) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    const announcementData = {
+    // Validate input using schema
+    const validation = validateInput(announcementSchema, {
       title,
       content,
       type,
       target_audience: targetAudience,
       is_published: isPublished,
-      publish_date: isPublished ? new Date().toISOString() : null,
       expiry_date: expiryDate || null,
+    });
+
+    if (validation.success === false) {
+      toast.error(validation.error);
+      return;
+    }
+
+    const validatedData = validation.data;
+    setIsSubmitting(true);
+
+    const announcementData = {
+      title: validatedData.title,
+      content: validatedData.content,
+      type: validatedData.type,
+      target_audience: validatedData.target_audience,
+      is_published: validatedData.is_published,
+      expiry_date: validatedData.expiry_date,
+      publish_date: isPublished ? new Date().toISOString() : null,
       created_by: user?.id,
     };
 

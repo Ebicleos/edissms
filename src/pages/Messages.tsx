@@ -19,6 +19,7 @@ import { Mail, MessageSquare, Phone, Send, Users, CheckCircle, Loader2 } from 'l
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { messageSchema, validateInput } from '@/lib/validations';
 
 interface Message {
   id: string;
@@ -57,15 +58,21 @@ export default function Messages() {
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim()) {
-      toast.error('Please enter a message');
+    // Validate input using schema
+    const validation = validateInput(messageSchema, {
+      content: message,
+      subject: selectedType === 'email' ? subject : undefined,
+      recipients_type: recipientType,
+      type: selectedType as 'sms' | 'email' | 'both',
+      class_id: recipientType === 'class' ? selectedClass : undefined,
+    });
+
+    if (validation.success === false) {
+      toast.error(validation.error);
       return;
     }
 
-    if (selectedType === 'email' && !subject.trim()) {
-      toast.error('Please enter a subject for the email');
-      return;
-    }
+    const validatedData = validation.data;
 
     if (recipientType === 'class' && !selectedClass) {
       toast.error('Please select a class');
@@ -75,11 +82,11 @@ export default function Messages() {
     setIsLoading(true);
 
     const { error } = await supabase.from('messages').insert({
-      type: selectedType,
-      subject: selectedType === 'email' ? subject : null,
-      content: message,
-      recipients_type: recipientType,
-      class_id: recipientType === 'class' ? selectedClass : null,
+      type: validatedData.type,
+      subject: validatedData.subject || null,
+      content: validatedData.content,
+      recipients_type: validatedData.recipients_type,
+      class_id: validatedData.class_id || null,
       sent_by: user?.id,
       status: 'sent',
     });
