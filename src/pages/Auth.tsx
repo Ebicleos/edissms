@@ -249,49 +249,25 @@ export default function Auth() {
         return;
       }
 
-      // Check if student record exists in students table (case-insensitive admission number)
-      const { data: studentRecords, error: studentLookupError } = await supabase
-        .from('students')
-        .select('id, full_name, class_id, admission_number');
-
-      if (studentLookupError) {
-        setIsLoading(false);
-        console.error('Student lookup error:', studentLookupError);
-        toast.error('Error looking up student record. Please try again.');
-        return;
-      }
-
-      // Find matching student (case-insensitive)
-      const normalizedInputAdmission = studentAdmissionNumber.trim().toUpperCase();
-      const studentRecord = studentRecords?.find(s => 
-        s.admission_number.trim().toUpperCase() === normalizedInputAdmission
-      );
-
-      if (!studentRecord) {
-        setIsLoading(false);
-        console.log('No student found. Input:', studentAdmissionNumber, 'Available records:', studentRecords?.map(s => s.admission_number));
-        toast.error('No student record found with this admission number', {
-          description: `Searched for: "${studentAdmissionNumber}". Please contact admin if this is incorrect.`,
+      // Validate student using secure RPC function (returns boolean only, no PII exposure)
+      const { data: isValidStudent, error: validationError } = await supabase
+        .rpc('validate_student_for_signup', {
+          admission_num: studentAdmissionNumber.trim(),
+          student_name: signupFullName.trim()
         });
+
+      if (validationError) {
+        setIsLoading(false);
+        console.error('Student validation error:', validationError);
+        toast.error('Error validating student record. Please try again.');
         return;
       }
 
-      // Validate name matches (case-insensitive with normalized whitespace)
-      const normalizedDbName = studentRecord.full_name.toLowerCase().replace(/\s+/g, ' ').trim();
-      const normalizedInputName = signupFullName.toLowerCase().replace(/\s+/g, ' ').trim();
-      
-      if (normalizedDbName !== normalizedInputName) {
+      if (!isValidStudent) {
         setIsLoading(false);
-        toast.error('Name does not match the student record', {
-          description: `Expected: "${studentRecord.full_name}". Please use your exact registered name.`,
+        toast.error('Student record not found or name does not match', {
+          description: 'Please check your admission number and use your exact registered name. Contact admin if this is incorrect.',
         });
-        return;
-      }
-
-      // Validate class matches
-      if (studentRecord.class_id !== selectedClass) {
-        setIsLoading(false);
-        toast.error('Class does not match the student record. Please select the correct class.');
         return;
       }
     }
