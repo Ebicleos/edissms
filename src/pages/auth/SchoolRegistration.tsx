@@ -79,11 +79,8 @@ export default function SchoolRegistration() {
     setVerifyingPayment(true);
     
     try {
-      const response = await supabase.functions.invoke('registration-payment', {
+      const response = await supabase.functions.invoke('registration-payment?action=verify', {
         body: { reference },
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
 
       if (response.error) {
@@ -163,7 +160,7 @@ export default function SchoolRegistration() {
       }
 
       // Initialize payment
-      const response = await supabase.functions.invoke('registration-payment', {
+      const response = await supabase.functions.invoke('registration-payment?action=initialize', {
         body: {
           school_data: {
             name: formData.schoolName,
@@ -181,9 +178,6 @@ export default function SchoolRegistration() {
           },
           plan_type: formData.planType,
           callback_url: `${window.location.origin}/auth/register-school`,
-        },
-        headers: {
-          'Content-Type': 'application/json',
         },
       });
 
