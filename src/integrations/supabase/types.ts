@@ -929,6 +929,47 @@ export type Database = {
         }
         Relationships: []
       }
+      school_payment_secrets: {
+        Row: {
+          created_at: string | null
+          id: string
+          key_last_four: string | null
+          school_id: string
+          secret_key_encrypted: string | null
+          updated_at: string | null
+          webhook_last_four: string | null
+          webhook_secret_encrypted: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          key_last_four?: string | null
+          school_id: string
+          secret_key_encrypted?: string | null
+          updated_at?: string | null
+          webhook_last_four?: string | null
+          webhook_secret_encrypted?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          key_last_four?: string | null
+          school_id?: string
+          secret_key_encrypted?: string | null
+          updated_at?: string | null
+          webhook_last_four?: string | null
+          webhook_secret_encrypted?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_payment_secrets_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: true
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_settings: {
         Row: {
           academic_year: string | null
@@ -1015,8 +1056,6 @@ export type Database = {
           payment_gateway_enabled: boolean | null
           payment_gateway_provider: string | null
           payment_gateway_public_key: string | null
-          payment_gateway_secret_key: string | null
-          payment_gateway_webhook_secret: string | null
           phone: string | null
         }
         Insert: {
@@ -1033,8 +1072,6 @@ export type Database = {
           payment_gateway_enabled?: boolean | null
           payment_gateway_provider?: string | null
           payment_gateway_public_key?: string | null
-          payment_gateway_secret_key?: string | null
-          payment_gateway_webhook_secret?: string | null
           phone?: string | null
         }
         Update: {
@@ -1051,8 +1088,6 @@ export type Database = {
           payment_gateway_enabled?: boolean | null
           payment_gateway_provider?: string | null
           payment_gateway_public_key?: string | null
-          payment_gateway_secret_key?: string | null
-          payment_gateway_webhook_secret?: string | null
           phone?: string | null
         }
         Relationships: []
@@ -1478,6 +1513,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_school_payment_secret: {
+        Args: { p_school_id: string }
+        Returns: {
+          secret_key: string
+          webhook_secret: string
+        }[]
+      }
       get_user_by_admission_number: {
         Args: { _admission_number: string }
         Returns: string

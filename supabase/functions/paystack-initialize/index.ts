@@ -146,17 +146,14 @@ serve(async (req) => {
       }
 
       if (schoolId) {
-        // Get school's payment gateway settings
+        // Get school's payment gateway settings from schools table (non-secret data)
         const { data: schoolData } = await supabase
           .from('schools')
-          .select('payment_gateway_enabled, payment_gateway_secret_key, name')
+          .select('payment_gateway_enabled, name')
           .eq('id', schoolId)
           .single();
 
-        if (schoolData?.payment_gateway_enabled && schoolData?.payment_gateway_secret_key) {
-          paystackSecretKey = schoolData.payment_gateway_secret_key;
-          console.log('Using school-specific Paystack key for:', schoolData.name);
-        } else if (!schoolData?.payment_gateway_enabled) {
+        if (!schoolData?.payment_gateway_enabled) {
           console.error('School payment gateway not enabled');
           return new Response(
             JSON.stringify({ 
@@ -165,6 +162,15 @@ serve(async (req) => {
             }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
+        }
+
+        // Get secret key from secure table using service role (never exposed to clients)
+        const { data: secretData } = await supabase
+          .rpc('get_school_payment_secret', { p_school_id: schoolId });
+
+        if (secretData && secretData.length > 0 && secretData[0].secret_key) {
+          paystackSecretKey = secretData[0].secret_key;
+          console.log('Using school-specific Paystack key for:', schoolData.name);
         }
       }
     }
