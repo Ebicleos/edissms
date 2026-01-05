@@ -579,10 +579,76 @@ export default function Auth() {
                       'Sign In'
                     )}
                   </Button>
-                  {/* Password reset is handled by admin only */}
-                  <p className="text-xs text-center text-muted-foreground">
-                    Forgot your password? Contact your school administrator.
-                  </p>
+                  {/* Forgot Password */}
+                  <div className="text-center space-y-2">
+                    {!showForgotPassword ? (
+                      <button 
+                        type="button"
+                        className="text-sm text-primary hover:underline"
+                        onClick={() => setShowForgotPassword(true)}
+                      >
+                        Forgot your password?
+                      </button>
+                    ) : (
+                      <div className="p-4 rounded-lg bg-muted/50 space-y-3">
+                        <div className="flex items-center gap-2 justify-center">
+                          <KeyRound className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">Reset Password</span>
+                        </div>
+                        {resetLimitReached ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-destructive">
+                              You have exceeded the maximum reset attempts (3 per 24 hours).
+                            </p>
+                            <Button 
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={handleContactAdmin}
+                            >
+                              Contact Admin for Help
+                            </Button>
+                            <button 
+                              type="button"
+                              className="text-xs text-muted-foreground hover:underline"
+                              onClick={() => { setShowForgotPassword(false); setResetLimitReached(false); }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <form onSubmit={handleForgotPassword} className="space-y-2">
+                            <Input
+                              type="email"
+                              placeholder="Enter your email"
+                              value={forgotPasswordEmail}
+                              onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                              className="text-sm"
+                            />
+                            <div className="flex gap-2">
+                              <Button 
+                                type="submit" 
+                                size="sm" 
+                                className="flex-1"
+                                disabled={isLoading}
+                              >
+                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Reset Link'}
+                              </Button>
+                              <Button 
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowForgotPassword(false)}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </form>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </form>
               </TabsContent>
               

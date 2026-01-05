@@ -101,18 +101,30 @@ export function useReportCards() {
         return [];
       }
 
-      // Fetch profiles for these students
+      // Fetch student details from students table
       const studentIds = studentClasses.map(sc => sc.student_id);
+      const { data: studentDetails } = await supabase
+        .from('students')
+        .select('id, full_name, gender, photo_url')
+        .in('id', studentIds);
+
+      // Also try profiles for fallback names
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, photo_url')
         .in('id', studentIds);
 
-      // Combine the data
-      const students = studentClasses.map(sc => ({
-        ...sc,
-        profile: profiles?.find(p => p.id === sc.student_id) || { id: sc.student_id, full_name: 'Unknown', photo_url: null }
-      }));
+      // Combine the data - prefer students table data
+      const students = studentClasses.map(sc => {
+        const studentData = studentDetails?.find(s => s.id === sc.student_id);
+        const profile = profiles?.find(p => p.id === sc.student_id);
+        return {
+          ...sc,
+          full_name: studentData?.full_name || profile?.full_name || 'Unknown',
+          gender: studentData?.gender || 'N/A',
+          photo_url: studentData?.photo_url || profile?.photo_url || null,
+        };
+      });
 
       // Fetch grades for all students in this class
       const { data: allGrades, error: gradesError } = await supabase
@@ -147,6 +159,8 @@ export function useReportCards() {
           const totalScore = studentGrades.reduce((sum, g) => sum + (Number(g.total_score) || 0), 0);
           const average = totalScore / studentGrades.length;
           studentAverages.push({ studentId: student.student_id, average });
+        } else {
+          studentAverages.push({ studentId: student.student_id, average: 0 });
         }
       });
 
@@ -164,7 +178,6 @@ export function useReportCards() {
 
       // Generate report cards
       const generatedCards: ReportCardData[] = students.map(student => {
-        const profile = student.profile;
         const studentGrades = allGrades?.filter(g => g.student_id === student.student_id) || [];
         const existingCard = existingReportCards?.find(rc => rc.student_id === student.student_id);
         
@@ -210,11 +223,11 @@ export function useReportCards() {
 
         return {
           studentId: student.student_id,
-          studentName: profile.full_name,
+          studentName: student.full_name,
           admissionNumber: student.admission_number || '',
           classId: student.class_id,
           className: student.class_id,
-          gender: 'N/A',
+          gender: student.gender || 'N/A',
           term,
           academicYear,
           grades,

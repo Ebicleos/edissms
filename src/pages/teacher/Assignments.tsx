@@ -19,7 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Plus, FileText, Calendar, Loader2, Trash2, Upload } from 'lucide-react';
-import { CLASS_LIST } from '@/types';
+import { CLASS_LIST_DETAILED } from '@/types';
 
 interface Assignment {
   id: string;
@@ -33,10 +33,15 @@ interface Assignment {
   created_at: string;
 }
 
+interface TeacherClass {
+  class_id: string;
+}
+
 export default function Assignments() {
   const { user } = useAuth();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [teacherClasses, setTeacherClasses] = useState<TeacherClass[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -50,7 +55,21 @@ export default function Assignments() {
 
   useEffect(() => {
     fetchAssignments();
+    fetchTeacherClasses();
   }, [user]);
+
+  const fetchTeacherClasses = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('teacher_classes')
+      .select('class_id')
+      .eq('teacher_id', user.id);
+    
+    if (!error && data) {
+      setTeacherClasses(data);
+    }
+  };
 
   const fetchAssignments = async () => {
     if (!user) return;
@@ -216,9 +235,14 @@ export default function Assignments() {
                         <SelectValue placeholder="Select class" />
                       </SelectTrigger>
                       <SelectContent>
-                        {CLASS_LIST.map((cls) => (
-                          <SelectItem key={cls} value={cls}>
-                            {cls}
+                        {(teacherClasses.length > 0
+                          ? CLASS_LIST_DETAILED.filter(cls => 
+                              teacherClasses.some(tc => tc.class_id === cls.id)
+                            )
+                          : CLASS_LIST_DETAILED
+                        ).map((cls) => (
+                          <SelectItem key={cls.id} value={cls.id}>
+                            {cls.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

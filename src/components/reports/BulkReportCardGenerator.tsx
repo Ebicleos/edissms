@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { FileText, Printer, Download, Eye, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { CLASS_LIST, ACADEMIC_YEARS } from '@/types';
+import { CLASS_LIST_DETAILED, ACADEMIC_YEARS } from '@/types';
 import { useReportCards, ReportCardData } from '@/hooks/useReportCards';
 import { ReportCardTemplate } from './ReportCardTemplate';
 import { ReportCardEditor } from './ReportCardEditor';
@@ -266,9 +266,9 @@ export function BulkReportCardGenerator() {
                   <SelectValue placeholder="Select class" />
                 </SelectTrigger>
                 <SelectContent>
-                  {CLASS_LIST.map((cls) => (
-                    <SelectItem key={cls} value={cls}>
-                      {cls}
+                  {CLASS_LIST_DETAILED.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id}>
+                      {cls.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
