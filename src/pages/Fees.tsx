@@ -398,39 +398,39 @@ export default function Fees() {
 
   return (
     <MainLayout title="Fees Management" subtitle="Track and manage school fee payments">
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-4 md:space-y-6 animate-fade-in">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-card rounded-xl border border-border/50 p-5 shadow-sm">
-            <p className="text-sm text-muted-foreground mb-1">Total Expected</p>
-            <p className="text-2xl font-bold text-foreground">{formatCurrency(totalExpected)}</p>
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
+          <div className="bg-card rounded-xl border border-border/50 p-3 md:p-5 shadow-sm">
+            <p className="text-xs md:text-sm text-muted-foreground mb-1">Expected</p>
+            <p className="text-lg md:text-2xl font-bold text-foreground">{formatCurrency(totalExpected)}</p>
           </div>
-          <div className="bg-card rounded-xl border border-border/50 p-5 shadow-sm">
-            <p className="text-sm text-muted-foreground mb-1">Total Collected</p>
-            <p className="text-2xl font-bold text-success">{formatCurrency(totalCollected)}</p>
+          <div className="bg-card rounded-xl border border-border/50 p-3 md:p-5 shadow-sm">
+            <p className="text-xs md:text-sm text-muted-foreground mb-1">Collected</p>
+            <p className="text-lg md:text-2xl font-bold text-success">{formatCurrency(totalCollected)}</p>
           </div>
-          <div className="bg-card rounded-xl border border-border/50 p-5 shadow-sm">
-            <p className="text-sm text-muted-foreground mb-1">Pending Balance</p>
-            <p className="text-2xl font-bold text-warning">{formatCurrency(totalPending)}</p>
+          <div className="bg-card rounded-xl border border-border/50 p-3 md:p-5 shadow-sm">
+            <p className="text-xs md:text-sm text-muted-foreground mb-1">Pending</p>
+            <p className="text-lg md:text-2xl font-bold text-warning">{formatCurrency(totalPending)}</p>
           </div>
         </div>
 
         {/* Header Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="flex flex-1 gap-3">
-            <div className="relative flex-1 max-w-sm">
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name or admission no..."
+                placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-36">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="All Status" />
+              <SelectTrigger className="w-28 md:w-36">
+                <Filter className="h-4 w-4 mr-1 md:mr-2" />
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
@@ -440,24 +440,73 @@ export default function Fees() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleGenerateBillSheet}>
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Generate Bill Sheet
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={handleGenerateBillSheet} className="flex-1 md:flex-none">
+              <FileSpreadsheet className="mr-1 md:mr-2 h-4 w-4" />
+              <span className="hidden md:inline">Bill Sheet</span>
+              <span className="md:hidden">Bills</span>
             </Button>
-            <Button variant="outline" onClick={handleBulkPrintReceipts}>
-              <Printer className="mr-2 h-4 w-4" />
-              Bulk Print {selectedForBulk.length > 0 ? `(${selectedForBulk.length})` : ''}
+            <Button variant="outline" size="sm" onClick={handleBulkPrintReceipts} className="flex-1 md:flex-none">
+              <Printer className="mr-1 md:mr-2 h-4 w-4" />
+              <span className="hidden md:inline">Bulk Print</span>
+              <span className="md:hidden">Print</span>
             </Button>
-            <Button className="bg-gradient-primary hover:opacity-90" onClick={() => setRecordPaymentOpen(true)}>
-              <Receipt className="mr-2 h-4 w-4" />
-              Record Payment
+            <Button className="bg-gradient-primary hover:opacity-90 flex-1 md:flex-none" size="sm" onClick={() => setRecordPaymentOpen(true)}>
+              <Receipt className="mr-1 md:mr-2 h-4 w-4" />
+              Record
             </Button>
           </div>
         </div>
 
-        {/* Payments Table */}
-        <div className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-3">
+          {filteredPayments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No fee records found</div>
+          ) : (
+            filteredPayments.map((payment) => (
+              <div key={payment.id} className="bg-card rounded-xl border border-border/50 p-4 shadow-sm">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="font-medium text-foreground">{payment.student_name}</p>
+                    <p className="text-xs text-muted-foreground">{payment.admission_number}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(payment.status)}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleUpdatePayment(payment)}>Update</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handlePrintReceipt(payment)}>Print Receipt</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleSendReminder(payment)}>Send Reminder</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Payable</p>
+                    <p className="font-medium">{formatCurrency(payment.amount_payable)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Paid</p>
+                    <p className="font-medium text-success">{formatCurrency(payment.amount_paid)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Balance</p>
+                    <p className={`font-medium ${payment.balance > 0 ? 'text-warning' : ''}`}>{formatCurrency(payment.balance)}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="table-header">

@@ -161,23 +161,23 @@ export default function Students() {
 
   return (
     <MainLayout title="Students Database" subtitle={`${students.length} registered students`}>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-4 md:space-y-6 animate-fade-in">
         {/* Header Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="flex flex-1 gap-3">
-            <div className="relative flex-1 max-w-sm">
+        <div className="flex flex-col gap-3 md:gap-4">
+          <div className="flex gap-2 md:gap-3">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name, admission no..."
+                placeholder="Search students..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
             <Select value={classFilter} onValueChange={setClassFilter}>
-              <SelectTrigger className="w-40">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="All Classes" />
+              <SelectTrigger className="w-28 md:w-40">
+                <Filter className="h-4 w-4 mr-1 md:mr-2" />
+                <SelectValue placeholder="Class" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Classes</SelectItem>
@@ -189,7 +189,7 @@ export default function Students() {
               </SelectContent>
             </Select>
           </div>
-          <Button asChild className="bg-gradient-primary hover:opacity-90">
+          <Button asChild className="bg-gradient-primary hover:opacity-90 w-full md:w-auto md:self-end">
             <Link to="/admission">
               <Plus className="mr-2 h-4 w-4" />
               New Admission
@@ -197,8 +197,81 @@ export default function Students() {
           </Button>
         </div>
 
-        {/* Students Table */}
-        <div className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-3">
+          {filteredStudents.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">No students found</div>
+          ) : (
+            filteredStudents.map((student) => (
+              <div key={student.id} className="bg-card rounded-xl border border-border/50 p-4 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                      {student.photoUrl ? (
+                        <img src={student.photoUrl} alt={student.fullName} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-sm font-semibold text-primary">
+                          {student.fullName.split(' ').map((n) => n[0]).join('')}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{student.fullName}</p>
+                      <Badge variant="outline" className="font-mono text-xs mt-1">
+                        {student.admissionNumber}
+                      </Badge>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleViewDetails(student)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEditStudent(student)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handlePrintReceipt(student)}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print Receipt
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleGenerateIDCard(student)}>
+                        <IdCard className="mr-2 h-4 w-4" />
+                        ID Card
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(student)}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Class:</span> {student.className}
+                  </div>
+                  <div>
+                    <Badge variant={student.gender === 'male' ? 'secondary' : 'default'} className="text-xs">
+                      {student.gender === 'male' ? 'Male' : 'Female'}
+                    </Badge>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Guardian:</span> {student.guardianName}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">

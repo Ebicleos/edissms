@@ -94,19 +94,19 @@ export default function TeacherDashboard() {
 
   return (
     <MainLayout>
-      <div className="space-y-8">
+      <div className="space-y-4 md:space-y-8">
         {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-8 text-white">
-          <h1 className="text-3xl font-bold mb-2">
-            Welcome, {profile?.full_name || 'Teacher'}! 📚
+        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl md:rounded-2xl p-4 md:p-8 text-white">
+          <h1 className="text-xl md:text-3xl font-bold mb-1 md:mb-2">
+            Welcome, {profile?.full_name?.split(' ')[0] || 'Teacher'}! 📚
           </h1>
-          <p className="text-white/80 text-lg">
+          <p className="text-white/80 text-sm md:text-lg">
             {userClass ? `Assigned Class: ${userClass}` : 'Manage your classes and students'}
           </p>
         </div>
 
         {/* Quick Actions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
@@ -115,14 +115,14 @@ export default function TeacherDashboard() {
                 className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                 onClick={() => navigate(action.path)}
               >
-                <CardHeader className="pb-3">
+                <CardHeader className="p-3 md:pb-3">
                   <div
-                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}
+                    className={`w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-2 md:mb-3 group-hover:scale-110 transition-transform`}
                   >
-                    <Icon className="h-6 w-6 text-white" />
+                    <Icon className="h-5 w-5 md:h-6 md:w-6 text-white" />
                   </div>
-                  <CardTitle className="text-lg">{action.title}</CardTitle>
-                  <CardDescription>{action.description}</CardDescription>
+                  <CardTitle className="text-sm md:text-lg">{action.title}</CardTitle>
+                  <CardDescription className="text-xs md:text-sm hidden md:block">{action.description}</CardDescription>
                 </CardHeader>
               </Card>
             );
@@ -130,38 +130,38 @@ export default function TeacherDashboard() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-3 md:gap-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">My Classes</CardTitle>
+            <CardHeader className="p-3 md:p-6 pb-2 md:pb-3">
+              <CardTitle className="text-sm md:text-lg">My Classes</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-primary">
+            <CardContent className="p-3 md:p-6 pt-0">
+              <p className="text-2xl md:text-3xl font-bold text-primary">
                 {stats.isLoading ? '...' : stats.classCount}
               </p>
-              <p className="text-muted-foreground">Assigned classes</p>
+              <p className="text-xs md:text-sm text-muted-foreground">Assigned</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Students</CardTitle>
+            <CardHeader className="p-3 md:p-6 pb-2 md:pb-3">
+              <CardTitle className="text-sm md:text-lg">Students</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-blue-600">
+            <CardContent className="p-3 md:p-6 pt-0">
+              <p className="text-2xl md:text-3xl font-bold text-blue-600">
                 {stats.isLoading ? '...' : stats.studentCount}
               </p>
-              <p className="text-muted-foreground">In your classes</p>
+              <p className="text-xs md:text-sm text-muted-foreground">In classes</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Active Exams</CardTitle>
+            <CardHeader className="p-3 md:p-6 pb-2 md:pb-3">
+              <CardTitle className="text-sm md:text-lg">Exams</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-green-600">
+            <CardContent className="p-3 md:p-6 pt-0">
+              <p className="text-2xl md:text-3xl font-bold text-green-600">
                 {stats.isLoading ? '...' : stats.examCount}
               </p>
-              <p className="text-muted-foreground">Published exams</p>
+              <p className="text-xs md:text-sm text-muted-foreground">Published</p>
             </CardContent>
           </Card>
         </div>

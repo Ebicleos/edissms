@@ -170,19 +170,19 @@ export default function StudentDashboard() {
 
   return (
     <MainLayout>
-      <div className="space-y-8">
+      <div className="space-y-4 md:space-y-8">
         {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-primary to-primary/80 rounded-2xl p-8 text-primary-foreground">
-          <h1 className="text-3xl font-bold mb-2">
-            Welcome back, {profile?.full_name || 'Student'}! 👋
+        <div className="bg-gradient-to-r from-primary to-primary/80 rounded-xl md:rounded-2xl p-4 md:p-8 text-primary-foreground">
+          <h1 className="text-xl md:text-3xl font-bold mb-1 md:mb-2">
+            Welcome back, {profile?.full_name?.split(' ')[0] || 'Student'}! 👋
           </h1>
-          <p className="text-primary-foreground/80 text-lg">
+          <p className="text-primary-foreground/80 text-sm md:text-lg">
             {userClass ? `Class: ${userClass}` : 'Ready to learn something new today?'}
           </p>
         </div>
 
         {/* Quick Actions Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+        <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-2 md:gap-4">
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
@@ -191,13 +191,13 @@ export default function StudentDashboard() {
                 className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                 onClick={() => navigate(action.path)}
               >
-                <CardHeader className="pb-2 pt-4 px-3">
+                <CardHeader className="p-2 md:pb-2 md:pt-4 md:px-3">
                   <div
-                    className={`w-10 h-10 rounded-lg bg-gradient-to-br ${action.color} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform`}
+                    className={`w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br ${action.color} flex items-center justify-center mb-1 md:mb-2 group-hover:scale-110 transition-transform mx-auto md:mx-0`}
                   >
-                    <Icon className="h-5 w-5 text-white" />
+                    <Icon className="h-4 w-4 md:h-5 md:w-5 text-white" />
                   </div>
-                  <CardTitle className="text-sm">{action.title}</CardTitle>
+                  <CardTitle className="text-[10px] md:text-sm text-center md:text-left">{action.title}</CardTitle>
                 </CardHeader>
               </Card>
             );
@@ -205,11 +205,11 @@ export default function StudentDashboard() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex justify-center py-8 md:py-12">
+            <Loader2 className="h-6 w-6 md:h-8 md:w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Upcoming Exams */}
             <Card>
               <CardHeader>
