@@ -83,6 +83,10 @@ const menuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/student', roles: ['student'] },
   { icon: PenTool, label: 'CBT Portal', path: '/cbt', roles: ['student'] },
   { icon: Trophy, label: 'My Results', path: '/student/results', roles: ['student'] },
+  { icon: Megaphone, label: 'Announcements', path: '/student/announcements', roles: ['student'] },
+  { icon: CalendarDays, label: 'Events', path: '/student/events', roles: ['student'] },
+  { icon: Calendar, label: 'My Attendance', path: '/student/attendance', roles: ['student'] },
+  { icon: FileText, label: 'Assignments', path: '/student/assignments', roles: ['student'] },
   { icon: IdCard, label: 'My ID Card', path: '/student/id-card', roles: ['student'] },
   { icon: Wallet, label: 'School Fees', path: '/student/fees', roles: ['student'] },
 ];

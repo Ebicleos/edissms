@@ -147,15 +147,6 @@ export default function Messages() {
     } finally {
       setIsLoading(false);
     }
-
-    toast.success(`${selectedType.toUpperCase()} sent successfully!`, {
-      description: `Message sent to ${recipientType === 'class' ? selectedClass : recipientType}`,
-    });
-
-    // Reset form
-    setSubject('');
-    setMessage('');
-    fetchMessages();
   };
 
   const getRecipientLabel = (type: string, classId: string | null) => {

@@ -10,14 +10,22 @@ import { Badge } from '@/components/ui/badge';
 import { Save, Loader2, BookOpen, Users, Calculator } from 'lucide-react';
 import { useGradeEntry } from '@/hooks/useGradeEntry';
 import { CLASS_LIST_DETAILED, ACADEMIC_YEARS } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const TERMS = ['First Term', 'Second Term', 'Third Term'];
 
+interface TeacherClass {
+  class_id: string;
+}
+
 export default function GradeEntry() {
+  const { user, role } = useAuth();
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedTerm, setSelectedTerm] = useState('First Term');
   const [selectedYear, setSelectedYear] = useState(ACADEMIC_YEARS[1]);
+  const [teacherClasses, setTeacherClasses] = useState<TeacherClass[]>([]);
 
   const {
     subjects,
@@ -29,6 +37,24 @@ export default function GradeEntry() {
     updateStudentScore,
     saveGrades,
   } = useGradeEntry();
+
+  // Fetch teacher's assigned classes
+  useEffect(() => {
+    const fetchTeacherClasses = async () => {
+      if (!user || role !== 'teacher') return;
+      
+      const { data, error } = await supabase
+        .from('teacher_classes')
+        .select('class_id')
+        .eq('teacher_id', user.id);
+      
+      if (!error && data) {
+        setTeacherClasses(data);
+      }
+    };
+    
+    fetchTeacherClasses();
+  }, [user, role]);
 
   useEffect(() => {
     if (selectedClass) {
@@ -111,7 +137,12 @@ export default function GradeEntry() {
                     <SelectValue placeholder="Select class" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CLASS_LIST_DETAILED.map((cls) => (
+                    {(role === 'teacher' && teacherClasses.length > 0
+                      ? CLASS_LIST_DETAILED.filter(cls => 
+                          teacherClasses.some(tc => tc.class_id === cls.id)
+                        )
+                      : CLASS_LIST_DETAILED
+                    ).map((cls) => (
                       <SelectItem key={cls.id} value={cls.id}>
                         {cls.name}
                       </SelectItem>
