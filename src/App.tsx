@@ -6,11 +6,15 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 // Auth
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/auth/ResetPassword";
 import SchoolRegistration from "./pages/auth/SchoolRegistration";
+
+// PWA
+import Install from "./pages/Install";
 
 // Super Admin pages
 import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
@@ -79,6 +83,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/auth/register-school" element={<SchoolRegistration />} />
+            <Route path="/install" element={<Install />} />
 
             {/* Super Admin routes */}
             <Route path="/superadmin" element={
@@ -305,6 +310,7 @@ const App = () => (
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <InstallPrompt />
           </ViewModeProvider>
         </AuthProvider>
       </BrowserRouter>
