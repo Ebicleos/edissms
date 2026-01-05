@@ -407,13 +407,13 @@ export default function Auth() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-              <School className="h-7 w-7 text-primary-foreground" />
+          <div className="flex items-center justify-center gap-2 md:gap-3 mb-6 md:mb-8">
+            <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-primary">
+              <School className="h-5 w-5 md:h-7 md:w-7 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-bold text-2xl">EduManage</h1>
-              <p className="text-sm text-muted-foreground">Password Recovery</p>
+              <h1 className="font-bold text-xl md:text-2xl">EduManage</h1>
+              <p className="text-xs md:text-sm text-muted-foreground">Password Recovery</p>
             </div>
           </div>
 
@@ -488,51 +488,51 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-3 md:p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-            <School className="h-7 w-7 text-primary-foreground" />
+        <div className="flex items-center justify-center gap-2 md:gap-3 mb-4 md:mb-8">
+          <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-primary">
+            <School className="h-5 w-5 md:h-7 md:w-7 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="font-bold text-2xl">EduManage</h1>
-            <p className="text-sm text-muted-foreground">School Management System</p>
+            <h1 className="font-bold text-xl md:text-2xl">EduManage</h1>
+            <p className="text-xs md:text-sm text-muted-foreground">School Management System</p>
           </div>
         </div>
 
         {/* Role Selection */}
-        <div className="flex justify-center gap-2 mb-6">
+        <div className="flex justify-center gap-2 mb-4 md:mb-6">
           {(['admin', 'teacher', 'student'] as AppRole[]).map((r) => {
             const Icon = roleIcons[r];
             return (
               <button
                 key={r}
                 onClick={() => setSelectedRole(r)}
-                className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all ${
+                className={`flex flex-col items-center gap-1 p-2 md:p-3 rounded-lg border-2 transition-all ${
                   selectedRole === r
                     ? 'border-primary bg-primary/10'
                     : 'border-border hover:border-primary/50'
                 }`}
               >
-                <div className={`p-2 rounded-lg bg-gradient-to-br ${roleColors[r]}`}>
-                  <Icon className="h-5 w-5 text-white" />
+                <div className={`p-1.5 md:p-2 rounded-lg bg-gradient-to-br ${roleColors[r]}`}>
+                  <Icon className="h-4 w-4 md:h-5 md:w-5 text-white" />
                 </div>
-                <span className="text-xs font-medium capitalize">{r}</span>
+                <span className="text-[10px] md:text-xs font-medium capitalize">{r}</span>
               </button>
             );
           })}
         </div>
 
         <Card className="shadow-xl">
-          <CardHeader className="text-center pb-4">
-            <div className={`mx-auto w-16 h-16 rounded-full bg-gradient-to-br ${roleColors[selectedRole]} flex items-center justify-center mb-4`}>
-              <RoleIcon className="h-8 w-8 text-white" />
+          <CardHeader className="text-center pb-2 md:pb-4 px-4 md:px-6">
+            <div className={`mx-auto w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br ${roleColors[selectedRole]} flex items-center justify-center mb-3 md:mb-4`}>
+              <RoleIcon className="h-6 w-6 md:h-8 md:w-8 text-white" />
             </div>
-            <CardTitle className="capitalize">{selectedRole} Portal</CardTitle>
-            <CardDescription>{roleDescriptions[selectedRole]}</CardDescription>
+            <CardTitle className="capitalize text-lg md:text-xl">{selectedRole} Portal</CardTitle>
+            <CardDescription className="text-xs md:text-sm">{roleDescriptions[selectedRole]}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 md:px-6">
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Login</TabsTrigger>

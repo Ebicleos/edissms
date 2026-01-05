@@ -11,9 +11,9 @@ export default function Dashboard() {
 
   return (
     <MainLayout title="Dashboard" subtitle="Welcome back! Here's your school overview.">
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-4 md:space-y-6 animate-fade-in">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           <StatCard
             title="Total Students"
             value={stats.isLoading ? '...' : stats.totalStudents.toLocaleString()}
