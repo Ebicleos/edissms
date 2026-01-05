@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { escapeHtml } from '@/utils/sanitize';
 
 interface ReceiptData {
   type: 'fee' | 'subscription';
@@ -28,10 +29,17 @@ export const generatePaymentReceipt = (data: ReceiptData) => {
     }).format(amount);
   };
 
+  // Generate initials safely from escaped school name
+  const schoolInitials = data.schoolName
+    .split(' ')
+    .map(w => w[0])
+    .join('')
+    .slice(0, 2);
+
   const logoHtml = data.logoUrl 
-    ? `<img src="${data.logoUrl}" alt="School Logo" style="height: 80px; width: auto; object-fit: contain;" />`
+    ? `<img src="${escapeHtml(data.logoUrl)}" alt="School Logo" style="height: 80px; width: auto; object-fit: contain;" />`
     : `<div style="height: 80px; width: 80px; background: linear-gradient(135deg, #7c3aed, #a78bfa); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold;">
-        ${data.schoolName.split(' ').map(w => w[0]).join('').slice(0, 2)}
+        ${escapeHtml(schoolInitials)}
       </div>`;
 
   const receiptContent = `
@@ -69,9 +77,9 @@ export const generatePaymentReceipt = (data: ReceiptData) => {
       <div class="receipt">
         <div class="header">
           <div class="logo">${logoHtml}</div>
-          <div class="school-name">${data.schoolName}</div>
-          ${data.schoolAddress ? `<div class="school-address">${data.schoolAddress}</div>` : ''}
-          ${data.schoolPhone || data.schoolEmail ? `<div class="school-address">${[data.schoolPhone, data.schoolEmail].filter(Boolean).join(' | ')}</div>` : ''}
+          <div class="school-name">${escapeHtml(data.schoolName)}</div>
+          ${data.schoolAddress ? `<div class="school-address">${escapeHtml(data.schoolAddress)}</div>` : ''}
+          ${data.schoolPhone || data.schoolEmail ? `<div class="school-address">${[data.schoolPhone, data.schoolEmail].filter(Boolean).map(v => escapeHtml(v)).join(' | ')}</div>` : ''}
           <div class="receipt-title">Payment Receipt</div>
         </div>
         <div class="body">
@@ -88,37 +96,37 @@ export const generatePaymentReceipt = (data: ReceiptData) => {
             ${data.type === 'fee' ? `
               <div class="detail-row">
                 <span class="detail-label">Student Name</span>
-                <span class="detail-value">${data.studentName || '-'}</span>
+                <span class="detail-value">${escapeHtml(data.studentName) || '-'}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Admission No.</span>
-                <span class="detail-value">${data.admissionNumber || '-'}</span>
+                <span class="detail-value">${escapeHtml(data.admissionNumber) || '-'}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Class</span>
-                <span class="detail-value">${data.className || '-'}</span>
+                <span class="detail-value">${escapeHtml(data.className) || '-'}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Term</span>
-                <span class="detail-value">${data.term || '-'}</span>
+                <span class="detail-value">${escapeHtml(data.term) || '-'}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Academic Year</span>
-                <span class="detail-value">${data.academicYear || '-'}</span>
+                <span class="detail-value">${escapeHtml(data.academicYear) || '-'}</span>
               </div>
             ` : `
               <div class="detail-row">
                 <span class="detail-label">Plan Type</span>
-                <span class="detail-value" style="text-transform: capitalize;">${data.planType || '-'}</span>
+                <span class="detail-value" style="text-transform: capitalize;">${escapeHtml(data.planType) || '-'}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Description</span>
-                <span class="detail-value">${data.description || 'Subscription Payment'}</span>
+                <span class="detail-value">${escapeHtml(data.description) || 'Subscription Payment'}</span>
               </div>
             `}
             <div class="detail-row">
               <span class="detail-label">Reference</span>
-              <span class="detail-value" style="font-family: monospace; font-size: 12px;">${data.reference}</span>
+              <span class="detail-value" style="font-family: monospace; font-size: 12px;">${escapeHtml(data.reference)}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Payment Date</span>
