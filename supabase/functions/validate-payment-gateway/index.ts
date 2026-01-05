@@ -97,17 +97,17 @@ serve(async (req) => {
       );
     }
 
-    // Get secret key - use provided or fetch from database
+    // Get secret key - use provided or fetch from secure table
     let effectiveSecretKey = secret_key;
     
     if (!effectiveSecretKey) {
-      const { data: school } = await supabase
-        .from('schools')
-        .select('payment_gateway_secret_key')
-        .eq('id', school_id)
-        .single();
+      // Get secret from secure table using service role
+      const { data: secretData } = await supabase
+        .rpc('get_school_payment_secret', { p_school_id: school_id });
 
-      effectiveSecretKey = school?.payment_gateway_secret_key;
+      if (secretData && secretData.length > 0) {
+        effectiveSecretKey = secretData[0].secret_key;
+      }
     }
 
     if (!effectiveSecretKey) {

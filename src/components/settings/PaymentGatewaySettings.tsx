@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Save, Loader2, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { CreditCard, Save, Loader2, CheckCircle2, XCircle, AlertTriangle, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,6 +43,7 @@ export function PaymentGatewaySettings({ schoolId }: PaymentGatewaySettingsProps
   const [webhookSecret, setWebhookSecret] = useState('');
   const [gatewayEnabled, setGatewayEnabled] = useState(false);
   const [hasExistingKeys, setHasExistingKeys] = useState(false);
+  const [keyLastFour, setKeyLastFour] = useState('');
 
   const effectiveSchoolId = schoolId || profile?.school_id;
 
@@ -63,22 +64,36 @@ export function PaymentGatewaySettings({ schoolId }: PaymentGatewaySettingsProps
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch non-secret data from schools table
+      const { data: schoolData, error: schoolError } = await supabase
         .from('schools')
-        .select('payment_gateway_provider, payment_gateway_public_key, payment_gateway_secret_key, payment_gateway_webhook_secret, payment_gateway_enabled')
+        .select('payment_gateway_provider, payment_gateway_public_key, payment_gateway_enabled')
         .eq('id', effectiveSchoolId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (schoolError) throw schoolError;
 
-      if (data) {
-        setGatewayProvider(data.payment_gateway_provider || 'paystack');
-        setPublicKey(data.payment_gateway_public_key || '');
-        setSecretKey(''); // Never prefill secret key for security
-        setWebhookSecret(''); // Never prefill webhook secret
-        setGatewayEnabled(data.payment_gateway_enabled || false);
-        setHasExistingKeys(!!data.payment_gateway_secret_key);
+      if (schoolData) {
+        setGatewayProvider(schoolData.payment_gateway_provider || 'paystack');
+        setPublicKey(schoolData.payment_gateway_public_key || '');
+        setGatewayEnabled(schoolData.payment_gateway_enabled || false);
       }
+
+      // Fetch masked secret info from secure table (only last 4 chars visible)
+      const { data: secretData, error: secretError } = await supabase
+        .from('school_payment_secrets')
+        .select('key_last_four, webhook_last_four')
+        .eq('school_id', effectiveSchoolId)
+        .maybeSingle();
+
+      if (!secretError && secretData) {
+        setHasExistingKeys(!!secretData.key_last_four);
+        setKeyLastFour(secretData.key_last_four || '');
+      }
+
+      // Never prefill secret keys for security
+      setSecretKey('');
+      setWebhookSecret('');
     } catch (error) {
       console.error('Error fetching gateway settings:', error);
       toast.error('Failed to load payment gateway settings');
@@ -105,29 +120,70 @@ export function PaymentGatewaySettings({ schoolId }: PaymentGatewaySettingsProps
 
     setIsSaving(true);
     try {
-      const updateData: Record<string, unknown> = {
-        payment_gateway_provider: gatewayProvider,
-        payment_gateway_public_key: publicKey,
-        payment_gateway_enabled: gatewayEnabled,
-      };
-
-      // Only update secret keys if new values are provided
-      if (secretKey) {
-        updateData.payment_gateway_secret_key = secretKey;
-      }
-      if (webhookSecret) {
-        updateData.payment_gateway_webhook_secret = webhookSecret;
-      }
-
-      const { error } = await supabase
+      // Update non-secret data in schools table
+      const { error: schoolError } = await supabase
         .from('schools')
-        .update(updateData)
+        .update({
+          payment_gateway_provider: gatewayProvider,
+          payment_gateway_public_key: publicKey,
+          payment_gateway_enabled: gatewayEnabled,
+        })
         .eq('id', effectiveSchoolId);
 
-      if (error) throw error;
+      if (schoolError) throw schoolError;
+
+      // Only update secrets if new values are provided
+      if (secretKey || webhookSecret) {
+        // Check if record exists first
+        const { data: existingSecret } = await supabase
+          .from('school_payment_secrets')
+          .select('id')
+          .eq('school_id', effectiveSchoolId)
+          .maybeSingle();
+
+        if (existingSecret) {
+          // Update existing record
+          const updateData: { secret_key_encrypted?: string; key_last_four?: string; webhook_secret_encrypted?: string; webhook_last_four?: string } = {};
+          
+          if (secretKey) {
+            updateData.secret_key_encrypted = secretKey;
+            updateData.key_last_four = secretKey.slice(-4);
+          }
+          if (webhookSecret) {
+            updateData.webhook_secret_encrypted = webhookSecret;
+            updateData.webhook_last_four = webhookSecret.slice(-4);
+          }
+
+          const { error: updateSecretError } = await supabase
+            .from('school_payment_secrets')
+            .update(updateData)
+            .eq('school_id', effectiveSchoolId);
+
+          if (updateSecretError) throw updateSecretError;
+        } else {
+          // Insert new record
+          const { error: insertSecretError } = await supabase
+            .from('school_payment_secrets')
+            .insert({
+              school_id: effectiveSchoolId,
+              secret_key_encrypted: secretKey || null,
+              key_last_four: secretKey ? secretKey.slice(-4) : null,
+              webhook_secret_encrypted: webhookSecret || null,
+              webhook_last_four: webhookSecret ? webhookSecret.slice(-4) : null,
+            });
+
+          if (insertSecretError) throw insertSecretError;
+        }
+        
+        if (secretKey) {
+          setKeyLastFour(secretKey.slice(-4));
+        }
+      }
 
       setHasExistingKeys(true);
-      toast.success('Payment gateway settings saved successfully!');
+      setSecretKey(''); // Clear after saving
+      setWebhookSecret(''); // Clear after saving
+      toast.success('Payment gateway settings saved securely!');
     } catch (error) {
       console.error('Error saving gateway settings:', error);
       toast.error('Failed to save payment gateway settings');
@@ -214,9 +270,9 @@ export function PaymentGatewaySettings({ schoolId }: PaymentGatewaySettingsProps
       </CardHeader>
       <CardContent className="space-y-6">
         <Alert>
-          <AlertTriangle className="h-4 w-4" />
+          <Shield className="h-4 w-4" />
           <AlertDescription>
-            Students will use your payment gateway to pay fees. Keep your API keys secure and never share them.
+            Your API keys are stored securely and encrypted. Secret keys are never displayed after saving.
           </AlertDescription>
         </Alert>
 
@@ -264,16 +320,16 @@ export function PaymentGatewaySettings({ schoolId }: PaymentGatewaySettingsProps
             </div>
             <div>
               <Label htmlFor="secretKey">
-                Secret Key {hasExistingKeys && <span className="text-muted-foreground">(leave blank to keep current)</span>}
+                Secret Key {hasExistingKeys && <span className="text-muted-foreground">(stored: ****{keyLastFour})</span>}
               </Label>
               <PasswordInput
                 id="secretKey"
                 value={secretKey}
                 onChange={(e) => setSecretKey(e.target.value)}
-                placeholder={hasExistingKeys ? '••••••••••••••••' : 'sk_live_xxx or sk_test_xxx'}
+                placeholder={hasExistingKeys ? 'Enter new key to update' : 'sk_live_xxx or sk_test_xxx'}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Starts with sk_live_ (production) or sk_test_ (testing)
+                {hasExistingKeys ? 'Leave blank to keep current key' : 'Starts with sk_live_ or sk_test_'}
               </p>
             </div>
           </div>

@@ -35,17 +35,24 @@ serve(async (req) => {
     
     let paystackSecretKey: string | undefined;
 
-    // For fee payments, try to use school's key first
+    // For fee payments, try to use school's key first from secure table
     if (paymentType === 'fee_payment' && schoolId) {
+      // Check if school has payment gateway enabled
       const { data: schoolData } = await supabase
         .from('schools')
-        .select('payment_gateway_secret_key, payment_gateway_enabled')
+        .select('payment_gateway_enabled')
         .eq('id', schoolId)
         .single();
 
-      if (schoolData?.payment_gateway_enabled && schoolData?.payment_gateway_secret_key) {
-        paystackSecretKey = schoolData.payment_gateway_secret_key;
-        console.log('Using school-specific key for webhook verification');
+      if (schoolData?.payment_gateway_enabled) {
+        // Get secret from secure table using service role
+        const { data: secretData } = await supabase
+          .rpc('get_school_payment_secret', { p_school_id: schoolId });
+
+        if (secretData && secretData.length > 0 && secretData[0].secret_key) {
+          paystackSecretKey = secretData[0].secret_key;
+          console.log('Using school-specific key for webhook verification');
+        }
       }
     }
 
