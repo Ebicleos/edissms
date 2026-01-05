@@ -49,11 +49,17 @@ export function PaymentGatewaySettings({ schoolId }: PaymentGatewaySettingsProps
   useEffect(() => {
     if (effectiveSchoolId) {
       fetchGatewaySettings();
+    } else {
+      // Stop loading if no school ID is available
+      setIsLoading(false);
     }
   }, [effectiveSchoolId]);
 
   const fetchGatewaySettings = async () => {
-    if (!effectiveSchoolId) return;
+    if (!effectiveSchoolId) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -61,7 +67,7 @@ export function PaymentGatewaySettings({ schoolId }: PaymentGatewaySettingsProps
         .from('schools')
         .select('payment_gateway_provider, payment_gateway_public_key, payment_gateway_secret_key, payment_gateway_webhook_secret, payment_gateway_enabled')
         .eq('id', effectiveSchoolId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -172,6 +178,17 @@ export function PaymentGatewaySettings({ schoolId }: PaymentGatewaySettingsProps
       <Card>
         <CardContent className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!effectiveSchoolId) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <AlertTriangle className="h-8 w-8 text-warning mb-4" />
+          <p className="text-muted-foreground">School not found. Please register your school first.</p>
         </CardContent>
       </Card>
     );

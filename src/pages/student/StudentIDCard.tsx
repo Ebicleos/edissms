@@ -35,36 +35,72 @@ export default function StudentIDCard() {
     }
 
     try {
-      // Get admission number from student_classes for current user
+      let admissionNumber = '';
+      let className = 'N/A';
+      let studentData: { full_name: string; admission_number: string; photo_url: string | null; class_id: string } | null = null;
+
+      // First try to get from student_classes
       const { data: studentClass } = await supabase
         .from('student_classes')
         .select('admission_number, class_id')
         .eq('student_id', user.id)
         .maybeSingle();
 
-      if (!studentClass?.admission_number) {
-        setIsLoading(false);
-        return;
+      if (studentClass?.admission_number) {
+        admissionNumber = studentClass.admission_number;
+        className = studentClass.class_id;
+
+        // Fetch student data using admission number
+        const { data } = await supabase
+          .from('students')
+          .select('full_name, admission_number, photo_url, class_id')
+          .eq('admission_number', admissionNumber)
+          .maybeSingle();
+        
+        studentData = data;
       }
 
-      // Fetch student data from students table using admission number
-      const { data: studentData } = await supabase
-        .from('students')
-        .select('full_name, admission_number, photo_url, class_id')
-        .eq('admission_number', studentClass.admission_number)
-        .maybeSingle();
+      // Fallback: Try to find student directly by matching user profile
+      if (!studentData) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
 
-      // Fetch class name
-      const { data: classData } = await supabase
-        .from('classes')
-        .select('name')
-        .eq('id', studentClass.class_id)
-        .maybeSingle();
+        if (profile?.full_name) {
+          // Try to find student by name
+          const { data } = await supabase
+            .from('students')
+            .select('full_name, admission_number, photo_url, class_id')
+            .ilike('full_name', profile.full_name)
+            .maybeSingle();
+          
+          studentData = data;
+          if (data) {
+            admissionNumber = data.admission_number;
+            className = data.class_id;
+          }
+        }
+      }
+
+      // Fetch class name if we have a class_id
+      if (className && className !== 'N/A') {
+        const { data: classData } = await supabase
+          .from('classes')
+          .select('name')
+          .eq('id', className)
+          .maybeSingle();
+        
+        if (classData?.name) {
+          className = classData.name;
+        }
+      }
 
       const info: StudentInfo = {
         fullName: studentData?.full_name || 'Student',
-        admissionNumber: studentData?.admission_number || studentClass.admission_number,
-        className: classData?.name || 'N/A',
+        admissionNumber: studentData?.admission_number || admissionNumber || 'N/A',
+        className: className,
         photoUrl: studentData?.photo_url || null,
       };
       

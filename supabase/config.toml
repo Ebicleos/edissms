@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.validate-payment-gateway]
 verify_jwt = true
+
+[functions.send-whatsapp]
+verify_jwt = true

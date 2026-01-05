@@ -56,6 +56,7 @@ export default function Auth() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [adminExists, setAdminExists] = useState(false);
+  const [resetLimitReached, setResetLimitReached] = useState(false);
   
   // Student signup fields
   const [studentAdmissionNumber, setStudentAdmissionNumber] = useState('');
@@ -149,6 +150,40 @@ export default function Auth() {
       });
       return;
     }
+
+    // Check user role and reset attempts for teachers/students (limit 3 per 24 hours)
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', existingProfile.id)
+      .maybeSingle();
+
+    if (userRole?.role === 'teacher' || userRole?.role === 'student') {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      
+      const { count, error: countError } = await supabase
+        .from('password_reset_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('email', forgotPasswordEmail)
+        .gte('requested_at', twentyFourHoursAgo);
+
+      if (!countError && count !== null && count >= 3) {
+        setIsLoading(false);
+        setResetLimitReached(true);
+        toast.error('Reset limit reached', {
+          description: 'You have exceeded the maximum reset attempts. Please contact your administrator.',
+        });
+        return;
+      }
+
+      // Log the reset request
+      await supabase.from('password_reset_requests').insert({
+        user_id: existingProfile.id,
+        email: forgotPasswordEmail,
+        role: userRole.role,
+        status: 'pending',
+      });
+    }
     
     const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
       redirectTo: `${window.location.origin}/auth/reset-password`,
@@ -166,6 +201,14 @@ export default function Auth() {
     });
     setShowForgotPassword(false);
     setForgotPasswordEmail('');
+    setResetLimitReached(false);
+  };
+
+  const handleContactAdmin = () => {
+    toast.info('Contact Administrator', {
+      description: 'Please visit the school administration office or call the school helpline for password reset assistance.',
+      duration: 10000,
+    });
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -181,18 +224,37 @@ export default function Auth() {
     
     let emailToUse = loginIdentifier;
     
-    // Check if it's an admission number (for students)
+    // Check if it's an admission number or name (for students)
     if (selectedRole === 'student' && !loginIdentifier.includes('@')) {
-      // Look up the email by admission number
-      const { data: studentData, error: lookupError } = await supabase
+      let studentId: string | null = null;
+      
+      // First try to look up by admission number
+      const { data: studentClassData } = await supabase
         .from('student_classes')
         .select('student_id')
-        .eq('admission_number', loginIdentifier)
+        .eq('admission_number', loginIdentifier.trim())
         .maybeSingle();
       
-      if (lookupError || !studentData) {
+      if (studentClassData?.student_id) {
+        studentId = studentClassData.student_id;
+      } else {
+        // Try to find by name in students table
+        const { data: studentByName } = await supabase
+          .from('students')
+          .select('id')
+          .ilike('full_name', loginIdentifier.trim())
+          .maybeSingle();
+        
+        if (studentByName) {
+          studentId = studentByName.id;
+        }
+      }
+      
+      if (!studentId) {
         setIsLoading(false);
-        toast.error('Invalid admission number');
+        toast.error('Invalid admission number or name', {
+          description: 'Please enter your admission number (e.g., 0001) or your full registered name.',
+        });
         return;
       }
       
@@ -200,12 +262,12 @@ export default function Auth() {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('email')
-        .eq('id', studentData.student_id)
+        .eq('id', studentId)
         .maybeSingle();
       
       if (profileError || !profileData?.email) {
         setIsLoading(false);
-        toast.error('Could not find account for this admission number');
+        toast.error('Could not find account for this student');
         return;
       }
       
@@ -376,21 +438,44 @@ export default function Auth() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    'Send Reset Link'
-                  )}
-                </Button>
+                {resetLimitReached ? (
+                  <>
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-center">
+                      <p className="text-sm text-destructive mb-2">
+                        You have exceeded the maximum password reset attempts (3 per 24 hours).
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Please contact your school administrator for assistance.
+                      </p>
+                    </div>
+                    <Button 
+                      type="button" 
+                      className="w-full bg-gradient-primary hover:opacity-90"
+                      onClick={handleContactAdmin}
+                    >
+                      Contact Administrator
+                    </Button>
+                  </>
+                ) : (
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      'Send Reset Link'
+                    )}
+                  </Button>
+                )}
                 <Button 
                   type="button" 
                   variant="ghost" 
                   className="w-full"
-                  onClick={() => setShowForgotPassword(false)}
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setResetLimitReached(false);
+                  }}
                 >
                   Back to Login
                 </Button>
@@ -458,19 +543,19 @@ export default function Auth() {
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-identifier">
-                      {selectedRole === 'student' ? 'Email or Admission Number' : 'Email'}
+                      {selectedRole === 'student' ? 'Email, Admission Number, or Name' : 'Email'}
                     </Label>
                     <Input
                       id="login-identifier"
                       type={selectedRole === 'student' ? 'text' : 'email'}
-                      placeholder={selectedRole === 'student' ? 'Enter email or admission number' : 'Enter your email'}
+                      placeholder={selectedRole === 'student' ? 'Enter email, admission number, or name' : 'Enter your email'}
                       value={loginIdentifier}
                       onChange={(e) => setLoginIdentifier(e.target.value)}
                       required
                     />
                     {selectedRole === 'student' && (
                       <p className="text-xs text-muted-foreground">
-                        Students can login with their admission number (e.g., 0001)
+                        Students can login with their admission number (e.g., 0001) or full name
                       </p>
                     )}
                   </div>
