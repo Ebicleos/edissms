@@ -120,64 +120,29 @@ export function PaymentGatewaySettings({ schoolId }: PaymentGatewaySettingsProps
 
     setIsSaving(true);
     try {
-      // Update non-secret data in schools table
-      const { error: schoolError } = await supabase
-        .from('schools')
-        .update({
-          payment_gateway_provider: gatewayProvider,
-          payment_gateway_public_key: publicKey,
-          payment_gateway_enabled: gatewayEnabled,
-        })
-        .eq('id', effectiveSchoolId);
+      // Use Edge Function for secure server-side handling of secrets
+      const response = await supabase.functions.invoke('update-payment-secrets', {
+        body: {
+          school_id: effectiveSchoolId,
+          public_key: publicKey,
+          provider: gatewayProvider,
+          enabled: gatewayEnabled,
+          secret_key: secretKey || undefined,
+          webhook_secret: webhookSecret || undefined,
+        },
+      });
 
-      if (schoolError) throw schoolError;
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to save settings');
+      }
 
-      // Only update secrets if new values are provided
-      if (secretKey || webhookSecret) {
-        // Check if record exists first
-        const { data: existingSecret } = await supabase
-          .from('school_payment_secrets')
-          .select('id')
-          .eq('school_id', effectiveSchoolId)
-          .maybeSingle();
+      if (!response.data?.success) {
+        throw new Error(response.data?.error || 'Failed to save settings');
+      }
 
-        if (existingSecret) {
-          // Update existing record
-          const updateData: { secret_key_encrypted?: string; key_last_four?: string; webhook_secret_encrypted?: string; webhook_last_four?: string } = {};
-          
-          if (secretKey) {
-            updateData.secret_key_encrypted = secretKey;
-            updateData.key_last_four = secretKey.slice(-4);
-          }
-          if (webhookSecret) {
-            updateData.webhook_secret_encrypted = webhookSecret;
-            updateData.webhook_last_four = webhookSecret.slice(-4);
-          }
-
-          const { error: updateSecretError } = await supabase
-            .from('school_payment_secrets')
-            .update(updateData)
-            .eq('school_id', effectiveSchoolId);
-
-          if (updateSecretError) throw updateSecretError;
-        } else {
-          // Insert new record
-          const { error: insertSecretError } = await supabase
-            .from('school_payment_secrets')
-            .insert({
-              school_id: effectiveSchoolId,
-              secret_key_encrypted: secretKey || null,
-              key_last_four: secretKey ? secretKey.slice(-4) : null,
-              webhook_secret_encrypted: webhookSecret || null,
-              webhook_last_four: webhookSecret ? webhookSecret.slice(-4) : null,
-            });
-
-          if (insertSecretError) throw insertSecretError;
-        }
-        
-        if (secretKey) {
-          setKeyLastFour(secretKey.slice(-4));
-        }
+      // Update local state
+      if (response.data?.key_last_four) {
+        setKeyLastFour(response.data.key_last_four);
       }
 
       setHasExistingKeys(true);
@@ -186,7 +151,7 @@ export function PaymentGatewaySettings({ schoolId }: PaymentGatewaySettingsProps
       toast.success('Payment gateway settings saved securely!');
     } catch (error) {
       console.error('Error saving gateway settings:', error);
-      toast.error('Failed to save payment gateway settings');
+      toast.error(error instanceof Error ? error.message : 'Failed to save payment gateway settings');
     } finally {
       setIsSaving(false);
     }
