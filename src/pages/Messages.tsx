@@ -31,8 +31,12 @@ interface Message {
   class_id: string | null;
 }
 
+interface TeacherClass {
+  class_id: string;
+}
+
 export default function Messages() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const [selectedType, setSelectedType] = useState('email');
   const [recipientType, setRecipientType] = useState('all');
   const [selectedClass, setSelectedClass] = useState('');
@@ -40,10 +44,14 @@ export default function Messages() {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messageHistory, setMessageHistory] = useState<Message[]>([]);
+  const [teacherClasses, setTeacherClasses] = useState<string[]>([]);
 
   useEffect(() => {
     fetchMessages();
-  }, []);
+    if (role === 'teacher') {
+      fetchTeacherClasses();
+    }
+  }, [role]);
 
   const fetchMessages = async () => {
     const { data, error } = await supabase
@@ -57,14 +65,27 @@ export default function Messages() {
     }
   };
 
+  const fetchTeacherClasses = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('teacher_classes')
+      .select('class_id')
+      .eq('teacher_id', user.id);
+
+    if (!error && data) {
+      setTeacherClasses(data.map(tc => tc.class_id));
+    }
+  };
+
   const handleSendMessage = async () => {
     // Validate input using schema
     const validation = validateInput(messageSchema, {
       content: message,
       subject: selectedType === 'email' ? subject : undefined,
-      recipients_type: recipientType,
+      recipients_type: recipientType === 'my_students' ? 'class' : recipientType,
       type: selectedType as 'sms' | 'email' | 'both',
-      class_id: recipientType === 'class' ? selectedClass : undefined,
+      class_id: recipientType === 'class' ? selectedClass : (recipientType === 'my_students' && teacherClasses.length > 0 ? teacherClasses[0] : undefined),
     });
 
     if (validation.success === false) {
@@ -81,21 +102,50 @@ export default function Messages() {
 
     setIsLoading(true);
 
-    const { error } = await supabase.from('messages').insert({
-      type: validatedData.type,
-      subject: validatedData.subject || null,
-      content: validatedData.content,
-      recipients_type: validatedData.recipients_type,
-      class_id: validatedData.class_id || null,
-      sent_by: user?.id,
-      status: 'sent',
-    });
+    try {
+      // For WhatsApp, invoke the edge function
+      if (selectedType === 'whatsapp') {
+        const { data, error: whatsappError } = await supabase.functions.invoke('send-whatsapp', {
+          body: {
+            message: validatedData.content,
+            recipient_type: validatedData.recipients_type,
+            class_id: validatedData.class_id,
+          },
+        });
 
-    setIsLoading(false);
+        if (whatsappError) throw whatsappError;
 
-    if (error) {
+        toast.success('WhatsApp message queued!', {
+          description: data?.note || `Message sent to ${recipientType === 'class' ? selectedClass : recipientType}`,
+        });
+      } else {
+        // For email/SMS, store in database
+        const { error } = await supabase.from('messages').insert({
+          type: validatedData.type,
+          subject: validatedData.subject || null,
+          content: validatedData.content,
+          recipients_type: validatedData.recipients_type,
+          class_id: validatedData.class_id || null,
+          sent_by: user?.id,
+          status: 'sent',
+        });
+
+        if (error) throw error;
+
+        toast.success(`${selectedType.toUpperCase()} sent successfully!`, {
+          description: `Message sent to ${recipientType === 'class' ? selectedClass : recipientType}`,
+        });
+      }
+
+      // Reset form
+      setSubject('');
+      setMessage('');
+      fetchMessages();
+    } catch (error) {
+      console.error('Error sending message:', error);
       toast.error('Failed to send message');
-      return;
+    } finally {
+      setIsLoading(false);
     }
 
     toast.success(`${selectedType.toUpperCase()} sent successfully!`, {
@@ -114,6 +164,7 @@ export default function Messages() {
     if (type === 'students') return 'All Students';
     if (type === 'parents') return 'All Parents';
     if (type === 'teachers') return 'All Teachers';
+    if (type === 'my_students') return 'My Class Students';
     return type;
   };
 
@@ -152,10 +203,17 @@ export default function Messages() {
                     <SelectValue placeholder="Select recipients" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Students & Parents</SelectItem>
-                    <SelectItem value="students">All Students</SelectItem>
-                    <SelectItem value="parents">All Parents</SelectItem>
-                    <SelectItem value="teachers">All Teachers</SelectItem>
+                    {role === 'admin' && (
+                      <>
+                        <SelectItem value="all">All Students & Parents</SelectItem>
+                        <SelectItem value="students">All Students</SelectItem>
+                        <SelectItem value="parents">All Parents</SelectItem>
+                        <SelectItem value="teachers">All Teachers</SelectItem>
+                      </>
+                    )}
+                    {role === 'teacher' && (
+                      <SelectItem value="my_students">My Class Students</SelectItem>
+                    )}
                     <SelectItem value="class">Specific Class</SelectItem>
                   </SelectContent>
                 </Select>
@@ -169,13 +227,18 @@ export default function Messages() {
                       <SelectValue placeholder="Choose a class" />
                     </SelectTrigger>
                     <SelectContent>
-                      {CLASS_LIST_DETAILED.map((cls) => (
+                      {(role === 'teacher' ? CLASS_LIST_DETAILED.filter(cls => teacherClasses.includes(cls.id)) : CLASS_LIST_DETAILED).map((cls) => (
                         <SelectItem key={cls.id} value={cls.id}>
                           {cls.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {role === 'teacher' && teacherClasses.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      No classes assigned. Please contact admin.
+                    </p>
+                  )}
                 </div>
               )}
 

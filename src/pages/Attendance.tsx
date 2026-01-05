@@ -54,20 +54,18 @@ export default function Attendance() {
   const fetchStudents = async () => {
     setIsLoading(true);
     try {
+      // Query students table directly instead of student_classes
       const { data, error } = await supabase
-        .from('student_classes')
-        .select(`
-          student_id,
-          admission_number,
-          profiles!inner(full_name)
-        `)
-        .eq('class_id', selectedClass);
+        .from('students')
+        .select('id, full_name, admission_number')
+        .eq('class_id', selectedClass)
+        .order('full_name');
 
       if (error) throw error;
 
       const studentRecords: StudentRecord[] = (data || []).map((s: any) => ({
-        id: s.student_id,
-        name: s.profiles?.full_name || 'Unknown',
+        id: s.id,
+        name: s.full_name || 'Unknown',
         admissionNumber: s.admission_number || 'N/A',
       }));
 

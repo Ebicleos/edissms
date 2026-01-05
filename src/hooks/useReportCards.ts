@@ -72,12 +72,28 @@ export function useReportCards() {
         ? (schoolSettings.grading_scale as unknown as GradeScale[]) 
         : DEFAULT_GRADING_SCALE;
 
-      // Fetch students in the class
-      // Fetch student class mappings
-      const { data: studentClasses, error: studentsError } = await supabase
+      // Fetch students in the class - try student_classes first, then fallback to students table
+      let { data: studentClasses, error: studentsError } = await supabase
         .from('student_classes')
         .select('student_id, admission_number, class_id')
         .eq('class_id', classId);
+
+      // If no students found in student_classes, try the students table directly
+      if (!studentClasses?.length) {
+        const { data: studentsData, error: studentsDirectError } = await supabase
+          .from('students')
+          .select('id, admission_number, class_id')
+          .eq('class_id', classId);
+
+        if (studentsDirectError) throw studentsDirectError;
+        
+        // Map to same structure as student_classes
+        studentClasses = studentsData?.map(s => ({
+          student_id: s.id,
+          admission_number: s.admission_number,
+          class_id: s.class_id
+        })) || [];
+      }
 
       if (studentsError) throw studentsError;
       if (!studentClasses?.length) {

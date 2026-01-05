@@ -368,6 +368,7 @@ export default function Fees() {
       status: 'unpaid',
       term: validData.data.term,
       academic_year: validData.data.academic_year,
+      school_id: userProfile.school_id,
     });
 
     setIsSubmitting(false);

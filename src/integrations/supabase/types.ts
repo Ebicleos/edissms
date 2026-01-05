@@ -432,6 +432,7 @@ export type Database = {
           id: string
           installment: string | null
           last_payment_date: string | null
+          school_id: string | null
           status: string | null
           student_id: string
           term: string
@@ -446,6 +447,7 @@ export type Database = {
           id?: string
           installment?: string | null
           last_payment_date?: string | null
+          school_id?: string | null
           status?: string | null
           student_id: string
           term: string
@@ -460,11 +462,20 @@ export type Database = {
           id?: string
           installment?: string | null
           last_payment_date?: string | null
+          school_id?: string | null
           status?: string | null
           student_id?: string
           term?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fee_payments_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fee_structures: {
         Row: {
@@ -633,6 +644,45 @@ export type Database = {
           subject?: string | null
           teacher_id?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+      password_reset_requests: {
+        Row: {
+          admin_notes: string | null
+          email: string
+          id: string
+          requested_at: string
+          resolved_at: string | null
+          resolved_by: string | null
+          role: string
+          school_id: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          email: string
+          id?: string
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          role: string
+          school_id?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          email?: string
+          id?: string
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          role?: string
+          school_id?: string | null
+          status?: string
+          user_id?: string | null
         }
         Relationships: []
       }
