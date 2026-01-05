@@ -1,4 +1,5 @@
 import { SchoolSettings } from '@/hooks/useSchoolSettings';
+import { escapeHtml } from '@/utils/sanitize';
 
 interface ReceiptData {
   studentName: string;
@@ -32,7 +33,7 @@ export function printReceipt(data: ReceiptData, schoolSettings: SchoolSettings) 
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Payment Receipt - ${data.studentName}</title>
+      <title>Payment Receipt - ${escapeHtml(data.studentName)}</title>
       <style>
         * {
           margin: 0;
@@ -152,35 +153,35 @@ export function printReceipt(data: ReceiptData, schoolSettings: SchoolSettings) 
     <body>
       <div class="receipt">
         <div class="header">
-          <h1>${schoolSettings.school_name}</h1>
-          <p>${schoolSettings.motto || 'Excellence in Education'}</p>
-          ${schoolSettings.address ? `<p>${schoolSettings.address}</p>` : ''}
-          ${schoolSettings.phone ? `<p>Tel: ${schoolSettings.phone}</p>` : ''}
+          <h1>${escapeHtml(schoolSettings.school_name)}</h1>
+          <p>${escapeHtml(schoolSettings.motto) || 'Excellence in Education'}</p>
+          ${schoolSettings.address ? `<p>${escapeHtml(schoolSettings.address)}</p>` : ''}
+          ${schoolSettings.phone ? `<p>Tel: ${escapeHtml(schoolSettings.phone)}</p>` : ''}
         </div>
         
         <div class="receipt-number">
           <strong>PAYMENT RECEIPT</strong><br/>
-          Receipt No: ${receiptNumber} | Date: ${receiptDate}
+          Receipt No: ${escapeHtml(receiptNumber)} | Date: ${receiptDate}
         </div>
 
         <div class="section">
           <div class="section-title">Student Information</div>
           <div class="row">
             <span class="label">Name:</span>
-            <span class="value">${data.studentName}</span>
+            <span class="value">${escapeHtml(data.studentName)}</span>
           </div>
           <div class="row">
             <span class="label">Admission No:</span>
-            <span class="value">${data.admissionNumber}</span>
+            <span class="value">${escapeHtml(data.admissionNumber)}</span>
           </div>
           <div class="row">
             <span class="label">Class:</span>
-            <span class="value">${data.className}</span>
+            <span class="value">${escapeHtml(data.className)}</span>
           </div>
           ${data.guardianName ? `
           <div class="row">
             <span class="label">Guardian:</span>
-            <span class="value">${data.guardianName}</span>
+            <span class="value">${escapeHtml(data.guardianName)}</span>
           </div>
           ` : ''}
         </div>
@@ -189,22 +190,22 @@ export function printReceipt(data: ReceiptData, schoolSettings: SchoolSettings) 
           <div class="section-title">Payment Details</div>
           <div class="row">
             <span class="label">Academic Year:</span>
-            <span class="value">${data.academicYear}</span>
+            <span class="value">${escapeHtml(data.academicYear)}</span>
           </div>
           <div class="row">
             <span class="label">Term:</span>
-            <span class="value">${data.term}</span>
+            <span class="value">${escapeHtml(data.term)}</span>
           </div>
           ${data.paymentMethod ? `
           <div class="row">
             <span class="label">Payment Method:</span>
-            <span class="value">${data.paymentMethod}</span>
+            <span class="value">${escapeHtml(data.paymentMethod)}</span>
           </div>
           ` : ''}
           ${data.transactionRef ? `
           <div class="row">
             <span class="label">Transaction Ref:</span>
-            <span class="value">${data.transactionRef}</span>
+            <span class="value">${escapeHtml(data.transactionRef)}</span>
           </div>
           ` : ''}
         </div>
@@ -236,7 +237,7 @@ export function printReceipt(data: ReceiptData, schoolSettings: SchoolSettings) 
         <div class="footer">
           <p>Thank you for your payment!</p>
           <p>This is a computer-generated receipt.</p>
-          ${schoolSettings.email ? `<p>Email: ${schoolSettings.email}</p>` : ''}
+          ${schoolSettings.email ? `<p>Email: ${escapeHtml(schoolSettings.email)}</p>` : ''}
         </div>
       </div>
       <script>

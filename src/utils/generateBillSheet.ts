@@ -1,4 +1,5 @@
 import { SchoolSettings } from '@/hooks/useSchoolSettings';
+import { escapeHtml } from '@/utils/sanitize';
 
 interface FeeRecord {
   student_name: string;
@@ -41,7 +42,7 @@ export function generateBillSheet(
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Bill Sheet - ${schoolSettings.school_name}</title>
+      <title>Bill Sheet - ${escapeHtml(schoolSettings.school_name)}</title>
       <style>
         * {
           margin: 0;
@@ -189,8 +190,8 @@ export function generateBillSheet(
     </head>
     <body>
       <div class="header">
-        <h1>${schoolSettings.school_name}</h1>
-        <p>${schoolSettings.motto || 'Excellence in Education'}</p>
+        <h1>${escapeHtml(schoolSettings.school_name)}</h1>
+        <p>${escapeHtml(schoolSettings.motto) || 'Excellence in Education'}</p>
         <h2 style="margin-top: 10px; color: #333;">FEE COLLECTION BILL SHEET</h2>
       </div>
 
@@ -199,10 +200,10 @@ export function generateBillSheet(
           <strong>Generated:</strong> ${generatedDate} at ${generatedTime}
         </div>
         <div>
-          <strong>Academic Year:</strong> ${schoolSettings.academic_year}
+          <strong>Academic Year:</strong> ${escapeHtml(schoolSettings.academic_year)}
         </div>
         <div>
-          <strong>Term:</strong> ${schoolSettings.term}
+          <strong>Term:</strong> ${escapeHtml(schoolSettings.term)}
         </div>
         <div>
           <strong>Total Students:</strong> ${feeRecords.length}
@@ -241,14 +242,14 @@ export function generateBillSheet(
           ${feeRecords.map((record, index) => `
             <tr>
               <td>${index + 1}</td>
-              <td>${record.student_name}</td>
-              <td>${record.admission_number}</td>
-              <td>${record.class_id}</td>
+              <td>${escapeHtml(record.student_name)}</td>
+              <td>${escapeHtml(record.admission_number)}</td>
+              <td>${escapeHtml(record.class_id)}</td>
               <td>${formatCurrency(record.amount_payable)}</td>
               <td class="amount-positive">${formatCurrency(record.amount_paid)}</td>
               <td class="${record.balance > 0 ? 'amount-negative' : ''}">${formatCurrency(record.balance)}</td>
               <td>
-                <span class="status-${record.status}">${record.status.toUpperCase()}</span>
+                <span class="status-${escapeHtml(record.status)}">${escapeHtml(record.status.toUpperCase())}</span>
               </td>
             </tr>
           `).join('')}
@@ -277,8 +278,8 @@ export function generateBillSheet(
       </div>
 
       <div class="footer">
-        <p>${schoolSettings.school_name} - ${schoolSettings.address || ''}</p>
-        <p>${schoolSettings.phone ? `Tel: ${schoolSettings.phone}` : ''} ${schoolSettings.email ? `| Email: ${schoolSettings.email}` : ''}</p>
+        <p>${escapeHtml(schoolSettings.school_name)} - ${escapeHtml(schoolSettings.address) || ''}</p>
+        <p>${schoolSettings.phone ? `Tel: ${escapeHtml(schoolSettings.phone)}` : ''} ${schoolSettings.email ? `| Email: ${escapeHtml(schoolSettings.email)}` : ''}</p>
       </div>
       <script>
         window.onload = function() {
