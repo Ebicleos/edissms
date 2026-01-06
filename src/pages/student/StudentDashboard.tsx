@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, ClipboardList, Calendar, IdCard, GraduationCap, CreditCard, Megaphone, CalendarDays, Bell, Loader2 } from 'lucide-react';
+import { BookOpen, ClipboardList, Calendar, IdCard, GraduationCap, CreditCard, Megaphone, CalendarDays, Bell, Loader2, User, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Exam {
@@ -112,59 +112,59 @@ export default function StudentDashboard() {
   const quickActions = [
     {
       title: 'CBT Portal',
-      description: 'Take exams and assignments',
+      description: 'Take exams',
       icon: ClipboardList,
       path: '/cbt',
       color: 'from-blue-500 to-cyan-500',
     },
     {
       title: 'My Results',
-      description: 'View your exam results',
+      description: 'View results',
       icon: GraduationCap,
       path: '/student/results',
       color: 'from-green-500 to-emerald-500',
     },
     {
-      title: 'Online Classes',
-      description: 'Join live lessons',
-      icon: BookOpen,
-      path: '/online-classes',
+      title: 'Report Cards',
+      description: 'Download reports',
+      icon: FileText,
+      path: '/student/report-cards',
       color: 'from-purple-500 to-pink-500',
     },
     {
       title: 'School Fees',
-      description: 'Check fees & pay online',
+      description: 'Pay online',
       icon: CreditCard,
       path: '/student/fees',
       color: 'from-yellow-500 to-orange-500',
     },
     {
       title: 'ID Card',
-      description: 'View and print your ID',
+      description: 'View ID',
       icon: IdCard,
       path: '/student/id-card',
       color: 'from-red-500 to-pink-500',
     },
     {
-      title: 'Announcements',
-      description: 'School news & updates',
-      icon: Megaphone,
-      path: '/student/announcements',
+      title: 'Materials',
+      description: 'Study resources',
+      icon: BookOpen,
+      path: '/student/materials',
       color: 'from-indigo-500 to-purple-500',
     },
     {
-      title: 'Events',
-      description: 'Upcoming school events',
-      icon: CalendarDays,
-      path: '/student/events',
-      color: 'from-teal-500 to-cyan-500',
-    },
-    {
       title: 'Attendance',
-      description: 'View your attendance',
+      description: 'View records',
       icon: Calendar,
       path: '/student/attendance',
       color: 'from-amber-500 to-yellow-500',
+    },
+    {
+      title: 'My Profile',
+      description: 'Edit profile',
+      icon: User,
+      path: '/student/profile',
+      color: 'from-teal-500 to-cyan-500',
     },
   ];
 
