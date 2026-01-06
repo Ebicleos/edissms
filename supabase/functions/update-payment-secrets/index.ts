@@ -1,10 +1,32 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Dynamic CORS based on origin - prevents CSRF attacks
+const getAllowedOrigin = (requestOrigin: string | null): string => {
+  const allowedOrigins = [
+    Deno.env.get('ALLOWED_ORIGIN'),
+    'https://lovable.dev',
+  ].filter(Boolean);
+  
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+  // Allow localhost for development
+  if (requestOrigin?.includes('localhost') || requestOrigin?.includes('127.0.0.1')) {
+    return requestOrigin;
+  }
+  // Allow lovable.app subdomains (preview environments)
+  if (requestOrigin?.endsWith('.lovable.app')) {
+    return requestOrigin;
+  }
+  return allowedOrigins[0] || '';
 };
+
+const getCorsHeaders = (req: Request) => ({
+  'Access-Control-Allow-Origin': getAllowedOrigin(req.headers.get('origin')),
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Credentials': 'true',
+});
 
 interface UpdateSecretsRequest {
   school_id: string;
@@ -16,6 +38,8 @@ interface UpdateSecretsRequest {
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
