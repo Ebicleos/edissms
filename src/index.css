@@ -290,6 +290,21 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  /* Mobile card layout */
+  .mobile-card-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+  }
+
+  /* Touch-friendly button sizing */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Mobile table scroll container */
+  .mobile-table-container {
+    @apply overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0;
+  }
 }
 
 /* PWA standalone mode adjustments */

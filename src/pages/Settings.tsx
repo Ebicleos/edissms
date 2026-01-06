@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,17 +14,20 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { PasswordInput } from '@/components/ui/password-input';
-import { School, User, Lock, Bell, Shield, Save, Loader2, FileText, CreditCard } from 'lucide-react';
+import { School, User, Lock, Bell, Shield, Save, Loader2, FileText, CreditCard, Upload, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { SchoolLogoUpload } from '@/components/settings/SchoolLogoUpload';
 import { PaymentGatewaySettings } from '@/components/settings/PaymentGatewaySettings';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function Settings() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // School settings
   const [schoolName, setSchoolName] = useState('');
@@ -45,6 +48,7 @@ export default function Settings() {
   const [fullName, setFullName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPhone, setAdminPhone] = useState('');
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
 
   // Security settings
   const [currentPassword, setCurrentPassword] = useState('');
@@ -56,12 +60,14 @@ export default function Settings() {
   const [smsAlerts, setSmsAlerts] = useState(false);
   const [feeReminders, setFeeReminders] = useState(true);
   const [attendanceReports, setAttendanceReports] = useState(true);
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
 
   useEffect(() => {
     fetchSettings();
   }, [profile]);
 
   const fetchSettings = async () => {
+    if (!user) return;
     setIsLoading(true);
 
     // Fetch school settings
@@ -89,6 +95,34 @@ export default function Settings() {
     if (profile) {
       setFullName(profile.full_name || '');
       setAdminEmail(profile.email || '');
+      setProfilePhotoUrl(profile.photo_url || '');
+    }
+
+    // Fetch full profile for phone contact
+    if (user) {
+      const { data: fullProfile } = await supabase
+        .from('profiles')
+        .select('phone_contact')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (fullProfile) {
+        setAdminPhone(fullProfile.phone_contact || '');
+      }
+    }
+
+    // Fetch notification preferences
+    const { data: notifPrefs } = await supabase
+      .from('notification_preferences')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (notifPrefs) {
+      setEmailNotifications(notifPrefs.email_notifications ?? true);
+      setSmsAlerts(notifPrefs.sms_alerts ?? false);
+      setFeeReminders(notifPrefs.fee_reminders ?? true);
+      setAttendanceReports(notifPrefs.attendance_reports ?? true);
     }
 
     setIsLoading(false);
@@ -191,8 +225,82 @@ export default function Settings() {
     setConfirmPassword('');
   };
 
-  const handleSaveNotifications = () => {
+  const handleSaveNotifications = async () => {
+    if (!user) return;
+    setIsSavingNotifications(true);
+
+    const prefsData = {
+      user_id: user.id,
+      school_id: profile?.school_id || null,
+      email_notifications: emailNotifications,
+      sms_alerts: smsAlerts,
+      fee_reminders: feeReminders,
+      attendance_reports: attendanceReports,
+    };
+
+    const { error } = await supabase
+      .from('notification_preferences')
+      .upsert(prefsData, { onConflict: 'user_id' });
+
+    setIsSavingNotifications(false);
+
+    if (error) {
+      toast.error('Failed to save notification preferences');
+      return;
+    }
+
     toast.success('Notification preferences saved!');
+  };
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File size must be less than 2MB');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+    const filePath = `profiles/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('student-photos')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast.error('Failed to upload photo');
+      setIsUploadingPhoto(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('student-photos')
+      .getPublicUrl(filePath);
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ photo_url: filePath })
+      .eq('id', user.id);
+
+    if (updateError) {
+      toast.error('Failed to update profile');
+      setIsUploadingPhoto(false);
+      return;
+    }
+
+    setProfilePhotoUrl(filePath);
+    await refreshProfile();
+    toast.success('Profile photo updated!');
+    setIsUploadingPhoto(false);
   };
 
   if (isLoading) {
@@ -355,13 +463,41 @@ export default function Settings() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center gap-6">
-                  <div className="h-20 w-20 rounded-full bg-gradient-primary flex items-center justify-center">
-                    <span className="text-2xl font-bold text-primary-foreground">
-                      {fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'AD'}
-                    </span>
+                  <div className="relative">
+                    <Avatar className="h-20 w-20">
+                      {profilePhotoUrl ? (
+                        <AvatarImage 
+                          src={supabase.storage.from('student-photos').getPublicUrl(profilePhotoUrl).data.publicUrl} 
+                          alt={fullName}
+                        />
+                      ) : null}
+                      <AvatarFallback className="bg-gradient-primary text-2xl font-bold text-primary-foreground">
+                        {fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'AD'}
+                      </AvatarFallback>
+                    </Avatar>
+                    {isUploadingPhoto && (
+                      <div className="absolute inset-0 bg-background/80 rounded-full flex items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <Button variant="outline" size="sm">Change Photo</Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingPhoto}
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      Change Photo
+                    </Button>
                     <p className="text-xs text-muted-foreground mt-1">JPG, PNG. Max 2MB</p>
                   </div>
                 </div>
@@ -552,8 +688,13 @@ export default function Settings() {
                   <Button 
                     className="bg-gradient-primary hover:opacity-90"
                     onClick={handleSaveNotifications}
+                    disabled={isSavingNotifications}
                   >
-                    <Save className="mr-2 h-4 w-4" />
+                    {isSavingNotifications ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
                     Save Preferences
                   </Button>
                 </div>

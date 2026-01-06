@@ -49,6 +49,9 @@ const menuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/superadmin', roles: ['superadmin'] },
   { icon: School, label: 'Schools', path: '/superadmin/schools', roles: ['superadmin'] },
   { icon: Wallet, label: 'Subscriptions', path: '/superadmin/subscriptions', roles: ['superadmin'] },
+  { icon: Users, label: 'Platform Users', path: '/superadmin/users', roles: ['superadmin'] },
+  { icon: Settings, label: 'System Settings', path: '/superadmin/settings', roles: ['superadmin'] },
+  { icon: FileText, label: 'Audit Logs', path: '/superadmin/audit-logs', roles: ['superadmin'] },
   
   // Admin items
   { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['admin'] },
