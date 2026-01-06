@@ -4,6 +4,7 @@ import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { Download, Printer, Loader2, School, QrCode, User } from 'lucide-react';
@@ -18,6 +19,7 @@ interface StudentInfo {
 
 export default function StudentIDCard() {
   const { user } = useAuth();
+  const { studentRecord, isLoading: studentLoading } = useStudentRecord();
   const { settings: schoolSettings, isLoading: settingsLoading } = useSchoolSettings();
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,67 +27,24 @@ export default function StudentIDCard() {
   const [photoLoading, setPhotoLoading] = useState(false);
 
   useEffect(() => {
-    fetchStudentInfo();
-  }, [user]);
+    if (studentRecord) {
+      fetchStudentInfo();
+    } else if (!studentLoading) {
+      setIsLoading(false);
+    }
+  }, [studentRecord, studentLoading]);
 
   const fetchStudentInfo = async () => {
-    if (!user) {
+    if (!studentRecord) {
       setIsLoading(false);
       return;
     }
 
     try {
-      let admissionNumber = '';
-      let className = 'N/A';
-      let studentData: { full_name: string; admission_number: string; photo_url: string | null; class_id: string } | null = null;
-
-      // First try to get from student_classes
-      const { data: studentClass } = await supabase
-        .from('student_classes')
-        .select('admission_number, class_id')
-        .eq('student_id', user.id)
-        .maybeSingle();
-
-      if (studentClass?.admission_number) {
-        admissionNumber = studentClass.admission_number;
-        className = studentClass.class_id;
-
-        // Fetch student data using admission number
-        const { data } = await supabase
-          .from('students')
-          .select('full_name, admission_number, photo_url, class_id')
-          .eq('admission_number', admissionNumber)
-          .maybeSingle();
-        
-        studentData = data;
-      }
-
-      // Fallback: Try to find student directly by matching user profile
-      if (!studentData) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (profile?.full_name) {
-          // Try to find student by name
-          const { data } = await supabase
-            .from('students')
-            .select('full_name, admission_number, photo_url, class_id')
-            .ilike('full_name', profile.full_name)
-            .maybeSingle();
-          
-          studentData = data;
-          if (data) {
-            admissionNumber = data.admission_number;
-            className = data.class_id;
-          }
-        }
-      }
+      let className = studentRecord.class_id;
 
       // Fetch class name if we have a class_id
-      if (className && className !== 'N/A') {
+      if (className) {
         const { data: classData } = await supabase
           .from('classes')
           .select('name')
@@ -98,10 +57,10 @@ export default function StudentIDCard() {
       }
 
       const info: StudentInfo = {
-        fullName: studentData?.full_name || 'Student',
-        admissionNumber: studentData?.admission_number || admissionNumber || 'N/A',
-        className: className,
-        photoUrl: studentData?.photo_url || null,
+        fullName: studentRecord.full_name,
+        admissionNumber: studentRecord.admission_number,
+        className: className || 'N/A',
+        photoUrl: studentRecord.photo_url,
       };
       
       setStudentInfo(info);
@@ -111,6 +70,7 @@ export default function StudentIDCard() {
         setPhotoLoading(true);
         if (info.photoUrl.startsWith('http')) {
           setSignedPhotoUrl(info.photoUrl);
+          setPhotoLoading(false);
         } else {
           const { data } = await supabase.storage
             .from('student-photos')

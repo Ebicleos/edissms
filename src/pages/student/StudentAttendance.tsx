@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { Calendar, Check, X, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -16,24 +17,30 @@ interface AttendanceRecord {
 
 export default function StudentAttendance() {
   const { user } = useAuth();
+  const { studentId, isLoading: studentLoading } = useStudentRecord();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({ present: 0, absent: 0, late: 0, excused: 0, total: 0 });
 
   useEffect(() => {
-    if (user) {
+    if (studentId) {
       fetchAttendance();
+    } else if (!studentLoading) {
+      setIsLoading(false);
     }
-  }, [user]);
+  }, [studentId, studentLoading]);
 
   const fetchAttendance = async () => {
-    if (!user) return;
+    if (!studentId) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase
         .from('attendance')
         .select('id, date, status, remarks')
-        .eq('student_id', user.id)
+        .eq('student_id', studentId)
         .order('date', { ascending: false });
 
       if (error) throw error;

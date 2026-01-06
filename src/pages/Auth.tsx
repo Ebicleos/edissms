@@ -231,45 +231,73 @@ export default function Auth() {
       // First try to look up by admission number in students table
       const { data: studentByAdmission } = await supabase
         .from('students')
-        .select('id, email, admission_number')
+        .select('id, email, admission_number, user_id')
         .eq('admission_number', loginIdentifier.trim())
         .maybeSingle();
       
       if (studentByAdmission) {
-        // Found student by admission number, get their auth email from profiles
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('id', studentByAdmission.id)
-          .maybeSingle();
-        
-        if (profileData?.email) {
-          studentEmail = profileData.email;
-        } else if (studentByAdmission.email) {
-          // Fallback to student's email if profile doesn't exist
-          studentEmail = studentByAdmission.email;
-        }
-      } else {
-        // Try to find by name in students table (case-insensitive, partial match)
-        const { data: studentByName } = await supabase
-          .from('students')
-          .select('id, email')
-          .ilike('full_name', `%${loginIdentifier.trim()}%`)
-          .limit(1)
-          .maybeSingle();
-        
-        if (studentByName) {
-          // Get auth email from profiles
+        // Check if student has a linked user_id (account created)
+        if (studentByAdmission.user_id) {
+          // Get auth email from profiles using user_id
           const { data: profileData } = await supabase
             .from('profiles')
             .select('email')
-            .eq('id', studentByName.id)
+            .eq('id', studentByAdmission.user_id)
             .maybeSingle();
           
           if (profileData?.email) {
             studentEmail = profileData.email;
-          } else if (studentByName.email) {
-            studentEmail = studentByName.email;
+          }
+        }
+        
+        // Fallback to student's email if no user_id link or profile not found
+        if (!studentEmail && studentByAdmission.email) {
+          studentEmail = studentByAdmission.email;
+        }
+        
+        if (!studentEmail) {
+          setIsLoading(false);
+          toast.error('Account not created yet', {
+            description: 'Please sign up first using your admission number to create an account.',
+          });
+          return;
+        }
+      } else {
+        // Try to find by name in students table (case-insensitive, normalized match)
+        const normalizedInput = loginIdentifier.trim().toLowerCase().replace(/\s+/g, ' ');
+        const { data: studentByName } = await supabase
+          .from('students')
+          .select('id, email, user_id, full_name')
+          .limit(10);
+        
+        // Find match with normalized comparison
+        const matchedStudent = studentByName?.find(s => 
+          s.full_name.toLowerCase().replace(/\s+/g, ' ') === normalizedInput
+        );
+        
+        if (matchedStudent) {
+          if (matchedStudent.user_id) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('id', matchedStudent.user_id)
+              .maybeSingle();
+            
+            if (profileData?.email) {
+              studentEmail = profileData.email;
+            }
+          }
+          
+          if (!studentEmail && matchedStudent.email) {
+            studentEmail = matchedStudent.email;
+          }
+          
+          if (!studentEmail) {
+            setIsLoading(false);
+            toast.error('Account not created yet', {
+              description: 'Please sign up first using your admission number to create an account.',
+            });
+            return;
           }
         }
       }
@@ -277,7 +305,7 @@ export default function Auth() {
       if (!studentEmail) {
         setIsLoading(false);
         toast.error('Student not found', {
-          description: 'Please enter your admission number (e.g., 0001) or your full registered name.',
+          description: 'Please enter your admission number (e.g., 0001) or your exact registered full name.',
         });
         return;
       }
@@ -384,7 +412,8 @@ export default function Auth() {
       signupPassword,
       signupFullName,
       selectedRole,
-      selectedRole !== 'admin' ? selectedClass : undefined
+      selectedRole !== 'admin' ? selectedClass : undefined,
+      selectedRole === 'student' ? studentAdmissionNumber : undefined
     );
 
     if (error) {
