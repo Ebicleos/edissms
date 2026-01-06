@@ -17,7 +17,7 @@ interface AuthContextType {
   userClass: string | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName: string, role: AppRole, classId?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, role: AppRole, classId?: string, admissionNumber?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, fullName: string, role: AppRole, classId?: string) => {
+  const signUp = async (email: string, password: string, fullName: string, role: AppRole, classId?: string, admissionNumber?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { data, error } = await supabase.auth.signUp({
@@ -184,13 +184,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Add class assignment if provided
       if (classId) {
         if (role === 'student') {
-          const admissionNumber = `STU${Date.now().toString().slice(-8)}`;
+          // Link student record to auth user via user_id
+          if (admissionNumber) {
+            // Update existing student record with user_id
+            const { error: linkError } = await supabase
+              .from('students')
+              .update({ user_id: data.user.id, email })
+              .eq('admission_number', admissionNumber);
+            
+            if (linkError) {
+              console.error('Failed to link student record:', linkError);
+            }
+          }
+          
+          // Create student_classes entry
           const { error: classError } = await supabase
             .from('student_classes')
             .insert({ 
               student_id: data.user.id, 
               class_id: classId,
-              admission_number: admissionNumber
+              admission_number: admissionNumber || `STU${Date.now().toString().slice(-8)}`
             });
           if (classError) return { error: classError };
         } else if (role === 'teacher') {

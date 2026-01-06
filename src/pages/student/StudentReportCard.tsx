@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,17 +32,22 @@ const TERMS = [
 
 export default function StudentReportCard() {
   const { user, userClass } = useAuth();
+  const { studentId, isLoading: studentLoading } = useStudentRecord();
   const [isLoading, setIsLoading] = useState(true);
   const [reportCards, setReportCards] = useState<ReportCard[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>(ACADEMIC_YEARS[0]);
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchReportCards();
-  }, [user, userClass]);
+    if (studentId) {
+      fetchReportCards();
+    } else if (!studentLoading) {
+      setIsLoading(false);
+    }
+  }, [studentId, studentLoading]);
 
   const fetchReportCards = async () => {
-    if (!user || !userClass) {
+    if (!studentId) {
       setIsLoading(false);
       return;
     }
@@ -50,7 +56,7 @@ export default function StudentReportCard() {
       const { data, error } = await supabase
         .from('report_cards')
         .select('*')
-        .eq('student_id', user.id)
+        .eq('student_id', studentId)
         .order('academic_year', { ascending: false })
         .order('term', { ascending: false });
 

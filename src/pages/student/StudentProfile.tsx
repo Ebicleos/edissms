@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ interface StudentInfo {
 
 export default function StudentProfile() {
   const { user, profile } = useAuth();
+  const { studentRecord, isLoading: studentLoading } = useStudentRecord();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
@@ -33,47 +35,42 @@ export default function StudentProfile() {
   const [address, setAddress] = useState('');
 
   useEffect(() => {
-    fetchStudentInfo();
-  }, [user]);
+    if (studentRecord) {
+      fetchStudentInfo();
+    } else if (!studentLoading) {
+      setIsLoading(false);
+    }
+  }, [studentRecord, studentLoading]);
 
   const fetchStudentInfo = async () => {
-    if (!user) return;
+    if (!studentRecord) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      // Get student record
-      const { data: studentData, error } = await supabase
-        .from('students')
-        .select(`
-          id,
-          full_name,
-          admission_number,
-          email,
-          phone_contact,
-          address,
-          date_of_birth,
-          gender,
-          guardian_name,
-          class_id,
-          photo_url
-        `)
-        .eq('id', user.id)
+      // Get class name
+      const { data: classData } = await supabase
+        .from('classes')
+        .select('name')
+        .eq('id', studentRecord.class_id)
         .maybeSingle();
 
-      if (studentData) {
-        // Get class name
-        const { data: classData } = await supabase
-          .from('classes')
-          .select('name')
-          .eq('id', studentData.class_id)
-          .maybeSingle();
-
-        setStudentInfo({
-          ...studentData,
-          class_name: classData?.name || null,
-        });
-        setPhoneContact(studentData.phone_contact || '');
-        setAddress(studentData.address || '');
-      }
+      setStudentInfo({
+        id: studentRecord.id,
+        full_name: studentRecord.full_name,
+        admission_number: studentRecord.admission_number,
+        email: studentRecord.email,
+        phone_contact: studentRecord.phone_contact,
+        address: studentRecord.address,
+        date_of_birth: studentRecord.date_of_birth,
+        gender: studentRecord.gender,
+        guardian_name: studentRecord.guardian_name,
+        class_name: classData?.name || null,
+        photo_url: studentRecord.photo_url,
+      });
+      setPhoneContact(studentRecord.phone_contact || '');
+      setAddress(studentRecord.address || '');
     } catch (error) {
       console.error('Error fetching student info:', error);
       toast.error('Failed to load profile');
@@ -83,7 +80,7 @@ export default function StudentProfile() {
   };
 
   const handleSave = async () => {
-    if (!user || !studentInfo) return;
+    if (!user || !studentRecord) return;
 
     setIsSaving(true);
     try {
@@ -93,7 +90,7 @@ export default function StudentProfile() {
           phone_contact: phoneContact || null,
           address: address || null,
         })
-        .eq('id', user.id);
+        .eq('id', studentRecord.id);
 
       if (error) throw error;
       toast.success('Profile updated successfully');

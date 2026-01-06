@@ -1299,6 +1299,7 @@ export type Database = {
           photo_url: string | null
           school_id: string | null
           term: string | null
+          user_id: string | null
         }
         Insert: {
           academic_year?: string | null
@@ -1318,6 +1319,7 @@ export type Database = {
           photo_url?: string | null
           school_id?: string | null
           term?: string | null
+          user_id?: string | null
         }
         Update: {
           academic_year?: string | null
@@ -1337,6 +1339,7 @@ export type Database = {
           photo_url?: string | null
           school_id?: string | null
           term?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {

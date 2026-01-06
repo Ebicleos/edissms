@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Wallet, CreditCard, Loader2, CheckCircle, AlertCircle, Clock, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { toast } from 'sonner';
 import { printReceipt } from '@/utils/printReceipt';
 import { useSchoolSettings } from '@/hooks/useSchoolSettings';
@@ -25,13 +26,14 @@ interface FeePayment {
 
 export default function StudentFees() {
   const { user, profile } = useAuth();
+  const { studentRecord, studentId, isLoading: studentLoading } = useStudentRecord();
   const { settings: schoolSettings } = useSchoolSettings();
   const [feePayments, setFeePayments] = useState<FeePayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [payingFeeId, setPayingFeeId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
+    if (studentId) {
       fetchFeePayments();
       
       // Check for payment callback
@@ -48,15 +50,22 @@ export default function StudentFees() {
         // Refetch after a delay to allow webhook processing
         setTimeout(() => fetchFeePayments(), 3000);
       }
+    } else if (!studentLoading) {
+      setIsLoading(false);
     }
-  }, [user]);
+  }, [studentId, studentLoading]);
 
   const fetchFeePayments = async () => {
+    if (!studentId) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('fee_payments')
         .select('*')
-        .eq('student_id', user?.id)
+        .eq('student_id', studentId)
         .order('academic_year', { ascending: false })
         .order('term', { ascending: false });
 
@@ -156,8 +165,8 @@ export default function StudentFees() {
     }
 
     printReceipt({
-      studentName: profile.full_name || 'Student',
-      admissionNumber: 'N/A',
+      studentName: studentRecord?.full_name || profile?.full_name || 'Student',
+      admissionNumber: studentRecord?.admission_number || 'N/A',
       className: feePayment.class_id || 'N/A',
       amountPaid: Number(feePayment.amount_paid),
       totalFee: Number(feePayment.amount_payable),
