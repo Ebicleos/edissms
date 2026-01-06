@@ -608,6 +608,56 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          announcements: boolean | null
+          attendance_reports: boolean | null
+          created_at: string | null
+          email_notifications: boolean | null
+          exam_results: boolean | null
+          fee_reminders: boolean | null
+          id: string
+          school_id: string | null
+          sms_alerts: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          announcements?: boolean | null
+          attendance_reports?: boolean | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          exam_results?: boolean | null
+          fee_reminders?: boolean | null
+          id?: string
+          school_id?: string | null
+          sms_alerts?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          announcements?: boolean | null
+          attendance_reports?: boolean | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          exam_results?: boolean | null
+          fee_reminders?: boolean | null
+          id?: string
+          school_id?: string | null
+          sms_alerts?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       online_classes: {
         Row: {
           class_id: string

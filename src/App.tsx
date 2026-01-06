@@ -20,6 +20,9 @@ import Install from "./pages/Install";
 import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
 import SchoolManagement from "./pages/superadmin/SchoolManagement";
 import SubscriptionManagement from "./pages/superadmin/SubscriptionManagement";
+import PlatformUsers from "./pages/superadmin/PlatformUsers";
+import SystemSettings from "./pages/superadmin/SystemSettings";
+import AuditLogs from "./pages/superadmin/AuditLogs";
 
 // Admin pages
 import Dashboard from "./pages/Dashboard";
@@ -102,6 +105,21 @@ const App = () => (
             <Route path="/superadmin/subscriptions" element={
               <ProtectedRoute allowedRoles={['superadmin']}>
                 <SubscriptionManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/superadmin/users" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <PlatformUsers />
+              </ProtectedRoute>
+            } />
+            <Route path="/superadmin/settings" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <SystemSettings />
+              </ProtectedRoute>
+            } />
+            <Route path="/superadmin/audit-logs" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <AuditLogs />
               </ProtectedRoute>
             } />
 

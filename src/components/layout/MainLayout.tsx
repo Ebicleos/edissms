@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
 import { MobileSidebar } from './MobileSidebar';
+import { MobileBottomNav } from './MobileBottomNav';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface MainLayoutProps {
@@ -32,10 +33,13 @@ export function MainLayout({ children, title, subtitle }: MainLayoutProps) {
           subtitle={subtitle} 
           onMobileMenuToggle={() => setMobileMenuOpen(true)}
         />
-        <main className="p-4 md:p-6">
+        <main className="p-4 md:p-6 pb-20 md:pb-6">
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
     </div>
   );
 }
