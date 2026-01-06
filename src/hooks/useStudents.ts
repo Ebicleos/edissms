@@ -99,13 +99,38 @@ const generateAdmissionNumber = async (): Promise<string> => {
 export function useStudents() {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [schoolId, setSchoolId] = useState<string | null>(null);
+
+  // Get current user's school_id
+  useEffect(() => {
+    const getSchoolId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('school_id')
+          .eq('id', user.id)
+          .single();
+        setSchoolId(profile?.school_id || null);
+      }
+    };
+    getSchoolId();
+  }, []);
 
   const fetchStudents = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
+    
+    // Build query - filter by school_id if available
+    let query = supabase
       .from('students')
       .select('*')
       .order('created_at', { ascending: false });
+    
+    if (schoolId) {
+      query = query.eq('school_id', schoolId);
+    }
+    
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching students:', error);
@@ -133,26 +158,21 @@ export function useStudents() {
       setStudents(mapped);
     }
     setIsLoading(false);
-  }, []);
+  }, [schoolId]);
 
   useEffect(() => {
-    fetchStudents();
-  }, [fetchStudents]);
+    if (schoolId !== null) {
+      fetchStudents();
+    }
+  }, [fetchStudents, schoolId]);
 
   const addStudent = useCallback(async (data: AdmissionFormData & { photoUrl?: string }): Promise<Student | null> => {
-    const admissionNumber = await generateAdmissionNumber();
-    
-    // Fetch current user's school_id
-    const { data: { user } } = await supabase.auth.getUser();
-    let schoolId = null;
-    if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('school_id')
-        .eq('id', user.id)
-        .single();
-      schoolId = profile?.school_id;
+    if (!schoolId) {
+      console.error('No school_id found. Please complete school setup first.');
+      return null;
     }
+    
+    const admissionNumber = await generateAdmissionNumber();
     
     const { data: inserted, error } = await supabase
       .from('students')
@@ -179,6 +199,15 @@ export function useStudents() {
       console.error('Error adding student:', error);
       return null;
     }
+    
+    // Also create student_classes entry for class-based queries
+    await supabase
+      .from('student_classes')
+      .insert({
+        student_id: inserted.id,
+        class_id: data.classId,
+        admission_number: admissionNumber,
+      });
 
     // Auto-create fee payment record
     const amountPaid = data.amountPaid || 0;
@@ -197,7 +226,7 @@ export function useStudents() {
     const status = balance <= 0 ? 'paid' : amountPaid > 0 ? 'partial' : 'unpaid';
 
     // Create fee payment record
-    await supabase
+    const { data: feePayment } = await supabase
       .from('fee_payments')
       .insert({
         student_id: inserted.id,
@@ -210,14 +239,17 @@ export function useStudents() {
         status: status,
         last_payment_date: amountPaid > 0 ? new Date().toISOString() : null,
         installment: '1st Installment',
-      });
+        school_id: schoolId,
+      })
+      .select('id')
+      .single();
 
     // If amount was paid, create a transaction record
-    if (amountPaid > 0) {
+    if (amountPaid > 0 && feePayment) {
       await supabase
         .from('payment_transactions')
         .insert({
-          fee_payment_id: inserted.id, // This might need adjustment based on the actual fee_payment id
+          fee_payment_id: feePayment.id,
           amount: amountPaid,
           payment_method: 'cash',
           status: 'completed',

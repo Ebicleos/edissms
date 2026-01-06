@@ -36,6 +36,43 @@ export function useDashboardStats() {
   useEffect(() => {
     async function fetchStats() {
       try {
+        // Get current user's school_id first
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setStats(prev => ({ ...prev, isLoading: false }));
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('school_id')
+          .eq('id', user.id)
+          .single();
+
+        const schoolId = profile?.school_id;
+
+        // Build queries with school_id filter if available
+        let studentsQuery = supabase.from('students').select('id', { count: 'exact', head: true });
+        let teachersQuery = supabase.from('teachers').select('id', { count: 'exact', head: true });
+        let classesQuery = supabase.from('classes').select('id', { count: 'exact', head: true });
+        let attendanceQuery = supabase.from('attendance').select('status');
+        let feesQuery = supabase.from('fee_payments').select('amount_payable, amount_paid, balance');
+        let eventsQuery = supabase
+          .from('events')
+          .select('id, title, event_date, location')
+          .eq('is_published', true)
+          .gte('event_date', new Date().toISOString().split('T')[0])
+          .order('event_date', { ascending: true })
+          .limit(3);
+
+        if (schoolId) {
+          studentsQuery = studentsQuery.eq('school_id', schoolId);
+          teachersQuery = teachersQuery.eq('school_id', schoolId);
+          classesQuery = classesQuery.eq('school_id', schoolId);
+          feesQuery = feesQuery.eq('school_id', schoolId);
+          eventsQuery = eventsQuery.eq('school_id', schoolId);
+        }
+
         // Fetch all counts in parallel
         const [
           studentsResult,
@@ -45,18 +82,12 @@ export function useDashboardStats() {
           feesResult,
           eventsResult,
         ] = await Promise.all([
-          supabase.from('students').select('id', { count: 'exact', head: true }),
-          supabase.from('teachers').select('id', { count: 'exact', head: true }),
-          supabase.from('classes').select('id', { count: 'exact', head: true }),
-          supabase.from('attendance').select('status'),
-          supabase.from('fee_payments').select('amount_payable, amount_paid, balance'),
-          supabase
-            .from('events')
-            .select('id, title, event_date, location')
-            .eq('is_published', true)
-            .gte('event_date', new Date().toISOString().split('T')[0])
-            .order('event_date', { ascending: true })
-            .limit(3),
+          studentsQuery,
+          teachersQuery,
+          classesQuery,
+          attendanceQuery,
+          feesQuery,
+          eventsQuery,
         ]);
 
         // Calculate attendance rate

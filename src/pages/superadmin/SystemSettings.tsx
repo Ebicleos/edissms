@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,11 +7,26 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Settings, Save, Bell, Shield, CreditCard, Globe, Loader2 } from 'lucide-react';
+import { Save, Bell, Shield, CreditCard, Globe, Loader2, Database, Users } from 'lucide-react';
+
+interface PlatformStats {
+  totalSchools: number;
+  totalUsers: number;
+  activeSubscriptions: number;
+  trialSubscriptions: number;
+}
 
 export default function SystemSettings() {
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<PlatformStats>({
+    totalSchools: 0,
+    totalUsers: 0,
+    activeSubscriptions: 0,
+    trialSubscriptions: 0,
+  });
   
   // Platform settings
   const [platformName, setPlatformName] = useState('EduManage');
@@ -22,14 +37,42 @@ export default function SystemSettings() {
   // Pricing settings
   const [termlyPrice, setTermlyPrice] = useState('50000');
   const [yearlyPrice, setYearlyPrice] = useState('120000');
-  const [trialDays, setTrialDays] = useState('14');
+  const [trialDays, setTrialDays] = useState('30');
   
   // Notification settings
   const [systemAnnouncement, setSystemAnnouncement] = useState('');
 
+  useEffect(() => {
+    fetchPlatformStats();
+  }, []);
+
+  const fetchPlatformStats = async () => {
+    try {
+      const [schoolsResult, usersResult, subsResult] = await Promise.all([
+        supabase.from('schools').select('id', { count: 'exact', head: true }),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('subscriptions').select('status'),
+      ]);
+
+      const activeCount = subsResult.data?.filter(s => s.status === 'active').length || 0;
+      const trialCount = subsResult.data?.filter(s => s.status === 'trial').length || 0;
+
+      setStats({
+        totalSchools: schoolsResult.count || 0,
+        totalUsers: usersResult.count || 0,
+        activeSubscriptions: activeCount,
+        trialSubscriptions: trialCount,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate save
+    // In a real app, save to a platform_settings table
     await new Promise(resolve => setTimeout(resolve, 1000));
     setIsSaving(false);
     toast.success('System settings saved successfully!');
@@ -38,6 +81,62 @@ export default function SystemSettings() {
   return (
     <MainLayout title="System Settings" subtitle="Configure platform-wide settings">
       <div className="max-w-4xl space-y-6 animate-fade-in">
+        {/* Platform Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Database className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.totalSchools}</p>
+                  <p className="text-xs text-muted-foreground">Schools</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <Users className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.totalUsers}</p>
+                  <p className="text-xs text-muted-foreground">Users</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-500/10">
+                  <CreditCard className="h-5 w-5 text-green-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.activeSubscriptions}</p>
+                  <p className="text-xs text-muted-foreground">Active Subs</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-yellow-500/10">
+                  <Shield className="h-5 w-5 text-yellow-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.trialSubscriptions}</p>
+                  <p className="text-xs text-muted-foreground">Trial Subs</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Platform Settings */}
         <Card>
           <CardHeader>

@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface StudentRecord {
+export interface StudentRecord {
   id: string;
   full_name: string;
   admission_number: string;
-  email: string | null;
-  phone_contact: string | null;
-  address: string | null;
+  class_id: string;
   date_of_birth: string | null;
   gender: string;
   guardian_name: string | null;
-  class_id: string;
+  phone_contact: string | null;
+  email: string | null;
+  address: string | null;
   photo_url: string | null;
   school_id: string | null;
   user_id: string | null;
@@ -24,83 +24,100 @@ export function useStudentRecord() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchStudentRecord();
-    } else {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-  const fetchStudentRecord = async () => {
+  const fetchStudentRecord = useCallback(async () => {
     if (!user) {
       setIsLoading(false);
       return;
     }
 
+    setIsLoading(true);
+    setError(null);
+
     try {
-      // Get student record using user_id (linked during signup)
-      const { data, error: fetchError } = await supabase
+      // Primary method: Query students table using user_id column
+      const { data: studentData, error: studentError } = await supabase
         .from('students')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (fetchError) {
-        console.error('Error fetching student record:', fetchError);
-        setError(fetchError.message);
-        
-        // Fallback: Try via student_classes admission_number
-        const { data: studentClass } = await supabase
-          .from('student_classes')
-          .select('admission_number')
-          .eq('student_id', user.id)
+      if (studentData) {
+        setStudentRecord({
+          id: studentData.id,
+          full_name: studentData.full_name,
+          admission_number: studentData.admission_number,
+          class_id: studentData.class_id,
+          date_of_birth: studentData.date_of_birth,
+          gender: studentData.gender,
+          guardian_name: studentData.guardian_name,
+          phone_contact: studentData.phone_contact,
+          email: studentData.email,
+          address: studentData.address,
+          photo_url: studentData.photo_url,
+          school_id: studentData.school_id,
+          user_id: studentData.user_id,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Fallback: Check student_classes table for admission_number link
+      const { data: classLink } = await supabase
+        .from('student_classes')
+        .select('admission_number, class_id')
+        .eq('student_id', user.id)
+        .maybeSingle();
+
+      if (classLink?.admission_number) {
+        // Fetch student by admission number
+        const { data: linkedStudent } = await supabase
+          .from('students')
+          .select('*')
+          .eq('admission_number', classLink.admission_number)
           .maybeSingle();
 
-        if (studentClass?.admission_number) {
-          const { data: studentByAdmission } = await supabase
+        if (linkedStudent) {
+          // Update the student record with user_id for future queries
+          await supabase
             .from('students')
-            .select('*')
-            .eq('admission_number', studentClass.admission_number)
-            .maybeSingle();
-          
-          if (studentByAdmission) {
-            setStudentRecord(studentByAdmission as StudentRecord);
-            setError(null);
-          }
-        }
-      } else if (data) {
-        setStudentRecord(data as StudentRecord);
-      } else {
-        // Fallback: Try via student_classes
-        const { data: studentClass } = await supabase
-          .from('student_classes')
-          .select('admission_number')
-          .eq('student_id', user.id)
-          .maybeSingle();
+            .update({ user_id: user.id })
+            .eq('id', linkedStudent.id);
 
-        if (studentClass?.admission_number) {
-          const { data: studentByAdmission } = await supabase
-            .from('students')
-            .select('*')
-            .eq('admission_number', studentClass.admission_number)
-            .maybeSingle();
-          
-          if (studentByAdmission) {
-            setStudentRecord(studentByAdmission as StudentRecord);
-          }
+          setStudentRecord({
+            id: linkedStudent.id,
+            full_name: linkedStudent.full_name,
+            admission_number: linkedStudent.admission_number,
+            class_id: linkedStudent.class_id,
+            date_of_birth: linkedStudent.date_of_birth,
+            gender: linkedStudent.gender,
+            guardian_name: linkedStudent.guardian_name,
+            phone_contact: linkedStudent.phone_contact,
+            email: linkedStudent.email,
+            address: linkedStudent.address,
+            photo_url: linkedStudent.photo_url,
+            school_id: linkedStudent.school_id,
+            user_id: user.id,
+          });
+          setIsLoading(false);
+          return;
         }
       }
-    } catch (err) {
-      console.error('Error in useStudentRecord:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+
+      // If no student record found
+      setError('No student record found for your account');
+    } catch (err: any) {
+      console.error('Error fetching student record:', err);
+      setError(err.message || 'Failed to load student record');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchStudentRecord();
+  }, [fetchStudentRecord]);
 
   const refetch = () => {
-    setIsLoading(true);
     fetchStudentRecord();
   };
 
