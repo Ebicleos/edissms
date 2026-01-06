@@ -1123,6 +1123,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "student_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_student_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "student_answers_submission_id_fkey"
             columns: ["submission_id"]
             isOneToOne: false
@@ -1510,7 +1517,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      questions_student_view: {
+        Row: {
+          exam_id: string | null
+          id: string | null
+          marks: number | null
+          option_a: string | null
+          option_b: string | null
+          option_c: string | null
+          option_d: string | null
+          order_index: number | null
+          question_text: string | null
+        }
+        Insert: {
+          exam_id?: string | null
+          id?: string | null
+          marks?: number | null
+          option_a?: string | null
+          option_b?: string | null
+          option_c?: string | null
+          option_d?: string | null
+          order_index?: number | null
+          question_text?: string | null
+        }
+        Update: {
+          exam_id?: string | null
+          id?: string | null
+          marks?: number | null
+          option_a?: string | null
+          option_b?: string | null
+          option_c?: string | null
+          option_d?: string | null
+          order_index?: number | null
+          question_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_school_payment_secret: {
