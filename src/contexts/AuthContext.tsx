@@ -32,20 +32,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userClass, setUserClass] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUserData = async (userId: string, userEmail?: string | null) => {
+  const fetchUserData = async (userId: string, userEmail?: string | null, retryCount = 0): Promise<void> => {
     // Fetch all roles for user to handle multiple roles
     const { data: roleData } = await supabase
       .from('user_roles')
-      .select('role')
+      .select('role, school_id')
       .eq('user_id', userId);
     
     let assignedRole: AppRole | null = null;
+    let roleSchoolId: string | null = null;
     if (roleData && roleData.length > 0) {
       // Priority: superadmin > admin > teacher > student
       const rolePriority: AppRole[] = ['superadmin', 'admin', 'teacher', 'student'];
       const userRoles = roleData.map(r => r.role as AppRole);
       assignedRole = rolePriority.find(r => userRoles.includes(r)) || null;
       setRole(assignedRole);
+      // Get school_id from role if available
+      roleSchoolId = roleData.find(r => r.school_id)?.school_id || null;
     }
 
     // Fetch profile
@@ -56,6 +59,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .maybeSingle();
     
     if (profileData) {
+      // If profile exists but school_id is missing and we have it from role, update profile
+      if (!profileData.school_id && roleSchoolId) {
+        await supabase
+          .from('profiles')
+          .update({ school_id: roleSchoolId })
+          .eq('id', userId);
+        profileData.school_id = roleSchoolId;
+      }
       setProfile(profileData);
     } else if (profileError || !profileData) {
       // Profile missing - create it in database to prevent login issues
@@ -64,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         full_name: userEmail?.split('@')[0] || 'User',
         email: userEmail || null,
         photo_url: null,
-        school_id: null,
+        school_id: roleSchoolId,
       };
       
       // Insert profile into database
@@ -80,13 +91,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (insertError) {
         console.error('Failed to create profile:', insertError);
+        // Retry once if RLS error
+        if (retryCount < 2 && (insertError.code === '42501' || insertError.message?.includes('row-level security'))) {
+          await new Promise(r => setTimeout(r, 500));
+          return fetchUserData(userId, userEmail, retryCount + 1);
+        }
       }
       
       setProfile(defaultProfile);
     }
 
-    // Fetch class if student
+    // Fetch class if student - first try student_classes, then check students table
     if (assignedRole === 'student') {
+      // First check student_classes table
       const { data: classData } = await supabase
         .from('student_classes')
         .select('class_id')
@@ -95,6 +112,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (classData) {
         setUserClass(classData.class_id);
+      } else {
+        // Fallback: check students table for class_id via user_id
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('class_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+        
+        if (studentData) {
+          setUserClass(studentData.class_id);
+        }
       }
     }
 

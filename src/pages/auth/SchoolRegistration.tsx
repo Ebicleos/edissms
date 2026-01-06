@@ -248,21 +248,26 @@ export default function SchoolRegistration() {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Failed to create user');
 
-      // Wait for session to be established before proceeding
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Refresh session to ensure auth is ready
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        // Session not ready, wait a bit more
-        await new Promise(resolve => setTimeout(resolve, 1500));
+      // Wait for session to be established with exponential backoff
+      let sessionReady = false;
+      for (let i = 0; i < 5; i++) {
+        await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session) {
+          sessionReady = true;
+          break;
+        }
+      }
+
+      if (!sessionReady) {
+        console.warn('Session not ready, proceeding anyway...');
       }
 
       // 2. Create the school with retry mechanism
       let schoolData;
       let schoolError;
       
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 5; attempt++) {
         const result = await supabase
           .from('schools')
           .insert({
@@ -272,7 +277,7 @@ export default function SchoolRegistration() {
             phone: formData.schoolPhone,
             address: formData.schoolAddress,
             initials: formData.schoolInitials,
-            logo_url: formData.logoUrl,
+            logo_url: formData.logoUrl || null,
             created_by: authData.user.id,
           })
           .select()
@@ -283,18 +288,44 @@ export default function SchoolRegistration() {
         
         if (!schoolError) break;
         
-        // If RLS error, wait and retry
+        // If RLS error, wait and retry with exponential backoff
         if (schoolError.code === '42501' || schoolError.message?.includes('row-level security')) {
           console.log(`School insert attempt ${attempt + 1} failed, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          await new Promise(resolve => setTimeout(resolve, 800 * (attempt + 1)));
         } else {
           break; // Different error, don't retry
         }
       }
 
       if (schoolError) throw schoolError;
+      if (!schoolData) throw new Error('Failed to create school record');
 
-      // 3. Create the subscription (trial)
+      // Verify school was created
+      const { data: verifySchool } = await supabase
+        .from('schools')
+        .select('id')
+        .eq('id', schoolData.id)
+        .single();
+      
+      if (!verifySchool) {
+        throw new Error('School creation could not be verified. Please try again.');
+      }
+
+      // 3. Create school_settings for the new school
+      await supabase
+        .from('school_settings')
+        .insert({
+          school_id: schoolData.id,
+          school_name: formData.schoolName,
+          school_initials: formData.schoolInitials,
+          email: formData.schoolEmail,
+          phone: formData.schoolPhone,
+          address: formData.schoolAddress,
+          academic_year: '2025/2026',
+          term: 'First Term',
+        });
+
+      // 4. Create the subscription (trial)
       const startDate = new Date();
       const trialEndDate = addMonths(startDate, 1); // 1 month trial
 
@@ -311,7 +342,7 @@ export default function SchoolRegistration() {
 
       if (subError) throw subError;
 
-      // 4. Create the profile explicitly (trigger might not work)
+      // 5. Create/update the profile with school_id
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
@@ -325,7 +356,7 @@ export default function SchoolRegistration() {
         console.error('Failed to create/update profile:', profileError);
       }
 
-      // 5. Add admin role with school_id
+      // 6. Add admin role with school_id
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({ 
@@ -336,7 +367,36 @@ export default function SchoolRegistration() {
 
       if (roleError) throw roleError;
 
-      // 6. Send welcome notifications (non-blocking)
+      // 7. Create default classes for the school
+      const defaultClasses = [
+        { name: 'Creche', level: 'creche' },
+        { name: 'Pre-Nursery', level: 'preschool' },
+        { name: 'Nursery 1', level: 'preschool' },
+        { name: 'Nursery 2', level: 'preschool' },
+        { name: 'Primary 1', level: 'primary' },
+        { name: 'Primary 2', level: 'primary' },
+        { name: 'Primary 3', level: 'primary' },
+        { name: 'Primary 4', level: 'primary' },
+        { name: 'Primary 5', level: 'primary' },
+        { name: 'Primary 6', level: 'primary' },
+        { name: 'JSS 1', level: 'junior' },
+        { name: 'JSS 2', level: 'junior' },
+        { name: 'JSS 3', level: 'junior' },
+        { name: 'SSS 1', level: 'senior' },
+        { name: 'SSS 2', level: 'senior' },
+        { name: 'SSS 3', level: 'senior' },
+      ];
+
+      await supabase.from('classes').insert(
+        defaultClasses.map(c => ({
+          name: c.name,
+          level: c.level,
+          capacity: 30,
+          school_id: schoolData.id,
+        }))
+      );
+
+      // 8. Send welcome notifications (non-blocking)
       try {
         await supabase.functions.invoke('send-email-notification', {
           body: {

@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { BookOpen, ClipboardList, Calendar, IdCard, GraduationCap, CreditCard, Megaphone, CalendarDays, Bell, Loader2, User, FileText } from 'lucide-react';
 import { format } from 'date-fns';
+import { useStudentRecord } from '@/hooks/useStudentRecord';
+import { CLASS_LIST_DETAILED } from '@/types';
 
 interface Exam {
   id: string;
@@ -40,21 +42,55 @@ interface Assignment {
   due_date: string | null;
 }
 
+// Helper function to get class display name
+const getClassDisplayName = (classId: string | null): string => {
+  if (!classId) return 'Not Assigned';
+  const cls = CLASS_LIST_DETAILED.find(c => c.id === classId);
+  return cls?.name || classId;
+};
+
 export default function StudentDashboard() {
   const { profile, userClass } = useAuth();
+  const { studentRecord, isLoading: studentLoading } = useStudentRecord();
   const navigate = useNavigate();
   const [upcomingExams, setUpcomingExams] = useState<Exam[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [className, setClassName] = useState<string>('');
+
+  // Get the effective class ID from student record or userClass
+  const effectiveClassId = studentRecord?.class_id || userClass;
+
+  useEffect(() => {
+    // Fetch class name from database or use CLASS_LIST_DETAILED
+    const fetchClassName = async () => {
+      if (effectiveClassId) {
+        // Try to get from database first
+        const { data: classData } = await supabase
+          .from('classes')
+          .select('name')
+          .eq('id', effectiveClassId)
+          .single();
+        
+        if (classData?.name) {
+          setClassName(classData.name);
+        } else {
+          // Fallback to CLASS_LIST_DETAILED
+          setClassName(getClassDisplayName(effectiveClassId));
+        }
+      }
+    };
+    fetchClassName();
+  }, [effectiveClassId]);
 
   useEffect(() => {
     fetchDashboardData();
-  }, [userClass]);
+  }, [effectiveClassId]);
 
   const fetchDashboardData = async () => {
-    if (!userClass) {
+    if (!effectiveClassId) {
       setIsLoading(false);
       return;
     }
@@ -64,7 +100,7 @@ export default function StudentDashboard() {
       const { data: examsData } = await supabase
         .from('exams')
         .select('id, title, subject, start_time, duration_minutes')
-        .eq('class_id', userClass)
+        .eq('class_id', effectiveClassId)
         .eq('is_published', true)
         .gte('start_time', new Date().toISOString())
         .order('start_time', { ascending: true })
@@ -92,7 +128,7 @@ export default function StudentDashboard() {
       const { data: assignmentsData } = await supabase
         .from('assignments')
         .select('id, title, subject, due_date')
-        .eq('class_id', userClass)
+        .eq('class_id', effectiveClassId)
         .eq('is_published', true)
         .gte('due_date', new Date().toISOString())
         .order('due_date', { ascending: true })
@@ -174,10 +210,10 @@ export default function StudentDashboard() {
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-primary to-primary/80 rounded-xl md:rounded-2xl p-4 md:p-8 text-primary-foreground">
           <h1 className="text-xl md:text-3xl font-bold mb-1 md:mb-2">
-            Welcome back, {profile?.full_name?.split(' ')[0] || 'Student'}! 👋
+            Welcome back, {studentRecord?.full_name?.split(' ')[0] || profile?.full_name?.split(' ')[0] || 'Student'}! 👋
           </h1>
           <p className="text-primary-foreground/80 text-sm md:text-lg">
-            {userClass ? `Class: ${userClass}` : 'Ready to learn something new today?'}
+            {className ? `Class: ${className}` : effectiveClassId ? `Class: ${effectiveClassId}` : 'Ready to learn something new today?'}
           </p>
         </div>
 
