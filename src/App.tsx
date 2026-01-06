@@ -62,6 +62,9 @@ import StudentAnnouncements from "./pages/student/StudentAnnouncements";
 import StudentEvents from "./pages/student/StudentEvents";
 import StudentAttendance from "./pages/student/StudentAttendance";
 import StudentAssignments from "./pages/student/StudentAssignments";
+import StudentProfile from "./pages/student/StudentProfile";
+import StudentMaterials from "./pages/student/StudentMaterials";
+import StudentReportCard from "./pages/student/StudentReportCard";
 
 // CBT pages
 import CBTPortal from "./pages/cbt/CBTPortal";
@@ -287,6 +290,21 @@ const App = () => (
             <Route path="/student/assignments" element={
               <ProtectedRoute allowedRoles={['student']}>
                 <StudentAssignments />
+              </ProtectedRoute>
+            } />
+            <Route path="/student/profile" element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/student/materials" element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentMaterials />
+              </ProtectedRoute>
+            } />
+            <Route path="/student/report-cards" element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentReportCard />
               </ProtectedRoute>
             } />
 

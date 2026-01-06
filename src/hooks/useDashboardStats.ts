@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+interface UpcomingEvent {
+  id: string;
+  title: string;
+  event_date: string;
+  location: string | null;
+}
+
 interface DashboardStats {
   totalStudents: number;
   totalTeachers: number;
@@ -9,6 +16,7 @@ interface DashboardStats {
   totalFeesExpected: number;
   totalFeesCollected: number;
   totalFeesPending: number;
+  upcomingEvents: UpcomingEvent[];
   isLoading: boolean;
 }
 
@@ -21,6 +29,7 @@ export function useDashboardStats() {
     totalFeesExpected: 0,
     totalFeesCollected: 0,
     totalFeesPending: 0,
+    upcomingEvents: [],
     isLoading: true,
   });
 
@@ -34,12 +43,20 @@ export function useDashboardStats() {
           classesResult,
           attendanceResult,
           feesResult,
+          eventsResult,
         ] = await Promise.all([
           supabase.from('students').select('id', { count: 'exact', head: true }),
           supabase.from('teachers').select('id', { count: 'exact', head: true }),
           supabase.from('classes').select('id', { count: 'exact', head: true }),
           supabase.from('attendance').select('status'),
           supabase.from('fee_payments').select('amount_payable, amount_paid, balance'),
+          supabase
+            .from('events')
+            .select('id, title, event_date, location')
+            .eq('is_published', true)
+            .gte('event_date', new Date().toISOString().split('T')[0])
+            .order('event_date', { ascending: true })
+            .limit(3),
         ]);
 
         // Calculate attendance rate
@@ -69,6 +86,7 @@ export function useDashboardStats() {
           totalFeesExpected,
           totalFeesCollected,
           totalFeesPending: totalFeesExpected - totalFeesCollected,
+          upcomingEvents: eventsResult.data || [],
           isLoading: false,
         });
       } catch (error) {

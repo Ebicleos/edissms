@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +14,7 @@ import { addMonths, format } from 'date-fns';
 
 export default function RegisterSchool() {
   const navigate = useNavigate();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -147,9 +147,14 @@ export default function RegisterSchool() {
       setIsComplete(true);
       toast.success('School registered successfully!');
       
-      // Redirect to dashboard after short delay
+      // Refresh profile to update school_id in context, then redirect
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+      
+      // Use navigate for proper React Router redirect
       setTimeout(() => {
-        window.location.href = '/';
+        navigate('/', { replace: true });
       }, 2000);
     } catch (error: any) {
       console.error('Registration error:', error);

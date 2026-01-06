@@ -226,52 +226,63 @@ export default function Auth() {
     
     // Check if it's an admission number or name (for students)
     if (selectedRole === 'student' && !loginIdentifier.includes('@')) {
-      let studentId: string | null = null;
+      let studentEmail: string | null = null;
       
-      // First try to look up by admission number
-      const { data: studentClassData } = await supabase
-        .from('student_classes')
-        .select('student_id')
+      // First try to look up by admission number in students table
+      const { data: studentByAdmission } = await supabase
+        .from('students')
+        .select('id, email, admission_number')
         .eq('admission_number', loginIdentifier.trim())
         .maybeSingle();
       
-      if (studentClassData?.student_id) {
-        studentId = studentClassData.student_id;
+      if (studentByAdmission) {
+        // Found student by admission number, get their auth email from profiles
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', studentByAdmission.id)
+          .maybeSingle();
+        
+        if (profileData?.email) {
+          studentEmail = profileData.email;
+        } else if (studentByAdmission.email) {
+          // Fallback to student's email if profile doesn't exist
+          studentEmail = studentByAdmission.email;
+        }
       } else {
-        // Try to find by name in students table
+        // Try to find by name in students table (case-insensitive, partial match)
         const { data: studentByName } = await supabase
           .from('students')
-          .select('id')
-          .ilike('full_name', loginIdentifier.trim())
+          .select('id, email')
+          .ilike('full_name', `%${loginIdentifier.trim()}%`)
+          .limit(1)
           .maybeSingle();
         
         if (studentByName) {
-          studentId = studentByName.id;
+          // Get auth email from profiles
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', studentByName.id)
+            .maybeSingle();
+          
+          if (profileData?.email) {
+            studentEmail = profileData.email;
+          } else if (studentByName.email) {
+            studentEmail = studentByName.email;
+          }
         }
       }
       
-      if (!studentId) {
+      if (!studentEmail) {
         setIsLoading(false);
-        toast.error('Invalid admission number or name', {
+        toast.error('Student not found', {
           description: 'Please enter your admission number (e.g., 0001) or your full registered name.',
         });
         return;
       }
       
-      // Get the email from profiles
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', studentId)
-        .maybeSingle();
-      
-      if (profileError || !profileData?.email) {
-        setIsLoading(false);
-        toast.error('Could not find account for this student');
-        return;
-      }
-      
-      emailToUse = profileData.email;
+      emailToUse = studentEmail;
     }
 
     const { error } = await signIn(emailToUse, loginPassword);

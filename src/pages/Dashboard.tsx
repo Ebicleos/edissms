@@ -4,10 +4,13 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentStudents } from '@/components/dashboard/RecentStudents';
 import { FeesSummary } from '@/components/dashboard/FeesSummary';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
-import { Users, GraduationCap, BookOpen, UserCheck, Loader2 } from 'lucide-react';
+import { Users, GraduationCap, BookOpen, UserCheck, Calendar } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 export default function Dashboard() {
   const stats = useDashboardStats();
+
+  const colorVariants = ['primary', 'secondary', 'accent'] as const;
 
   return (
     <MainLayout title="Dashboard" subtitle="Welcome back! Here's your school overview.">
@@ -55,41 +58,55 @@ export default function Dashboard() {
           <div className="space-y-6">
             <FeesSummary />
             
-            {/* Upcoming Events */}
+            {/* Upcoming Events - Real Data */}
             <div className="bg-card rounded-xl border border-border/50 p-6 shadow-sm">
-              <h3 className="font-semibold text-foreground mb-4">Upcoming Events</h3>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex flex-col items-center justify-center">
-                    <span className="text-xs font-bold text-primary">15</span>
-                    <span className="text-[10px] text-primary">JAN</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Mid-Term Exams</p>
-                    <p className="text-sm text-muted-foreground">All classes</p>
-                  </div>
+              <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Upcoming Events
+              </h3>
+              {stats.isLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-start gap-3 animate-pulse">
+                      <div className="h-10 w-10 rounded-lg bg-muted" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-muted rounded w-3/4" />
+                        <div className="h-3 bg-muted rounded w-1/2" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-secondary/10 flex flex-col items-center justify-center">
-                    <span className="text-xs font-bold text-secondary">22</span>
-                    <span className="text-[10px] text-secondary">JAN</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">PTA Meeting</p>
-                    <p className="text-sm text-muted-foreground">School Hall</p>
-                  </div>
+              ) : stats.upcomingEvents.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Calendar className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No upcoming events</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-accent/10 flex flex-col items-center justify-center">
-                    <span className="text-xs font-bold text-accent">28</span>
-                    <span className="text-[10px] text-accent">JAN</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Sports Day</p>
-                    <p className="text-sm text-muted-foreground">School Field</p>
-                  </div>
+              ) : (
+                <div className="space-y-3">
+                  {stats.upcomingEvents.map((event, index) => {
+                    const eventDate = parseISO(event.event_date);
+                    const colorVariant = colorVariants[index % colorVariants.length];
+                    return (
+                      <div key={event.id} className="flex items-start gap-3">
+                        <div className={`h-10 w-10 rounded-lg bg-${colorVariant}/10 flex flex-col items-center justify-center`}>
+                          <span className={`text-xs font-bold text-${colorVariant}`}>
+                            {format(eventDate, 'd')}
+                          </span>
+                          <span className={`text-[10px] text-${colorVariant}`}>
+                            {format(eventDate, 'MMM').toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{event.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {event.location || 'Location TBD'}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
