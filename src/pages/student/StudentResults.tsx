@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,12 +25,17 @@ interface Result {
 export default function StudentResults() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { studentRecord, isLoading: studentLoading } = useStudentRecord();
   const [results, setResults] = useState<Result[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchResults();
-  }, [user]);
+    if (user && !studentLoading) {
+      fetchResults();
+    } else if (!user && !studentLoading) {
+      setIsLoading(false);
+    }
+  }, [user, studentLoading]);
 
   const fetchResults = async () => {
     if (!user) return;
