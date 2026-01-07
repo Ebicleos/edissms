@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { BookOpen, Download, Clock, Loader2, ExternalLink } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import { toast } from 'sonner';
@@ -20,24 +20,29 @@ interface Assignment {
 }
 
 export default function StudentAssignments() {
-  const { userClass } = useAuth();
+  const { studentRecord, isLoading: studentLoading } = useStudentRecord();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (userClass) {
+    if (studentRecord?.class_id) {
       fetchAssignments();
+    } else if (!studentLoading) {
+      setIsLoading(false);
     }
-  }, [userClass]);
+  }, [studentRecord, studentLoading]);
 
   const fetchAssignments = async () => {
-    if (!userClass) return;
+    if (!studentRecord?.class_id) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase
         .from('assignments')
         .select('id, title, description, subject, due_date, file_url, created_at')
-        .eq('class_id', userClass)
+        .eq('class_id', studentRecord.class_id)
         .eq('is_published', true)
         .order('due_date', { ascending: true });
 

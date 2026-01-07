@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,24 +35,34 @@ interface Submission {
 
 export default function CBTPortal() {
   const navigate = useNavigate();
-  const { userClass, user } = useAuth();
+  const { user } = useAuth();
+  const { studentRecord, isLoading: studentLoading } = useStudentRecord();
   const [exams, setExams] = useState<Exam[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [examSystemActive, setExamSystemActive] = useState(false);
 
   useEffect(() => {
-    fetchExams();
-    fetchSubmissions();
-  }, [userClass, user]);
+    if (studentRecord?.class_id) {
+      fetchExams();
+    } else if (!studentLoading) {
+      setIsLoading(false);
+    }
+  }, [studentRecord, studentLoading]);
+
+  useEffect(() => {
+    if (user) {
+      fetchSubmissions();
+    }
+  }, [user]);
 
   const fetchExams = async () => {
-    if (!userClass) return;
+    if (!studentRecord?.class_id) return;
     
     const { data, error } = await supabase
       .from('exams')
       .select('*')
-      .eq('class_id', userClass)
+      .eq('class_id', studentRecord.class_id)
       .eq('is_published', true)
       .order('created_at', { ascending: false });
 
@@ -144,9 +155,9 @@ export default function CBTPortal() {
               Computer-Based Testing - Take exams and view your results
             </p>
           </div>
-          {userClass && (
+          {studentRecord?.class_id && (
             <Badge variant="outline" className="text-lg px-4 py-2">
-              Class: {userClass}
+              Class: {studentRecord.class_id}
             </Badge>
           )}
         </div>

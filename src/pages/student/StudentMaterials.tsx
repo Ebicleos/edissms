@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,18 +20,22 @@ interface LearningMaterial {
 }
 
 export default function StudentMaterials() {
-  const { userClass } = useAuth();
+  const { studentRecord, isLoading: studentLoading } = useStudentRecord();
   const [isLoading, setIsLoading] = useState(true);
   const [materials, setMaterials] = useState<LearningMaterial[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchMaterials();
-  }, [userClass]);
+    if (studentRecord?.class_id) {
+      fetchMaterials();
+    } else if (!studentLoading) {
+      setIsLoading(false);
+    }
+  }, [studentRecord, studentLoading]);
 
   const fetchMaterials = async () => {
-    if (!userClass) {
+    if (!studentRecord?.class_id) {
       setIsLoading(false);
       return;
     }
@@ -40,7 +44,7 @@ export default function StudentMaterials() {
       const { data, error } = await supabase
         .from('learning_materials')
         .select('*')
-        .eq('class_id', userClass)
+        .eq('class_id', studentRecord.class_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
