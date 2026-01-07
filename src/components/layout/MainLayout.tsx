@@ -5,6 +5,7 @@ import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner
 import { MobileSidebar } from './MobileSidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 export interface MainLayoutProps {
   children: React.ReactNode;
@@ -26,14 +27,22 @@ export function MainLayout({ children, title, subtitle }: MainLayoutProps) {
       {/* Mobile Sidebar */}
       <MobileSidebar open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} />
       
-      <div className="md:pl-64">
+      <div className="md:pl-64 flex flex-col min-h-screen">
         <SubscriptionBanner />
         <Header 
           title={title || ''} 
           subtitle={subtitle} 
           onMobileMenuToggle={() => setMobileMenuOpen(true)}
         />
-        <main className="p-4 md:p-6 pb-20 md:pb-6">
+        <main 
+          className={cn(
+            "flex-1 p-3 sm:p-4 md:p-6",
+            // Bottom padding for mobile nav + safe area
+            "pb-[calc(env(safe-area-inset-bottom)+5rem)] md:pb-6",
+            // Touch-friendly scrolling
+            "touch-scroll"
+          )}
+        >
           {children}
         </main>
       </div>

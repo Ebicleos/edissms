@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Wallet, Settings, PenTool, Trophy, Calendar, Megaphone } from 'lucide-react';
+import { Home, Users, Wallet, Settings, PenTool, Trophy, Calendar, Megaphone, BookOpen, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -19,15 +19,15 @@ const adminNavItems: NavItem[] = [
 const teacherNavItems: NavItem[] = [
   { icon: Home, label: 'Home', path: '/teacher' },
   { icon: PenTool, label: 'Exams', path: '/teacher/exams' },
+  { icon: GraduationCap, label: 'Grades', path: '/teacher/grades' },
   { icon: Calendar, label: 'Attendance', path: '/attendance' },
-  { icon: Settings, label: 'Grades', path: '/teacher/grades' },
 ];
 
 const studentNavItems: NavItem[] = [
   { icon: Home, label: 'Home', path: '/student' },
   { icon: PenTool, label: 'CBT', path: '/cbt' },
   { icon: Trophy, label: 'Results', path: '/student/results' },
-  { icon: Megaphone, label: 'News', path: '/student/announcements' },
+  { icon: BookOpen, label: 'Materials', path: '/student/materials' },
 ];
 
 export function MobileBottomNav() {
@@ -55,22 +55,48 @@ export function MobileBottomNav() {
   }
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border safe-area-inset-bottom">
-      <div className="flex items-center justify-around h-16">
+    <nav 
+      className={cn(
+        "md:hidden fixed bottom-0 left-0 right-0 z-50",
+        "bg-background/95 backdrop-blur-md border-t border-border",
+        "safe-area-inset-bottom"
+      )}
+      role="navigation"
+      aria-label="Main navigation"
+    >
+      <div 
+        className="flex items-stretch justify-around"
+        style={{ height: 'calc(env(safe-area-inset-bottom) + 3.5rem)', minHeight: '56px' }}
+      >
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || 
+            (item.path !== '/' && item.path !== '/student' && item.path !== '/teacher' && 
+             location.pathname.startsWith(item.path));
+          
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors',
-                'active:bg-muted/50 touch-manipulation',
-                isActive ? 'text-primary' : 'text-muted-foreground'
+                "flex flex-col items-center justify-center flex-1 gap-0.5 py-2",
+                "transition-all duration-200 touch-manipulation",
+                "active:scale-95 active:bg-muted/50",
+                isActive 
+                  ? "text-primary" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
+              aria-current={isActive ? 'page' : undefined}
             >
-              <item.icon className={cn('h-5 w-5', isActive && 'text-primary')} />
-              <span className={cn('text-xs', isActive && 'font-medium')}>{item.label}</span>
+              <item.icon className={cn(
+                "h-5 w-5 transition-transform",
+                isActive && "scale-110"
+              )} />
+              <span className={cn(
+                "text-[10px] sm:text-xs leading-tight",
+                isActive && "font-semibold"
+              )}>
+                {item.label}
+              </span>
             </button>
           );
         })}
