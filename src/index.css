@@ -296,7 +296,7 @@
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
   }
 
-  /* Touch-friendly button sizing */
+  /* Touch-friendly button sizing - Apple HIG recommends 44px */
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
   }
@@ -305,6 +305,69 @@
   .mobile-table-container {
     @apply overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0;
   }
+
+  /* Improved mobile spacing */
+  .mobile-spacing {
+    @apply px-4 py-3 sm:px-6 sm:py-4;
+  }
+
+  /* Mobile-optimized card */
+  .mobile-card {
+    @apply rounded-xl p-4 sm:p-6 bg-card border border-border/50 shadow-sm;
+  }
+
+  /* Mobile bottom nav safe area */
+  .pb-safe-bottom-nav {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 4rem);
+  }
+
+  /* Mobile header with safe area */
+  .pt-safe-header {
+    padding-top: max(env(safe-area-inset-top), 0.75rem);
+  }
+
+  /* Swipeable horizontal scroll */
+  .swipe-scroll {
+    @apply flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory;
+  }
+
+  .swipe-scroll > * {
+    @apply snap-start flex-shrink-0;
+  }
+
+  /* Mobile action button */
+  .mobile-action-btn {
+    @apply flex-1 flex flex-col items-center justify-center gap-1 p-3 rounded-xl 
+           bg-muted/50 hover:bg-muted active:scale-95 transition-all touch-manipulation;
+  }
+
+  /* Floating action button */
+  .fab {
+    @apply fixed right-4 bottom-20 md:bottom-6 z-40 h-14 w-14 rounded-full 
+           bg-gradient-primary shadow-lg shadow-primary/25 flex items-center 
+           justify-center text-primary-foreground active:scale-95 transition-transform;
+  }
+
+  /* Mobile stat card compact */
+  .stat-card-mobile {
+    @apply rounded-lg p-3 bg-card border border-border/50 shadow-sm;
+  }
+
+  /* Pull-to-refresh indicator */
+  .pull-indicator {
+    @apply flex items-center justify-center py-2 text-muted-foreground;
+  }
+
+  /* Mobile list item */
+  .mobile-list-item {
+    @apply flex items-center justify-between p-4 bg-card border-b border-border/50 
+           last:border-b-0 active:bg-muted/50 transition-colors;
+  }
+
+  /* Skeleton pulse for mobile */
+  .skeleton-mobile {
+    @apply animate-pulse bg-muted rounded-md;
+  }
 }
 
 /* PWA standalone mode adjustments */
@@ -312,5 +375,39 @@
   body {
     /* Additional padding for PWA mode */
     padding-top: max(env(safe-area-inset-top), 0.5rem);
+  }
+
+  /* Hide browser chrome elements in standalone */
+  .hide-in-pwa {
+    display: none !important;
+  }
+}
+
+/* Small mobile devices (320px-375px) */
+@media (max-width: 374px) {
+  .stat-card {
+    @apply p-3;
+  }
+
+  .stat-card .text-3xl {
+    @apply text-xl;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects on touch devices */
+  .card-hover:hover {
+    transform: none;
+  }
+
+  /* Larger touch targets */
+  button, a {
+    @apply min-h-[44px];
+  }
+
+  /* Active states instead of hover */
+  .card-hover:active {
+    @apply scale-[0.98];
   }
 }

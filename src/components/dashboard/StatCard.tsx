@@ -30,21 +30,22 @@ export function StatCard({ title, value, subtitle, icon: Icon, trend, variant = 
 
   return (
     <div className={cn(
-      'stat-card card-hover',
+      'relative overflow-hidden rounded-xl p-3 sm:p-4 md:p-6 bg-card shadow-sm border border-border/50',
+      'transition-all duration-300 active:scale-[0.98] md:hover:shadow-lg md:hover:-translate-y-0.5',
       variantStyles[variant]
     )}>
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
           <p className={cn(
-            'text-sm font-medium',
+            'text-xs sm:text-sm font-medium truncate',
             variant === 'default' ? 'text-muted-foreground' : 'text-current/80'
           )}>
             {title}
           </p>
-          <p className="text-3xl font-bold mt-2">{value}</p>
+          <p className="text-xl sm:text-2xl md:text-3xl font-bold mt-1 sm:mt-2 truncate">{value}</p>
           {subtitle && (
             <p className={cn(
-              'text-sm mt-1',
+              'text-xs sm:text-sm mt-0.5 sm:mt-1 truncate',
               variant === 'default' ? 'text-muted-foreground' : 'text-current/70'
             )}>
               {subtitle}
@@ -52,20 +53,20 @@ export function StatCard({ title, value, subtitle, icon: Icon, trend, variant = 
           )}
           {trend && (
             <p className={cn(
-              'text-sm font-medium mt-2 flex items-center gap-1',
+              'text-xs sm:text-sm font-medium mt-1 sm:mt-2 flex items-center gap-1',
               trend.isPositive ? 'text-success' : 'text-destructive',
               variant !== 'default' && 'text-current/80'
             )}>
               {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
-              <span className="opacity-70 ml-1">vs last term</span>
+              <span className="opacity-70 ml-1 hidden sm:inline">vs last term</span>
             </p>
           )}
         </div>
         <div className={cn(
-          'rounded-xl p-3',
+          'rounded-lg sm:rounded-xl p-2 sm:p-3 flex-shrink-0',
           iconStyles[variant]
         )}>
-          <Icon className="h-6 w-6" />
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
         </div>
       </div>
     </div>
