@@ -44,6 +44,18 @@ export default function SystemSettings() {
 
   useEffect(() => {
     fetchPlatformStats();
+
+    // Set up realtime subscriptions for live updates
+    const channel = supabase
+      .channel('system-settings-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schools' }, () => fetchPlatformStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchPlatformStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, () => fetchPlatformStats())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchPlatformStats = async () => {
@@ -79,7 +91,7 @@ export default function SystemSettings() {
   };
 
   return (
-    <MainLayout title="System Settings" subtitle="Configure platform-wide settings">
+    <MainLayout title="System Settings" subtitle="Configure platform-wide settings (live updates enabled)">
       <div className="max-w-4xl space-y-6 animate-fade-in">
         {/* Platform Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -99,8 +111,8 @@ export default function SystemSettings() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-500/10">
-                  <Users className="h-5 w-5 text-blue-500" />
+                <div className="p-2 rounded-lg bg-info/10">
+                  <Users className="h-5 w-5 text-info" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.totalUsers}</p>
@@ -112,8 +124,8 @@ export default function SystemSettings() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-green-500/10">
-                  <CreditCard className="h-5 w-5 text-green-500" />
+                <div className="p-2 rounded-lg bg-success/10">
+                  <CreditCard className="h-5 w-5 text-success" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.activeSubscriptions}</p>
@@ -125,8 +137,8 @@ export default function SystemSettings() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-yellow-500/10">
-                  <Shield className="h-5 w-5 text-yellow-500" />
+                <div className="p-2 rounded-lg bg-warning/10">
+                  <Shield className="h-5 w-5 text-warning" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.trialSubscriptions}</p>

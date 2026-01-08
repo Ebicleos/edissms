@@ -37,45 +37,64 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PasswordInput } from '@/components/ui/password-input';
-import { Search, UserCog, Key, ShieldCheck, Users, GraduationCap, Loader2, Mail } from 'lucide-react';
+import { Search, UserCog, ShieldCheck, Users, GraduationCap, Loader2, Mail, Trash2, Edit, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logAudit } from '@/lib/auditLog';
+
+type AppRole = 'admin' | 'teacher' | 'student';
 
 interface UserRecord {
   id: string;
   email: string;
   full_name: string;
-  role: 'admin' | 'teacher' | 'student';
+  role: AppRole;
   created_at: string;
+  school_id: string | null;
 }
 
 export default function UserManagement() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
-  const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Dialog states
   const [sendResetEmailOpen, setSendResetEmailOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  
+  // Form states
+  const [editName, setEditName] = useState('');
+  const [newRole, setNewRole] = useState<AppRole>('student');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchUsers();
+    
+    // Set up realtime subscription
+    const channel = supabase
+      .channel('user-management')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchUsers())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_roles' }, () => fetchUsers())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchUsers = async () => {
     setIsLoading(true);
     
-    // Fetch user roles with profiles
+    // Fetch user roles with profiles for the same school
     const { data: rolesData, error: rolesError } = await supabase
       .from('user_roles')
-      .select('user_id, role');
+      .select('user_id, role, school_id');
 
     if (rolesError) {
       console.error('Error fetching roles:', rolesError);
@@ -86,7 +105,7 @@ export default function UserManagement() {
     // Fetch profiles
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, full_name, email, created_at');
+      .select('id, full_name, email, created_at, school_id');
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError);
@@ -94,17 +113,25 @@ export default function UserManagement() {
       return;
     }
 
-    // Merge data
-    const userMap = new Map(rolesData.map((r) => [r.user_id, r.role]));
+    // Merge data - only include users from the same school
+    const userMap = new Map(rolesData.map((r) => [r.user_id, { role: r.role, school_id: r.school_id }]));
     const mergedUsers: UserRecord[] = profilesData
-      .filter((p) => userMap.has(p.id))
-      .map((p) => ({
-        id: p.id,
-        email: p.email || '',
-        full_name: p.full_name,
-        role: userMap.get(p.id) as 'admin' | 'teacher' | 'student',
-        created_at: p.created_at || '',
-      }));
+      .filter((p) => {
+        const roleInfo = userMap.get(p.id);
+        // Include users from the same school or users without a school
+        return roleInfo && (roleInfo.school_id === profile?.school_id || !roleInfo.school_id);
+      })
+      .map((p) => {
+        const roleInfo = userMap.get(p.id);
+        return {
+          id: p.id,
+          email: p.email || '',
+          full_name: p.full_name,
+          role: roleInfo?.role as AppRole,
+          created_at: p.created_at || '',
+          school_id: p.school_id,
+        };
+      });
 
     setUsers(mergedUsers);
     setIsLoading(false);
@@ -117,43 +144,6 @@ export default function UserManagement() {
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
     return matchesSearch && matchesRole;
   });
-
-  const handleResetPassword = async () => {
-    if (!selectedUser) return;
-
-    if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast.error("Passwords don't match");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    // Note: Admin password reset requires service role key which is only available in Edge Functions
-    // For now, we'll send a reset email
-    const { error } = await supabase.auth.resetPasswordForEmail(selectedUser.email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    });
-
-    setIsSubmitting(false);
-
-    if (error) {
-      toast.error('Failed to send reset email', { description: error.message });
-      return;
-    }
-
-    toast.success('Password reset email sent!', {
-      description: `A reset link has been sent to ${selectedUser.email}`,
-    });
-    setResetPasswordOpen(false);
-    setNewPassword('');
-    setConfirmPassword('');
-    setSelectedUser(null);
-  };
 
   const handleSendResetEmail = async () => {
     if (!selectedUser || !selectedUser.email) {
@@ -174,6 +164,13 @@ export default function UserManagement() {
       return;
     }
 
+    await logAudit({
+      action: 'send_password_reset',
+      entityType: 'user',
+      entityId: selectedUser.id,
+      newData: { email: selectedUser.email },
+    });
+
     toast.success('Password reset email sent!', {
       description: `A reset link has been sent to ${selectedUser.email}`,
     });
@@ -181,14 +178,110 @@ export default function UserManagement() {
     setSelectedUser(null);
   };
 
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    setIsSubmitting(true);
+
+    const { data, error } = await supabase.functions.invoke('delete-user', {
+      body: { userId: selectedUser.id },
+    });
+
+    setIsSubmitting(false);
+
+    if (error || !data?.success) {
+      toast.error('Failed to delete user', { description: error?.message || data?.error });
+      return;
+    }
+
+    toast.success('User deleted successfully');
+    setDeleteDialogOpen(false);
+    setSelectedUser(null);
+    fetchUsers();
+  };
+
+  const handleEditUser = async () => {
+    if (!selectedUser) return;
+
+    setIsSubmitting(true);
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ full_name: editName })
+      .eq('id', selectedUser.id);
+
+    setIsSubmitting(false);
+
+    if (error) {
+      toast.error('Failed to update user', { description: error.message });
+      return;
+    }
+
+    await logAudit({
+      action: 'update_user',
+      entityType: 'user',
+      entityId: selectedUser.id,
+      oldData: { full_name: selectedUser.full_name },
+      newData: { full_name: editName },
+    });
+
+    toast.success('User updated successfully');
+    setEditDialogOpen(false);
+    setSelectedUser(null);
+    fetchUsers();
+  };
+
+  const handleChangeRole = async () => {
+    if (!selectedUser) return;
+
+    setIsSubmitting(true);
+
+    const { error } = await supabase
+      .from('user_roles')
+      .update({ role: newRole })
+      .eq('user_id', selectedUser.id);
+
+    setIsSubmitting(false);
+
+    if (error) {
+      toast.error('Failed to change role', { description: error.message });
+      return;
+    }
+
+    await logAudit({
+      action: 'change_role',
+      entityType: 'user',
+      entityId: selectedUser.id,
+      oldData: { role: selectedUser.role },
+      newData: { role: newRole },
+    });
+
+    toast.success('Role updated successfully');
+    setRoleDialogOpen(false);
+    setSelectedUser(null);
+    fetchUsers();
+  };
+
+  const openEditDialog = (u: UserRecord) => {
+    setSelectedUser(u);
+    setEditName(u.full_name);
+    setEditDialogOpen(true);
+  };
+
+  const openRoleDialog = (u: UserRecord) => {
+    setSelectedUser(u);
+    setNewRole(u.role);
+    setRoleDialogOpen(true);
+  };
+
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin':
-        return <Badge className="bg-red-500">Admin</Badge>;
+        return <Badge className="bg-destructive">Admin</Badge>;
       case 'teacher':
-        return <Badge className="bg-blue-500">Teacher</Badge>;
+        return <Badge className="bg-info">Teacher</Badge>;
       case 'student':
-        return <Badge className="bg-green-500">Student</Badge>;
+        return <Badge className="bg-success">Student</Badge>;
       default:
         return <Badge>{role}</Badge>;
     }
@@ -221,7 +314,7 @@ export default function UserManagement() {
     <MainLayout title="User Management" subtitle="Manage all system users and reset passwords">
       <div className="space-y-6 animate-fade-in">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-card rounded-xl border border-border/50 p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
@@ -235,8 +328,8 @@ export default function UserManagement() {
           </div>
           <div className="bg-card rounded-xl border border-border/50 p-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-500/10">
-                <ShieldCheck className="h-5 w-5 text-red-500" />
+              <div className="p-2 rounded-lg bg-destructive/10">
+                <ShieldCheck className="h-5 w-5 text-destructive" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{users.filter(u => u.role === 'admin').length}</p>
@@ -246,8 +339,8 @@ export default function UserManagement() {
           </div>
           <div className="bg-card rounded-xl border border-border/50 p-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <GraduationCap className="h-5 w-5 text-blue-500" />
+              <div className="p-2 rounded-lg bg-info/10">
+                <GraduationCap className="h-5 w-5 text-info" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{users.filter(u => u.role === 'teacher').length}</p>
@@ -257,8 +350,8 @@ export default function UserManagement() {
           </div>
           <div className="bg-card rounded-xl border border-border/50 p-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10">
-                <Users className="h-5 w-5 text-green-500" />
+              <div className="p-2 rounded-lg bg-success/10">
+                <Users className="h-5 w-5 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{users.filter(u => u.role === 'student').length}</p>
@@ -330,18 +423,49 @@ export default function UserManagement() {
                       {u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex gap-1 justify-end">
                         <Button
-                          variant="outline"
-                          size="sm"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(u)}
+                          disabled={u.id === user?.id}
+                          title="Edit user"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openRoleDialog(u)}
+                          disabled={u.id === user?.id}
+                          title="Change role"
+                        >
+                          <UserCheck className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => {
                             setSelectedUser(u);
                             setSendResetEmailOpen(true);
                           }}
                           disabled={!u.email || u.id === user?.id}
+                          title="Send reset link"
                         >
-                          <Mail className="h-4 w-4 mr-1" />
-                          Send Reset Link
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedUser(u);
+                            setDeleteDialogOpen(true);
+                          }}
+                          disabled={u.id === user?.id || u.role === 'admin'}
+                          title="Delete user"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -382,6 +506,115 @@ export default function UserManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete User Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{selectedUser?.full_name}</strong>? 
+              This action cannot be undone and will remove all their data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteUser} 
+              disabled={isSubmitting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete User'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update user information
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editName">Full Name</Label>
+              <Input
+                id="editName"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditUser} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Role Dialog */}
+      <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change User Role</DialogTitle>
+            <DialogDescription>
+              Change the role for <strong>{selectedUser?.full_name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newRole">New Role</Label>
+              <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="teacher">Teacher</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRoleDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleChangeRole} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update Role'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

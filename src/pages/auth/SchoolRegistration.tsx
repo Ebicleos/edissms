@@ -311,7 +311,32 @@ export default function SchoolRegistration() {
         throw new Error('School creation could not be verified. Please try again.');
       }
 
-      // 3. Create school_settings for the new school
+      // 3. Add admin role FIRST (required for school_settings and classes RLS)
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({ 
+          user_id: authData.user.id, 
+          role: 'admin',
+          school_id: schoolData.id,
+        });
+
+      if (roleError) throw roleError;
+
+      // 4. Create/update the profile with school_id
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: authData.user.id,
+          full_name: formData.adminName,
+          email: formData.adminEmail,
+          school_id: schoolData.id,
+        }, { onConflict: 'id' });
+
+      if (profileError) {
+        console.error('Failed to create/update profile:', profileError);
+      }
+
+      // 5. Create school_settings for the new school (now has admin role)
       await supabase
         .from('school_settings')
         .insert({
@@ -325,7 +350,7 @@ export default function SchoolRegistration() {
           term: 'First Term',
         });
 
-      // 4. Create the subscription (trial)
+      // 6. Create the subscription (trial)
       const startDate = new Date();
       const trialEndDate = addMonths(startDate, 1); // 1 month trial
 
@@ -342,32 +367,7 @@ export default function SchoolRegistration() {
 
       if (subError) throw subError;
 
-      // 5. Create/update the profile with school_id
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: authData.user.id,
-          full_name: formData.adminName,
-          email: formData.adminEmail,
-          school_id: schoolData.id,
-        }, { onConflict: 'id' });
-
-      if (profileError) {
-        console.error('Failed to create/update profile:', profileError);
-      }
-
-      // 6. Add admin role with school_id
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({ 
-          user_id: authData.user.id, 
-          role: 'admin',
-          school_id: schoolData.id,
-        });
-
-      if (roleError) throw roleError;
-
-      // 7. Create default classes for the school
+      // 7. Create default classes for the school (now has admin role)
       const defaultClasses = [
         { name: 'Creche', level: 'creche' },
         { name: 'Pre-Nursery', level: 'preschool' },
@@ -410,6 +410,19 @@ export default function SchoolRegistration() {
         });
       } catch (e) {
         console.warn('Failed to send welcome email:', e);
+      }
+
+      // 9. Log audit event
+      try {
+        await supabase.from('audit_logs').insert({
+          action: 'school_registration',
+          entity_type: 'school',
+          entity_id: schoolData.id,
+          user_id: authData.user.id,
+          new_data: { school_name: formData.schoolName, plan: 'trial' },
+        });
+      } catch (e) {
+        console.warn('Failed to log audit:', e);
       }
 
       setIsComplete(true);
