@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Search, Users, Filter, RefreshCw, Loader2, Shield, Mail } from 'lucide-react';
+import { Search, Users, RefreshCw, Loader2, Shield, Mail } from 'lucide-react';
 
 interface PlatformUser {
   id: string;
@@ -30,6 +30,18 @@ export default function PlatformUsers() {
 
   useEffect(() => {
     fetchData();
+
+    // Set up realtime subscriptions for live updates
+    const channel = supabase
+      .channel('platform-users-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_roles' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schools' }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchData = async () => {
@@ -158,7 +170,7 @@ export default function PlatformUsers() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle>All Users</CardTitle>
-                <CardDescription>View and manage platform users</CardDescription>
+                <CardDescription>View and manage platform users (live updates enabled)</CardDescription>
               </div>
               <Button variant="outline" size="sm" onClick={fetchData} disabled={isLoading}>
                 <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />

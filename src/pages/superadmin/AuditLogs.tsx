@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Search, FileText, RefreshCw, Loader2, Clock, User, Activity } from 'lucide-react';
+import { Search, FileText, RefreshCw, Loader2, Clock, Activity } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface AuditLog {
@@ -19,8 +19,8 @@ interface AuditLog {
   user_id: string | null;
   created_at: string;
   ip_address: string | null;
-  old_data: any;
-  new_data: any;
+  old_data: unknown;
+  new_data: unknown;
 }
 
 export default function AuditLogs() {
@@ -31,6 +31,19 @@ export default function AuditLogs() {
 
   useEffect(() => {
     fetchLogs();
+
+    // Set up realtime subscription for live updates
+    const channel = supabase
+      .channel('audit-logs-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, (payload) => {
+        // Prepend new log to the list
+        setLogs(prev => [payload.new as AuditLog, ...prev].slice(0, 100));
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchLogs = async () => {
@@ -58,23 +71,23 @@ export default function AuditLogs() {
   });
 
   const getActionBadgeVariant = (action: string) => {
-    switch (action.toLowerCase()) {
-      case 'create':
-      case 'insert':
-        return 'default';
-      case 'update':
-        return 'secondary';
-      case 'delete':
-        return 'destructive';
-      default:
-        return 'outline';
+    const actionLower = action.toLowerCase();
+    if (actionLower.includes('create') || actionLower.includes('insert') || actionLower.includes('registration')) {
+      return 'default';
     }
+    if (actionLower.includes('update') || actionLower.includes('change')) {
+      return 'secondary';
+    }
+    if (actionLower.includes('delete')) {
+      return 'destructive';
+    }
+    return 'outline';
   };
 
   const uniqueActions = [...new Set(logs.map(l => l.action))];
 
   return (
-    <MainLayout title="Audit Logs" subtitle="View system activity and changes">
+    <MainLayout title="Audit Logs" subtitle="View system activity and changes (live updates enabled)">
       <div className="space-y-6 animate-fade-in">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -99,7 +112,11 @@ export default function AuditLogs() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {logs.filter(l => l.action.toLowerCase().includes('create') || l.action.toLowerCase().includes('insert')).length}
+                    {logs.filter(l => 
+                      l.action.toLowerCase().includes('create') || 
+                      l.action.toLowerCase().includes('insert') ||
+                      l.action.toLowerCase().includes('registration')
+                    ).length}
                   </p>
                   <p className="text-xs text-muted-foreground">Creates</p>
                 </div>
@@ -114,7 +131,10 @@ export default function AuditLogs() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {logs.filter(l => l.action.toLowerCase().includes('update')).length}
+                    {logs.filter(l => 
+                      l.action.toLowerCase().includes('update') ||
+                      l.action.toLowerCase().includes('change')
+                    ).length}
                   </p>
                   <p className="text-xs text-muted-foreground">Updates</p>
                 </div>
