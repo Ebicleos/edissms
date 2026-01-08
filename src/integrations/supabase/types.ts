@@ -1358,7 +1358,7 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
-          school_id: string | null
+          school_id: string
         }
         Insert: {
           class_id?: string | null
@@ -1366,7 +1366,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           name: string
-          school_id?: string | null
+          school_id: string
         }
         Update: {
           class_id?: string | null
@@ -1374,7 +1374,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
-          school_id?: string | null
+          school_id?: string
         }
         Relationships: [
           {
