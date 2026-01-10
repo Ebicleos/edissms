@@ -91,13 +91,52 @@ Deno.serve(async (req) => {
       .eq('user_id', userId)
       .single();
 
-    // Delete the auth user (cascades to profiles and user_roles)
+    // Delete related data from all tables before deleting the auth user
+    // This ensures clean deletion even if CASCADE is not set on all foreign keys
+
+    // Delete from teachers table if exists
+    await supabaseAdmin
+      .from('teachers')
+      .delete()
+      .eq('user_id', userId);
+
+    // Delete from teacher_classes if exists
+    await supabaseAdmin
+      .from('teacher_classes')
+      .delete()
+      .eq('teacher_id', userId);
+
+    // Delete from students table if exists (linked by user_id)
+    await supabaseAdmin
+      .from('students')
+      .delete()
+      .eq('user_id', userId);
+
+    // Delete from student_classes if exists
+    await supabaseAdmin
+      .from('student_classes')
+      .delete()
+      .eq('student_id', userId);
+
+    // Delete user role
+    await supabaseAdmin
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId);
+
+    // Delete profile
+    await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    // Delete the auth user (will cascade to any remaining references)
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteError) {
       console.error('Delete user error:', deleteError);
       return new Response(
-        JSON.stringify({ error: 'Failed to delete user' }),
+        JSON.stringify({ error: 'Failed to delete user', details: deleteError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -124,7 +163,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in delete-user:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

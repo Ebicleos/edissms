@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Save, Bell, Shield, CreditCard, Globe, Loader2, Database, Users } from 'lucide-react';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 
 interface PlatformStats {
   totalSchools: number;
@@ -28,19 +29,31 @@ export default function SystemSettings() {
     trialSubscriptions: 0,
   });
   
-  // Platform settings
-  const [platformName, setPlatformName] = useState('EduManage');
-  const [supportEmail, setSupportEmail] = useState('support@edumanage.com');
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [newRegistrations, setNewRegistrations] = useState(true);
+  const { settings, updateMaintenanceMode, updateSystemAnnouncement, updatePlatformConfig, updatePricing } = usePlatformSettings();
   
-  // Pricing settings
-  const [termlyPrice, setTermlyPrice] = useState('50000');
-  const [yearlyPrice, setYearlyPrice] = useState('120000');
-  const [trialDays, setTrialDays] = useState('30');
-  
-  // Notification settings
-  const [systemAnnouncement, setSystemAnnouncement] = useState('');
+  // Local form state initialized from settings
+  const [platformName, setPlatformName] = useState(settings.platformConfig.name);
+  const [supportEmail, setSupportEmail] = useState(settings.platformConfig.support_email);
+  const [maintenanceMode, setMaintenanceMode] = useState(settings.maintenanceMode.enabled);
+  const [maintenanceMessage, setMaintenanceMessage] = useState(settings.maintenanceMode.message);
+  const [newRegistrations, setNewRegistrations] = useState(settings.platformConfig.allow_registrations);
+  const [termlyPrice, setTermlyPrice] = useState(String(settings.pricing.termly));
+  const [yearlyPrice, setYearlyPrice] = useState(String(settings.pricing.yearly));
+  const [trialDays, setTrialDays] = useState(String(settings.pricing.trial_days));
+  const [systemAnnouncement, setSystemAnnouncement] = useState(settings.systemAnnouncement.message);
+
+  // Sync form state when settings load
+  useEffect(() => {
+    setPlatformName(settings.platformConfig.name);
+    setSupportEmail(settings.platformConfig.support_email);
+    setMaintenanceMode(settings.maintenanceMode.enabled);
+    setMaintenanceMessage(settings.maintenanceMode.message);
+    setNewRegistrations(settings.platformConfig.allow_registrations);
+    setTermlyPrice(String(settings.pricing.termly));
+    setYearlyPrice(String(settings.pricing.yearly));
+    setTrialDays(String(settings.pricing.trial_days));
+    setSystemAnnouncement(settings.systemAnnouncement.message);
+  }, [settings]);
 
   useEffect(() => {
     fetchPlatformStats();
@@ -84,10 +97,19 @@ export default function SystemSettings() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // In a real app, save to a platform_settings table
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    toast.success('System settings saved successfully!');
+    try {
+      await Promise.all([
+        updateMaintenanceMode({ enabled: maintenanceMode, message: maintenanceMessage }),
+        updateSystemAnnouncement({ message: systemAnnouncement, type: 'info' }),
+        updatePlatformConfig({ name: platformName, support_email: supportEmail, allow_registrations: newRegistrations }),
+        updatePricing({ termly: Number(termlyPrice), yearly: Number(yearlyPrice), trial_days: Number(trialDays) }),
+      ]);
+      toast.success('System settings saved successfully!');
+    } catch (error) {
+      toast.error('Failed to save settings');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -196,6 +218,17 @@ export default function SystemSettings() {
                   onCheckedChange={setMaintenanceMode}
                 />
               </div>
+              {maintenanceMode && (
+                <div className="pl-4">
+                  <Label htmlFor="maintenanceMessage">Maintenance Message</Label>
+                  <Input
+                    id="maintenanceMessage"
+                    value={maintenanceMessage}
+                    onChange={(e) => setMaintenanceMessage(e.target.value)}
+                    placeholder="System is under maintenance..."
+                  />
+                </div>
+              )}
               <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                 <div>
                   <p className="font-medium">Allow New Registrations</p>

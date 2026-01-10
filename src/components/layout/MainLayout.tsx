@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
+import { SystemAnnouncementBanner } from './SystemAnnouncementBanner';
 import { MobileSidebar } from './MobileSidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -28,8 +29,9 @@ export function MainLayout({ children, title, subtitle }: MainLayoutProps) {
       <MobileSidebar open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} />
       
       <div className="md:pl-64 flex flex-col min-h-screen">
+        <SystemAnnouncementBanner />
         <SubscriptionBanner />
-        <Header 
+        <Header
           title={title || ''} 
           subtitle={subtitle} 
           onMobileMenuToggle={() => setMobileMenuOpen(true)}

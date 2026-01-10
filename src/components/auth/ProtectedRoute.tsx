@@ -33,22 +33,26 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/admin/register-school" replace />;
   }
 
-  // UX-only check: Superadmins can access admin routes as well
+  // UX-only check: Determine if user has access to this route
   // Note: Actual authorization is enforced server-side via RLS policies
-  const effectiveAllowedRoles = allowedRoles ? [...allowedRoles] : undefined;
-  const hasAccess = !effectiveAllowedRoles || 
-    (role && effectiveAllowedRoles.includes(role)) ||
-    (role === 'superadmin' && effectiveAllowedRoles.includes('admin'));
+  // Superadmins can access all routes
+  const isSuperadmin = role === 'superadmin';
+  const hasAccess = !allowedRoles || 
+    (role && allowedRoles.includes(role)) ||
+    isSuperadmin;
 
-  if (!hasAccess) {
+  if (!hasAccess && role) {
     // Redirect to appropriate dashboard based on role
-    if (role === 'superadmin') {
+    if (isSuperadmin) {
       return <Navigate to="/superadmin" replace />;
-    } else if (role === 'admin') {
+    }
+    if (role === 'admin') {
       return <Navigate to="/" replace />;
-    } else if (role === 'teacher') {
+    }
+    if (role === 'teacher') {
       return <Navigate to="/teacher" replace />;
-    } else if (role === 'student') {
+    }
+    if (role === 'student') {
       return <Navigate to="/student" replace />;
     }
   }
