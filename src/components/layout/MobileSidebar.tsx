@@ -44,33 +44,45 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['admin'] },
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/teacher/dashboard', roles: ['teacher'] },
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/student/dashboard', roles: ['student'] },
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/superadmin/dashboard', roles: ['superadmin'] },
-  { icon: Building, label: 'Schools', path: '/superadmin/schools', roles: ['superadmin'] },
-  { icon: CreditCard, label: 'Subscriptions', path: '/superadmin/subscriptions', roles: ['superadmin'] },
+  // Admin items
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['admin'] },
   { icon: Users, label: 'Students', path: '/students', roles: ['admin'] },
   { icon: GraduationCap, label: 'Teachers', path: '/teachers', roles: ['admin'] },
   { icon: BookOpen, label: 'Classes', path: '/classes', roles: ['admin'] },
   { icon: BookOpenCheck, label: 'Subjects', path: '/subjects', roles: ['admin'] },
-  { icon: Calendar, label: 'Attendance', path: '/attendance', roles: ['admin', 'teacher'] },
+  { icon: Calendar, label: 'Attendance', path: '/attendance', roles: ['admin'] },
   { icon: ClipboardList, label: 'Exams', path: '/exams', roles: ['admin'] },
-  { icon: ClipboardList, label: 'My Exams', path: '/teacher/exams', roles: ['teacher'] },
-  { icon: FileText, label: 'Grade Entry', path: '/teacher/grade-entry', roles: ['teacher'] },
-  { icon: FileText, label: 'Assignments', path: '/teacher/assignments', roles: ['teacher'] },
   { icon: FileText, label: 'Report Cards', path: '/report-cards', roles: ['admin'] },
   { icon: CreditCard, label: 'Fees', path: '/fees', roles: ['admin'] },
-  { icon: ArrowUpDown, label: 'Promotion', path: '/student-promotion', roles: ['admin'] },
-  { icon: MessageSquare, label: 'Messages', path: '/messages', roles: ['admin', 'teacher'] },
+  { icon: ArrowUpDown, label: 'Promotion', path: '/promotion', roles: ['admin'] },
+  { icon: MessageSquare, label: 'Messages', path: '/messages', roles: ['admin'] },
   { icon: Bell, label: 'Announcements', path: '/announcements', roles: ['admin'] },
   { icon: CalendarDays, label: 'Events', path: '/events', roles: ['admin'] },
-  { icon: Video, label: 'Online Classes', path: '/online-classes', roles: ['admin', 'teacher'] },
+  { icon: Video, label: 'Online Classes', path: '/online-classes', roles: ['admin'] },
   { icon: UserPlus, label: 'New Admission', path: '/admission', roles: ['admin'] },
   { icon: IdCard, label: 'ID Cards', path: '/id-cards', roles: ['admin'] },
-  { icon: Shield, label: 'Users', path: '/admin/users', roles: ['admin'] },
+  { icon: Shield, label: 'User Management', path: '/user-management', roles: ['admin'] },
   { icon: Settings, label: 'Settings', path: '/settings', roles: ['admin'] },
-  // Student menu items
+  
+  // Superadmin items
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/superadmin', roles: ['superadmin'] },
+  { icon: Building, label: 'Schools', path: '/superadmin/schools', roles: ['superadmin'] },
+  { icon: CreditCard, label: 'Subscriptions', path: '/superadmin/subscriptions', roles: ['superadmin'] },
+  { icon: Users, label: 'Platform Users', path: '/superadmin/users', roles: ['superadmin'] },
+  { icon: Settings, label: 'System Settings', path: '/superadmin/settings', roles: ['superadmin'] },
+  
+  // Teacher items
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/teacher', roles: ['teacher'] },
+  { icon: ClipboardList, label: 'My Exams', path: '/teacher/exams', roles: ['teacher'] },
+  { icon: FileText, label: 'Grade Entry', path: '/teacher/grades', roles: ['teacher'] },
+  { icon: FileText, label: 'Assignments', path: '/teacher/assignments', roles: ['teacher'] },
+  { icon: Calendar, label: 'Attendance', path: '/attendance', roles: ['teacher'] },
+  { icon: MessageSquare, label: 'Messages', path: '/messages', roles: ['teacher'] },
+  { icon: Video, label: 'Online Classes', path: '/online-classes', roles: ['teacher'] },
+  { icon: CalendarDays, label: 'Events', path: '/events', roles: ['teacher'] },
+  
+  // Student items
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/student', roles: ['student'] },
   { icon: ClipboardList, label: 'CBT Portal', path: '/cbt', roles: ['student'] },
   { icon: GraduationCap, label: 'My Results', path: '/student/results', roles: ['student'] },
   { icon: CreditCard, label: 'School Fees', path: '/student/fees', roles: ['student'] },
@@ -79,6 +91,7 @@ const menuItems: MenuItem[] = [
   { icon: CalendarDays, label: 'Events', path: '/student/events', roles: ['student'] },
   { icon: CalendarCheck, label: 'Attendance', path: '/student/attendance', roles: ['student'] },
   { icon: BookOpen, label: 'Assignments', path: '/student/assignments', roles: ['student'] },
+  { icon: Video, label: 'Online Classes', path: '/online-classes', roles: ['student'] },
 ];
 
 interface MobileSidebarProps {
@@ -108,7 +121,7 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
     setViewMode(mode);
     toast.success(`Switched to ${mode === 'superadmin' ? 'Super Admin' : 'Admin'} view`);
     onOpenChange(false);
-    navigate(mode === 'superadmin' ? '/superadmin/dashboard' : '/dashboard');
+    navigate(mode === 'superadmin' ? '/superadmin' : '/');
   };
 
   const getRoleBadgeColor = () => {
