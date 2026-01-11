@@ -37,6 +37,12 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   // Note: Actual authorization is enforced server-side via RLS policies
   // Superadmins can access all routes
   const isSuperadmin = role === 'superadmin';
+  
+  // Special case: Redirect superadmins from admin dashboard (/) to their dashboard
+  if (isSuperadmin && location.pathname === '/') {
+    return <Navigate to="/superadmin" replace />;
+  }
+  
   const hasAccess = !allowedRoles || 
     (role && allowedRoles.includes(role)) ||
     isSuperadmin;

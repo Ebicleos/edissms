@@ -26,7 +26,7 @@ import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 export default function Admission() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { addStudent } = useStudents();
+  const { addStudent, schoolId } = useStudents();
   const { settings: schoolSettings } = useSchoolSettings();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -89,19 +89,19 @@ export default function Admission() {
         ...formData,
         photoUrl: photoUrl || undefined,
       };
-      const student = await addStudent(studentData);
-      if (student) {
-        setNewStudent(student);
+      const result = await addStudent(studentData);
+      if (result.student) {
+        setNewStudent(result.student);
         setShowSuccess(true);
         
         toast({
           title: 'Student Admitted Successfully!',
-          description: `${student.fullName} has been admitted with admission number ${student.admissionNumber}`,
+          description: `${result.student.fullName} has been admitted with admission number ${result.student.admissionNumber}`,
         });
       } else {
         toast({
           title: 'Error',
-          description: 'Failed to admit student. Please try again.',
+          description: result.error || 'Failed to admit student. Please try again.',
           variant: 'destructive',
         });
       }
@@ -176,6 +176,20 @@ export default function Admission() {
   return (
     <MainLayout title="Student Admission" subtitle="Register a new student">
       <div className="max-w-4xl animate-slide-up">
+        {!schoolId && (
+          <div className="mb-6 p-4 rounded-lg border border-warning bg-warning/10">
+            <p className="text-sm text-warning-foreground font-medium">
+              ⚠️ School setup incomplete. Please complete your school registration before admitting students.
+            </p>
+            <Button 
+              variant="link" 
+              className="p-0 h-auto text-primary mt-2"
+              onClick={() => navigate('/settings')}
+            >
+              Go to Settings →
+            </Button>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Photo Upload Section */}
           <div className="form-section">

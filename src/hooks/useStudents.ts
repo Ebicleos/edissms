@@ -166,10 +166,11 @@ export function useStudents() {
     }
   }, [fetchStudents, schoolId]);
 
-  const addStudent = useCallback(async (data: AdmissionFormData & { photoUrl?: string }): Promise<Student | null> => {
+  const addStudent = useCallback(async (data: AdmissionFormData & { photoUrl?: string }): Promise<{ student: Student | null; error?: string }> => {
     if (!schoolId) {
-      console.error('No school_id found. Please complete school setup first.');
-      return null;
+      const errorMsg = 'No school_id found. Please complete school setup first.';
+      console.error(errorMsg);
+      return { student: null, error: errorMsg };
     }
     
     const admissionNumber = await generateAdmissionNumber();
@@ -197,7 +198,7 @@ export function useStudents() {
 
     if (error) {
       console.error('Error adding student:', error);
-      return null;
+      return { student: null, error: error.message };
     }
     
     // Also create student_classes entry for class-based queries
@@ -277,8 +278,8 @@ export function useStudents() {
     };
 
     setStudents((prev) => [newStudent, ...prev]);
-    return newStudent;
-  }, []);
+    return { student: newStudent };
+  }, [schoolId]);
 
   const updateStudent = useCallback(async (id: string, data: Partial<Student>) => {
     const updateData: Record<string, unknown> = {};
@@ -336,6 +337,7 @@ export function useStudents() {
   return {
     students,
     isLoading,
+    schoolId,
     addStudent,
     updateStudent,
     deleteStudent,
