@@ -13,6 +13,7 @@ import { School, ShieldCheck, GraduationCap, Users, Loader2, KeyRound } from 'lu
 import { toast } from 'sonner';
 import { CLASS_LIST_DETAILED } from '@/types';
 import { z } from 'zod';
+import { SystemAnnouncementBanner } from '@/components/layout/SystemAnnouncementBanner';
 
 const loginSchema = z.object({
   identifier: z.string().min(1, 'Email or Admission Number is required'),
@@ -445,7 +446,9 @@ export default function Auth() {
 
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex flex-col">
+        <SystemAnnouncementBanner />
+        <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="flex items-center justify-center gap-2 md:gap-3 mb-6 md:mb-8">
             <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-primary">
@@ -523,12 +526,15 @@ export default function Auth() {
             </CardContent>
           </Card>
         </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-3 md:p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex flex-col">
+      <SystemAnnouncementBanner />
+      <div className="flex-1 flex items-center justify-center p-3 md:p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 md:gap-3 mb-4 md:mb-8">
@@ -810,6 +816,7 @@ export default function Auth() {
             </Link>
           </p>
         </div>
+      </div>
       </div>
     </div>
   );

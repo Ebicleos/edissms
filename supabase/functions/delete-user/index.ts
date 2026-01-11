@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { userId } = await req.json();
+    const { userId, email } = await req.json();
     if (!userId) {
       return new Response(
         JSON.stringify({ error: 'Missing userId' }),
@@ -91,20 +91,46 @@ Deno.serve(async (req) => {
       .eq('user_id', userId)
       .single();
 
+    const userEmail = email || userProfile?.email;
+
     // Delete related data from all tables before deleting the auth user
     // This ensures clean deletion even if CASCADE is not set on all foreign keys
 
-    // Delete from teachers table if exists
+    // Delete from teachers table - by user_id first
     await supabaseAdmin
       .from('teachers')
       .delete()
       .eq('user_id', userId);
+
+    // Also delete from teachers table by email match (for orphaned records without user_id)
+    if (userEmail) {
+      console.log(`Cleaning up teacher records for email: ${userEmail}`);
+      await supabaseAdmin
+        .from('teachers')
+        .delete()
+        .eq('email', userEmail);
+    }
 
     // Delete from teacher_classes if exists
     await supabaseAdmin
       .from('teacher_classes')
       .delete()
       .eq('teacher_id', userId);
+
+    // Also try to delete teacher_classes by teacher_record_id (if teacher was linked via record)
+    const { data: teacherRecords } = await supabaseAdmin
+      .from('teachers')
+      .select('id')
+      .eq('email', userEmail || '');
+    
+    if (teacherRecords && teacherRecords.length > 0) {
+      for (const record of teacherRecords) {
+        await supabaseAdmin
+          .from('teacher_classes')
+          .delete()
+          .eq('teacher_record_id', record.id);
+      }
+    }
 
     // Delete from students table if exists (linked by user_id)
     await supabaseAdmin
@@ -117,6 +143,12 @@ Deno.serve(async (req) => {
       .from('student_classes')
       .delete()
       .eq('student_id', userId);
+
+    // Delete notification reads
+    await supabaseAdmin
+      .from('notification_reads')
+      .delete()
+      .eq('user_id', userId);
 
     // Delete user role
     await supabaseAdmin

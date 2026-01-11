@@ -53,11 +53,12 @@ export function SystemAnnouncementBanner() {
   };
 
   // Show maintenance mode banner (cannot be dismissed)
-  if (maintenance?.enabled && maintenance?.message) {
+  if (maintenance?.enabled) {
+    const maintenanceMessage = maintenance.message || 'System is currently under maintenance. Please check back later.';
     return (
       <div className="bg-destructive text-destructive-foreground px-4 py-3 flex items-center justify-center gap-3">
         <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-        <p className="text-sm font-medium text-center">{maintenance.message}</p>
+        <p className="text-sm font-medium text-center">{maintenanceMessage}</p>
       </div>
     );
   }

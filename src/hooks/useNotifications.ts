@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,18 +17,13 @@ export function useNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (user && role) {
-      fetchNotifications();
-    } else {
+  const fetchNotifications = useCallback(async () => {
+    if (!user || !role) {
       setNotifications([]);
       setUnreadCount(0);
       setIsLoading(false);
+      return;
     }
-  }, [user, role, profile?.school_id]);
-
-  const fetchNotifications = async () => {
-    if (!user || !role) return;
 
     setIsLoading(true);
     
@@ -53,7 +48,7 @@ export function useNotifications() {
     }
     // Admins and superadmins see all announcements
 
-    const { data, error } = await query;
+    const { data: announcements, error } = await query;
 
     if (error) {
       console.error('Error fetching notifications:', error);
@@ -61,30 +56,88 @@ export function useNotifications() {
       return;
     }
 
-    const formattedNotifications: Notification[] = (data || []).map((a) => ({
+    // Fetch read status for current user
+    const announcementIds = (announcements || []).map(a => a.id);
+    let readIds: string[] = [];
+    
+    if (announcementIds.length > 0) {
+      const { data: readData } = await supabase
+        .from('notification_reads')
+        .select('announcement_id')
+        .eq('user_id', user.id)
+        .in('announcement_id', announcementIds);
+      
+      readIds = (readData || []).map(r => r.announcement_id);
+    }
+
+    const formattedNotifications: Notification[] = (announcements || []).map((a) => ({
       id: a.id,
       title: a.title,
       content: a.content,
       type: a.type || 'general',
       created_at: a.created_at || new Date().toISOString(),
-      is_read: false, // We could track this in a separate table for per-user read status
+      is_read: readIds.includes(a.id),
     }));
 
     setNotifications(formattedNotifications);
-    setUnreadCount(formattedNotifications.length);
+    setUnreadCount(formattedNotifications.filter(n => !n.is_read).length);
     setIsLoading(false);
-  };
+  }, [user, role, profile?.school_id]);
 
-  const markAsRead = (notificationId: string) => {
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const markAsRead = async (notificationId: string) => {
+    if (!user) return;
+
+    // Optimistically update UI
     setNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
     );
     setUnreadCount((prev) => Math.max(0, prev - 1));
+
+    // Persist to database
+    const { error } = await supabase
+      .from('notification_reads')
+      .upsert({
+        user_id: user.id,
+        announcement_id: notificationId,
+      }, { onConflict: 'user_id,announcement_id' });
+
+    if (error) {
+      console.error('Error marking notification as read:', error);
+      // Revert on error
+      fetchNotifications();
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    if (!user) return;
+
+    const unreadNotifications = notifications.filter(n => !n.is_read);
+    
+    // Optimistically update UI
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     setUnreadCount(0);
+
+    // Persist all to database
+    const inserts = unreadNotifications.map(n => ({
+      user_id: user.id,
+      announcement_id: n.id,
+    }));
+
+    if (inserts.length > 0) {
+      const { error } = await supabase
+        .from('notification_reads')
+        .upsert(inserts, { onConflict: 'user_id,announcement_id' });
+
+      if (error) {
+        console.error('Error marking all notifications as read:', error);
+        // Revert on error
+        fetchNotifications();
+      }
+    }
   };
 
   return {
