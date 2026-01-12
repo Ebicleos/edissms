@@ -32,6 +32,15 @@ export default function Admission() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [newStudent, setNewStudent] = useState<Student | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [receiptData, setReceiptData] = useState<{
+    amountPaid: number;
+    totalFee: number;
+    balance: number;
+    guardianName: string;
+    phoneContact: string;
+    term: string;
+    academicYear: string;
+  } | null>(null);
 
   const [formData, setFormData] = useState<AdmissionFormData>({
     fullName: '',
@@ -91,6 +100,17 @@ export default function Admission() {
       };
       const result = await addStudent(studentData);
       if (result.student) {
+        // Store receipt data BEFORE resetting the form
+        setReceiptData({
+          amountPaid: formData.amountPaid,
+          totalFee: formData.admissionFee,
+          balance: formData.admissionFee - formData.amountPaid,
+          guardianName: formData.guardianName,
+          phoneContact: formData.phoneContact,
+          term: formData.term,
+          academicYear: formData.academicYear,
+        });
+        
         setNewStudent(result.student);
         setShowSuccess(true);
         
@@ -143,27 +163,24 @@ export default function Admission() {
   };
 
   const handlePrintReceipt = () => {
-    if (!newStudent || !schoolSettings) {
+    if (!newStudent || !schoolSettings || !receiptData) {
       toast({ title: "Error", description: "Unable to print receipt. Missing data.", variant: "destructive" });
       return;
     }
 
     const className = CLASS_LIST_DETAILED.find(c => c.id === newStudent.classId)?.name || newStudent.className || newStudent.classId;
-    const amountPaid = formData.amountPaid || 0;
-    const totalFee = newStudent.admissionFee || formData.admissionFee || 0;
-    const balance = totalFee - amountPaid;
 
     printReceipt({
       studentName: newStudent.fullName,
       admissionNumber: newStudent.admissionNumber,
       className: className,
-      guardianName: formData.guardianName || "N/A",
-      phoneContact: formData.phoneContact || "N/A",
-      amountPaid: amountPaid,
-      totalFee: totalFee,
-      balance: balance,
-      term: schoolSettings.term || formData.term || "First Term",
-      academicYear: schoolSettings.academic_year || formData.academicYear || new Date().getFullYear().toString(),
+      guardianName: receiptData.guardianName || "N/A",
+      phoneContact: receiptData.phoneContact || "N/A",
+      amountPaid: receiptData.amountPaid,
+      totalFee: receiptData.totalFee,
+      balance: receiptData.balance,
+      term: schoolSettings.term || receiptData.term || "First Term",
+      academicYear: schoolSettings.academic_year || receiptData.academicYear || new Date().getFullYear().toString(),
       paymentDate: new Date().toLocaleDateString(),
       paymentMethod: "Cash",
     }, schoolSettings);
@@ -423,7 +440,13 @@ export default function Admission() {
       </div>
 
       {/* Success Dialog */}
-      <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
+      <Dialog open={showSuccess} onOpenChange={(open) => {
+        setShowSuccess(open);
+        if (!open) {
+          setNewStudent(null);
+          setReceiptData(null);
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-success/10 flex items-center justify-center">
@@ -455,12 +478,12 @@ export default function Admission() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Amount Paid:</span>
-                <span className="font-medium text-green-600">{formatCurrency(formData.amountPaid)}</span>
+                <span className="font-medium text-green-600">{formatCurrency(receiptData?.amountPaid || 0)}</span>
               </div>
-              {balance > 0 && (
+              {(receiptData?.balance || 0) > 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Balance:</span>
-                  <span className="font-medium text-destructive">{formatCurrency(balance)}</span>
+                  <span className="font-medium text-destructive">{formatCurrency(receiptData?.balance || 0)}</span>
                 </div>
               )}
             </div>
