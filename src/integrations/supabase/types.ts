@@ -1692,6 +1692,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      link_student_to_user: {
+        Args: { p_admission_number: string; p_email: string; p_user_id: string }
+        Returns: boolean
+      }
       validate_student_for_signup: {
         Args: { admission_num: string; student_name: string }
         Returns: boolean

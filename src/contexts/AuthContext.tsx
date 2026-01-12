@@ -212,16 +212,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Add class assignment if provided
       if (classId) {
         if (role === 'student') {
-          // Link student record to auth user via user_id
+          // Link student record to auth user via user_id using secure RPC function
           if (admissionNumber) {
-            // Update existing student record with user_id
-            const { error: linkError } = await supabase
-              .from('students')
-              .update({ user_id: data.user.id, email })
-              .eq('admission_number', admissionNumber);
+            // Use RPC function to bypass RLS and reliably link student
+            const { data: linkResult, error: linkError } = await supabase
+              .rpc('link_student_to_user', {
+                p_admission_number: admissionNumber,
+                p_user_id: data.user.id,
+                p_email: email
+              });
             
             if (linkError) {
-              console.error('Failed to link student record:', linkError);
+              console.error('Failed to link student record via RPC:', linkError);
+            } else if (!linkResult) {
+              console.warn('Student record not found or already linked for admission:', admissionNumber);
             }
           }
           

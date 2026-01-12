@@ -251,7 +251,29 @@ export default function Auth() {
           }
         }
         
-        // Fallback to student's email if no user_id link or profile not found
+        // FALLBACK: If students.user_id is null, check student_classes for auth link
+        if (!studentEmail) {
+          const { data: classData } = await supabase
+            .from('student_classes')
+            .select('student_id')
+            .eq('admission_number', loginIdentifier.trim())
+            .maybeSingle();
+          
+          if (classData?.student_id) {
+            // Get auth email from profiles using student_id from student_classes
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('id', classData.student_id)
+              .maybeSingle();
+            
+            if (profileData?.email) {
+              studentEmail = profileData.email;
+            }
+          }
+        }
+        
+        // Last fallback to student's guardian email if no auth link found
         if (!studentEmail && studentByAdmission.email) {
           studentEmail = studentByAdmission.email;
         }
@@ -268,7 +290,7 @@ export default function Auth() {
         const normalizedInput = loginIdentifier.trim().toLowerCase().replace(/\s+/g, ' ');
         const { data: studentByName } = await supabase
           .from('students')
-          .select('id, email, user_id, full_name')
+          .select('id, email, user_id, full_name, admission_number')
           .limit(10);
         
         // Find match with normalized comparison
@@ -286,6 +308,27 @@ export default function Auth() {
             
             if (profileData?.email) {
               studentEmail = profileData.email;
+            }
+          }
+          
+          // FALLBACK: Check student_classes for auth link
+          if (!studentEmail && matchedStudent.admission_number) {
+            const { data: classData } = await supabase
+              .from('student_classes')
+              .select('student_id')
+              .eq('admission_number', matchedStudent.admission_number)
+              .maybeSingle();
+            
+            if (classData?.student_id) {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('email')
+                .eq('id', classData.student_id)
+                .maybeSingle();
+              
+              if (profileData?.email) {
+                studentEmail = profileData.email;
+              }
             }
           }
           
