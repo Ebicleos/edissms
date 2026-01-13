@@ -18,6 +18,13 @@ export interface AdmissionFormData {
   term: Term;
 }
 
+export interface PaginationState {
+  currentPage: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 // Helper to get class name from id
 const getClassName = (classId: string): string => {
   const cls = CLASS_LIST_DETAILED.find(c => c.id === classId);
@@ -39,7 +46,7 @@ const calculateAge = (dateOfBirth: string | null): number => {
 
 // Generate next admission number with format: XXXX20262001
 // Format: SchoolInitials + Year + Term + SequenceNumber
-const generateAdmissionNumber = async (): Promise<string> => {
+export const generateAdmissionNumber = async (): Promise<string> => {
   // Fetch school settings for initials
   const { data: schoolData } = await supabase
     .from('school_settings')
@@ -100,6 +107,18 @@ export function useStudents() {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [schoolId, setSchoolId] = useState<string | null>(null);
+  
+  // Pagination state
+  const [pagination, setPagination] = useState<PaginationState>({
+    currentPage: 1,
+    pageSize: 10,
+    totalCount: 0,
+    totalPages: 0,
+  });
+  
+  // Filter state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [classFilter, setClassFilter] = useState('');
 
   // Get current user's school_id
   useEffect(() => {
@@ -117,26 +136,35 @@ export function useStudents() {
     getSchoolId();
   }, []);
 
-  const fetchStudents = useCallback(async () => {
+  const fetchStudents = useCallback(async (
+    page: number = pagination.currentPage,
+    pageSize: number = pagination.pageSize,
+    search: string = searchTerm,
+    classId: string = classFilter
+  ) => {
+    if (!schoolId) return;
+    
     setIsLoading(true);
     
-    // Build query - filter by school_id if available
-    let query = supabase
-      .from('students')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (schoolId) {
-      query = query.eq('school_id', schoolId);
-    }
-    
-    const { data, error } = await query;
+    // Use the RPC function for paginated results
+    const { data, error } = await supabase
+      .rpc('get_paginated_students', {
+        p_school_id: schoolId,
+        p_page_number: page,
+        p_page_size: pageSize,
+        p_search_term: search || null,
+        p_class_filter: classId === 'all' ? null : (classId || null),
+      });
 
     if (error) {
       console.error('Error fetching students:', error);
       setStudents([]);
+      setPagination(prev => ({ ...prev, totalCount: 0, totalPages: 0 }));
     } else {
-      const mapped: Student[] = (data || []).map((s) => ({
+      const totalCount = data?.[0]?.total_count || 0;
+      const totalPages = Math.ceil(Number(totalCount) / pageSize);
+      
+      const mapped: Student[] = (data || []).map((s: any) => ({
         id: s.id,
         admissionNumber: s.admission_number,
         fullName: s.full_name,
@@ -155,16 +183,41 @@ export function useStudents() {
         email: s.email || undefined,
         photoUrl: s.photo_url || undefined,
       }));
+      
       setStudents(mapped);
+      setPagination(prev => ({
+        ...prev,
+        currentPage: page,
+        pageSize,
+        totalCount: Number(totalCount),
+        totalPages,
+      }));
     }
     setIsLoading(false);
-  }, [schoolId]);
+  }, [schoolId, pagination.currentPage, pagination.pageSize, searchTerm, classFilter]);
 
   useEffect(() => {
     if (schoolId !== null) {
       fetchStudents();
     }
-  }, [fetchStudents, schoolId]);
+  }, [schoolId]); // Only trigger on schoolId change, not on every fetchStudents change
+
+  // Page change handlers
+  const setPage = useCallback((page: number) => {
+    if (page >= 1 && page <= pagination.totalPages) {
+      fetchStudents(page, pagination.pageSize, searchTerm, classFilter);
+    }
+  }, [fetchStudents, pagination.totalPages, pagination.pageSize, searchTerm, classFilter]);
+
+  const setPageSize = useCallback((size: number) => {
+    fetchStudents(1, size, searchTerm, classFilter);
+  }, [fetchStudents, searchTerm, classFilter]);
+
+  const updateFilters = useCallback((search: string, classId: string) => {
+    setSearchTerm(search);
+    setClassFilter(classId);
+    fetchStudents(1, pagination.pageSize, search, classId);
+  }, [fetchStudents, pagination.pageSize]);
 
   const addStudent = useCallback(async (data: AdmissionFormData & { photoUrl?: string }): Promise<{ student: Student | null; error?: string }> => {
     if (!schoolId) {
@@ -277,9 +330,39 @@ export function useStudents() {
       photoUrl: inserted.photo_url || undefined,
     };
 
-    setStudents((prev) => [newStudent, ...prev]);
+    // Refresh the list to get updated pagination
+    fetchStudents(pagination.currentPage, pagination.pageSize, searchTerm, classFilter);
     return { student: newStudent };
-  }, [schoolId]);
+  }, [schoolId, fetchStudents, pagination.currentPage, pagination.pageSize, searchTerm, classFilter]);
+
+  // Bulk add students
+  const bulkAddStudents = useCallback(async (
+    studentsData: Array<AdmissionFormData & { photoUrl?: string }>
+  ): Promise<{ successCount: number; errors: Array<{ index: number; error: string }> }> => {
+    if (!schoolId) {
+      return { successCount: 0, errors: [{ index: 0, error: 'No school_id found' }] };
+    }
+
+    const errors: Array<{ index: number; error: string }> = [];
+    let successCount = 0;
+
+    for (let i = 0; i < studentsData.length; i++) {
+      const data = studentsData[i];
+      const result = await addStudent(data);
+      if (result.error) {
+        errors.push({ index: i, error: result.error });
+      } else {
+        successCount++;
+      }
+    }
+
+    // Refresh the list after bulk import
+    if (successCount > 0) {
+      fetchStudents(1, pagination.pageSize, searchTerm, classFilter);
+    }
+
+    return { successCount, errors };
+  }, [schoolId, addStudent, fetchStudents, pagination.pageSize, searchTerm, classFilter]);
 
   const updateStudent = useCallback(async (id: string, data: Partial<Student>) => {
     const updateData: Record<string, unknown> = {};
@@ -321,8 +404,9 @@ export function useStudents() {
       return;
     }
 
-    setStudents((prev) => prev.filter((student) => student.id !== id));
-  }, []);
+    // Refresh to update pagination counts
+    fetchStudents(pagination.currentPage, pagination.pageSize, searchTerm, classFilter);
+  }, [fetchStudents, pagination.currentPage, pagination.pageSize, searchTerm, classFilter]);
 
   const getStudentById = useCallback(
     (id: string) => students.find((s) => s.id === id),
@@ -339,11 +423,17 @@ export function useStudents() {
     isLoading,
     schoolId,
     addStudent,
+    bulkAddStudents,
     updateStudent,
     deleteStudent,
     getStudentById,
     getStudentsByClass,
-    totalStudents: students.length,
-    refetch: fetchStudents,
+    totalStudents: pagination.totalCount,
+    refetch: () => fetchStudents(pagination.currentPage, pagination.pageSize, searchTerm, classFilter),
+    // Pagination
+    pagination,
+    setPage,
+    setPageSize,
+    updateFilters,
   };
 }

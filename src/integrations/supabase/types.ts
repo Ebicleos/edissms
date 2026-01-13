@@ -1672,6 +1672,36 @@ export type Database = {
       }
     }
     Functions: {
+      get_paginated_students: {
+        Args: {
+          p_class_filter?: string
+          p_page_number?: number
+          p_page_size?: number
+          p_school_id: string
+          p_search_term?: string
+        }
+        Returns: {
+          academic_year: string
+          address: string
+          admission_fee: number
+          admission_number: string
+          class_id: string
+          created_at: string
+          date_of_admission: string
+          date_of_birth: string
+          email: string
+          full_name: string
+          gender: string
+          guardian_name: string
+          id: string
+          phone_contact: string
+          photo_url: string
+          school_id: string
+          term: string
+          total_count: number
+          user_id: string
+        }[]
+      }
       get_school_payment_secret: {
         Args: { p_school_id: string }
         Returns: {

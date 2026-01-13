@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -42,17 +42,38 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from '@/components/ui/pagination';
 import { useStudents } from '@/hooks/useStudents';
 import { useSchoolSettings } from '@/hooks/useSchoolSettings';
-import { CLASS_LIST_DETAILED, Student } from '@/types';
+import { CLASS_LIST_DETAILED, Student, Term } from '@/types';
 import { EditStudentDialog } from '@/components/students/EditStudentDialog';
+import { BulkStudentImportDialog } from '@/components/students/BulkStudentImportDialog';
 import { printReceipt } from '@/utils/printReceipt';
-import { Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Printer, IdCard, Camera } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Printer, IdCard, Camera, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Students() {
-  const { students, deleteStudent, updateStudent } = useStudents();
+  const { 
+    students, 
+    deleteStudent, 
+    updateStudent, 
+    bulkAddStudents,
+    totalStudents,
+    isLoading,
+    pagination,
+    setPage,
+    setPageSize,
+    updateFilters,
+  } = useStudents();
   const { settings: schoolSettings } = useSchoolSettings();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -61,19 +82,15 @@ export default function Students() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
-  const filteredStudents = useMemo(() => {
-    return students.filter((student) => {
-      const matchesSearch =
-        student.fullName.toLowerCase().includes(search.toLowerCase()) ||
-        student.admissionNumber.toLowerCase().includes(search.toLowerCase()) ||
-        student.guardianName.toLowerCase().includes(search.toLowerCase());
-      
-      const matchesClass = classFilter === 'all' || student.classId === classFilter;
-
-      return matchesSearch && matchesClass;
-    });
-  }, [students, search, classFilter]);
+  // Debounce search to avoid too many API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateFilters(search, classFilter);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, classFilter]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', {
@@ -102,7 +119,6 @@ export default function Students() {
   };
 
   const handlePrintReceipt = async (student: Student) => {
-    // Fetch fee payment data for this student
     const { data: feeData } = await supabase
       .from('fee_payments')
       .select('*')
@@ -159,8 +175,41 @@ export default function Students() {
     }
   };
 
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    const { currentPage, totalPages } = pagination;
+    
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    pages.push(1);
+    
+    if (currentPage > 3) {
+      pages.push('ellipsis');
+    }
+    
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    
+    if (currentPage < totalPages - 2) {
+      pages.push('ellipsis');
+    }
+    
+    if (totalPages > 1) {
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  };
+
   return (
-    <MainLayout title="Students Database" subtitle={`${students.length} registered students`}>
+    <MainLayout title="Students Database" subtitle={`${totalStudents} registered students`}>
       <div className="space-y-4 md:space-y-6 animate-fade-in">
         {/* Header Actions */}
         <div className="flex flex-col gap-3 md:gap-4">
@@ -189,20 +238,45 @@ export default function Students() {
               </SelectContent>
             </Select>
           </div>
-          <Button asChild className="bg-gradient-primary hover:opacity-90 w-full md:w-auto md:self-end">
-            <Link to="/admission">
-              <Plus className="mr-2 h-4 w-4" />
-              New Admission
-            </Link>
-          </Button>
+          <div className="flex gap-2 md:self-end">
+            <Button variant="outline" onClick={() => setBulkImportOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              Bulk Import
+            </Button>
+            <Button asChild className="bg-gradient-primary hover:opacity-90">
+              <Link to="/admission">
+                <Plus className="mr-2 h-4 w-4" />
+                New Admission
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        {/* Page Size Selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Show</span>
+          <Select value={String(pagination.pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-muted-foreground">per page</span>
         </div>
 
         {/* Mobile Card View */}
         <div className="md:hidden space-y-3">
-          {filteredStudents.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center py-10 text-muted-foreground">Loading...</div>
+          ) : students.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">No students found</div>
           ) : (
-            filteredStudents.map((student) => (
+            students.map((student) => (
               <div key={student.id} className="bg-card rounded-xl border border-border/50 p-4 shadow-sm">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
@@ -286,14 +360,20 @@ export default function Students() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredStudents.length === 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-10">
+                    <p className="text-muted-foreground">Loading...</p>
+                  </TableCell>
+                </TableRow>
+              ) : students.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-10">
                     <p className="text-muted-foreground">No students found</p>
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredStudents.map((student) => (
+                students.map((student) => (
                   <TableRow key={student.id} className="hover:bg-muted/30">
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -369,16 +449,47 @@ export default function Students() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <p>Showing {filteredStudents.length} of {students.length} students</p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled>
-              Previous
-            </Button>
-            <Button variant="outline" size="sm" disabled>
-              Next
-            </Button>
-          </div>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+          <p>
+            Showing {((pagination.currentPage - 1) * pagination.pageSize) + 1} to{' '}
+            {Math.min(pagination.currentPage * pagination.pageSize, totalStudents)} of {totalStudents} students
+          </p>
+          
+          {pagination.totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => setPage(pagination.currentPage - 1)}
+                    className={pagination.currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                
+                {getPageNumbers().map((page, index) => (
+                  <PaginationItem key={index}>
+                    {page === 'ellipsis' ? (
+                      <PaginationEllipsis />
+                    ) : (
+                      <PaginationLink
+                        onClick={() => setPage(page)}
+                        isActive={page === pagination.currentPage}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    )}
+                  </PaginationItem>
+                ))}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => setPage(pagination.currentPage + 1)}
+                    className={pagination.currentPage === pagination.totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       </div>
 
@@ -476,6 +587,16 @@ export default function Students() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Import Dialog */}
+      <BulkStudentImportDialog
+        open={bulkImportOpen}
+        onOpenChange={setBulkImportOpen}
+        onImport={bulkAddStudents}
+        academicYear={schoolSettings?.academic_year || '2024/2025'}
+        term={(schoolSettings?.term?.toLowerCase().includes('first') ? 'first' : 
+               schoolSettings?.term?.toLowerCase().includes('second') ? 'second' : 'third') as Term}
+      />
     </MainLayout>
   );
 }
