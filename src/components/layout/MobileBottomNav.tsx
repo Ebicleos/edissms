@@ -16,7 +16,7 @@ const adminNavItems: NavItem[] = [
   { icon: Home, label: 'Home', path: '/' },
   { icon: Users, label: 'Students', path: '/students' },
   { icon: Wallet, label: 'Fees', path: '/fees' },
-  { icon: GraduationCap, label: 'Teachers', path: '/teachers' },
+  { icon: PenTool, label: 'CBT', path: '/admin/cbt' },
   { icon: MoreHorizontal, label: 'More', path: '#more', isMore: true },
 ];
 
