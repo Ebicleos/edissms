@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Papa from 'papaparse';
 import {
   Dialog,
@@ -21,10 +21,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Upload, Download, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2, AlertTriangle } from 'lucide-react';
 import { AdmissionFormData } from '@/hooks/useStudents';
 import { CLASS_LIST_DETAILED, Gender, Term, ACADEMIC_YEARS } from '@/types';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BulkStudentImportDialogProps {
   open: boolean;
@@ -48,6 +49,8 @@ interface ParsedStudent {
   amountPaid: number;
   isValid: boolean;
   errors: string[];
+  isDuplicate?: boolean;
+  duplicateType?: 'internal' | 'database' | 'both';
 }
 
 const CSV_HEADERS = [
@@ -79,6 +82,108 @@ export function BulkStudentImportDialog({
   const [parsedStudents, setParsedStudents] = useState<ParsedStudent[]>([]);
   const [importProgress, setImportProgress] = useState(0);
   const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+  const [existingStudents, setExistingStudents] = useState<Array<{ full_name: string; phone_contact: string | null }>>([]);
+  const [skipDuplicates, setSkipDuplicates] = useState(true);
+
+  // Fetch existing students for duplicate checking
+  useEffect(() => {
+    const fetchExistingStudents = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('school_id')
+        .eq('id', user.id)
+        .single();
+      
+      if (!profile?.school_id) return;
+
+      const { data } = await supabase
+        .from('students')
+        .select('full_name, phone_contact')
+        .eq('school_id', profile.school_id);
+      
+      setExistingStudents(data || []);
+    };
+
+    if (open) {
+      fetchExistingStudents();
+    }
+  }, [open]);
+
+  const normalizeString = (str: string): string => {
+    return str.toLowerCase().trim().replace(/\s+/g, ' ');
+  };
+
+  const normalizePhone = (phone: string): string => {
+    return phone.replace(/[\s\-\(\)]/g, '');
+  };
+
+  const checkForDuplicates = useCallback((students: ParsedStudent[]): ParsedStudent[] => {
+    const seenNames = new Map<string, number>(); // name -> first occurrence index
+    const seenPhones = new Map<string, number>(); // phone -> first occurrence index
+
+    return students.map((student, index) => {
+      const errors = [...student.errors];
+      let isDuplicate = false;
+      let duplicateType: 'internal' | 'database' | 'both' | undefined;
+
+      const normalizedName = normalizeString(student.fullName);
+      const normalizedPhone = student.phoneContact ? normalizePhone(student.phoneContact) : '';
+
+      // Check internal duplicates (within CSV)
+      if (seenNames.has(normalizedName)) {
+        errors.push(`Duplicate name in CSV (row ${seenNames.get(normalizedName)! + 1})`);
+        isDuplicate = true;
+        duplicateType = 'internal';
+      }
+      
+      if (normalizedPhone && seenPhones.has(normalizedPhone)) {
+        errors.push(`Duplicate phone in CSV (row ${seenPhones.get(normalizedPhone)! + 1})`);
+        isDuplicate = true;
+        duplicateType = 'internal';
+      }
+
+      // Check against existing database records
+      const dbNameMatch = existingStudents.some(e => 
+        normalizeString(e.full_name) === normalizedName
+      );
+      
+      const dbPhoneMatch = normalizedPhone && existingStudents.some(e => 
+        e.phone_contact && normalizePhone(e.phone_contact) === normalizedPhone
+      );
+
+      if (dbNameMatch) {
+        errors.push('Student with this name already exists in database');
+        isDuplicate = true;
+        duplicateType = duplicateType ? 'both' : 'database';
+      }
+
+      if (dbPhoneMatch) {
+        errors.push('Phone contact already registered to another student');
+        isDuplicate = true;
+        duplicateType = duplicateType ? 'both' : 'database';
+      }
+
+      // Add to seen maps for future comparison
+      if (!seenNames.has(normalizedName)) {
+        seenNames.set(normalizedName, index);
+      }
+      if (normalizedPhone && !seenPhones.has(normalizedPhone)) {
+        seenPhones.set(normalizedPhone, index);
+      }
+
+      return {
+        ...student,
+        errors,
+        isValid: errors.length === 0,
+        isDuplicate,
+        duplicateType,
+      };
+    });
+  }, [existingStudents]);
 
   const validateStudent = (row: Record<string, string>): ParsedStudent => {
     const errors: string[] = [];
@@ -147,20 +252,26 @@ export function BulkStudentImportDialog({
       return;
     }
 
+    setIsCheckingDuplicates(true);
+    
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
         const students = (results.data as Record<string, string>[]).map(validateStudent);
-        setParsedStudents(students);
+        // Check for duplicates
+        const studentsWithDuplicateCheck = checkForDuplicates(students);
+        setParsedStudents(studentsWithDuplicateCheck);
         setStep('preview');
+        setIsCheckingDuplicates(false);
       },
       error: (error) => {
         console.error('CSV parsing error:', error);
         toast.error('Failed to parse CSV file');
+        setIsCheckingDuplicates(false);
       },
     });
-  }, []);
+  }, [checkForDuplicates]);
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -209,8 +320,12 @@ export function BulkStudentImportDialog({
   };
 
   const handleImport = async () => {
-    const validStudents = parsedStudents.filter(s => s.isValid);
-    if (validStudents.length === 0) {
+    // Filter based on skipDuplicates setting
+    const studentsToProcess = skipDuplicates 
+      ? parsedStudents.filter(s => s.isValid && !s.isDuplicate)
+      : parsedStudents.filter(s => s.errors.filter(e => !e.includes('Duplicate') && !e.includes('already exists') && !e.includes('already registered')).length === 0);
+    
+    if (studentsToProcess.length === 0) {
       toast.error('No valid students to import');
       return;
     }
@@ -218,7 +333,7 @@ export function BulkStudentImportDialog({
     setStep('importing');
     setImportProgress(0);
 
-    const studentsToImport: Array<AdmissionFormData & { photoUrl?: string }> = validStudents.map(s => ({
+    const studentsToImport: Array<AdmissionFormData & { photoUrl?: string }> = studentsToProcess.map(s => ({
       fullName: s.fullName,
       dateOfBirth: s.dateOfBirth,
       gender: s.gender,
@@ -271,8 +386,9 @@ export function BulkStudentImportDialog({
     onOpenChange(open);
   };
 
-  const validCount = parsedStudents.filter(s => s.isValid).length;
-  const invalidCount = parsedStudents.filter(s => !s.isValid).length;
+  const validCount = parsedStudents.filter(s => s.isValid && !s.isDuplicate).length;
+  const invalidCount = parsedStudents.filter(s => !s.isValid && !s.isDuplicate).length;
+  const duplicateCount = parsedStudents.filter(s => s.isDuplicate).length;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -342,7 +458,7 @@ export function BulkStudentImportDialog({
 
         {step === 'preview' && (
           <div className="space-y-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               <Badge variant="secondary" className="gap-1">
                 <CheckCircle2 className="h-3 w-3" />
                 {validCount} Valid
@@ -353,10 +469,43 @@ export function BulkStudentImportDialog({
                   {invalidCount} Invalid
                 </Badge>
               )}
+              {duplicateCount > 0 && (
+                <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
+                  <AlertTriangle className="h-3 w-3" />
+                  {duplicateCount} Duplicates
+                </Badge>
+              )}
               <span className="text-sm text-muted-foreground">
                 Academic Year: {academicYear} | Term: {term}
               </span>
             </div>
+
+            {duplicateCount > 0 && (
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                      {duplicateCount} duplicate record{duplicateCount > 1 ? 's' : ''} found
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                      Duplicates are detected by matching student names or phone contacts.
+                    </p>
+                    <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={skipDuplicates} 
+                        onChange={(e) => setSkipDuplicates(e.target.checked)}
+                        className="rounded border-amber-300"
+                      />
+                      <span className="text-xs text-amber-700 dark:text-amber-300">
+                        Skip duplicates during import (recommended)
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <ScrollArea className="h-[400px] border rounded-lg">
               <Table>
@@ -373,9 +522,20 @@ export function BulkStudentImportDialog({
                 </TableHeader>
                 <TableBody>
                   {parsedStudents.map((student, index) => (
-                    <TableRow key={index} className={!student.isValid ? 'bg-destructive/5' : ''}>
+                    <TableRow 
+                      key={index} 
+                      className={
+                        student.isDuplicate 
+                          ? 'bg-amber-50 dark:bg-amber-950/20' 
+                          : !student.isValid 
+                            ? 'bg-destructive/5' 
+                            : ''
+                      }
+                    >
                       <TableCell>
-                        {student.isValid ? (
+                        {student.isDuplicate ? (
+                          <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        ) : student.isValid ? (
                           <CheckCircle2 className="h-4 w-4 text-green-500" />
                         ) : (
                           <AlertCircle className="h-4 w-4 text-destructive" />
@@ -385,7 +545,9 @@ export function BulkStudentImportDialog({
                         <div>
                           <p className="font-medium">{student.fullName || '-'}</p>
                           {student.errors.length > 0 && (
-                            <p className="text-xs text-destructive">{student.errors.join(', ')}</p>
+                            <p className={`text-xs ${student.isDuplicate ? 'text-amber-600' : 'text-destructive'}`}>
+                              {student.errors.join(', ')}
+                            </p>
                           )}
                         </div>
                       </TableCell>
@@ -413,8 +575,8 @@ export function BulkStudentImportDialog({
               <Button variant="outline" onClick={resetDialog}>
                 Upload Different File
               </Button>
-              <Button onClick={handleImport} disabled={validCount === 0}>
-                Import {validCount} Student{validCount !== 1 ? 's' : ''}
+              <Button onClick={handleImport} disabled={skipDuplicates ? validCount === 0 : parsedStudents.length === 0}>
+                Import {skipDuplicates ? validCount : parsedStudents.filter(s => s.errors.filter(e => !e.includes('Duplicate') && !e.includes('already exists') && !e.includes('already registered')).length === 0).length} Student{(skipDuplicates ? validCount : parsedStudents.length) !== 1 ? 's' : ''}
               </Button>
             </DialogFooter>
           </div>

@@ -57,7 +57,7 @@ import { CLASS_LIST_DETAILED, Student, Term } from '@/types';
 import { EditStudentDialog } from '@/components/students/EditStudentDialog';
 import { BulkStudentImportDialog } from '@/components/students/BulkStudentImportDialog';
 import { printReceipt } from '@/utils/printReceipt';
-import { Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Printer, IdCard, Camera, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Printer, IdCard, Camera, Upload, Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -83,6 +83,7 @@ export default function Students() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Debounce search to avoid too many API calls
   useEffect(() => {
@@ -175,6 +176,102 @@ export default function Students() {
     }
   };
 
+  const handleExportStudents = async () => {
+    setIsExporting(true);
+    try {
+      // Fetch ALL students (not just current page)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Please log in to export students');
+        return;
+      }
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('school_id')
+        .eq('id', user.id)
+        .single();
+      
+      if (!profile?.school_id) {
+        toast.error('No school found');
+        return;
+      }
+
+      const { data: allStudents, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('school_id', profile.school_id)
+        .order('full_name');
+
+      if (error) {
+        console.error('Error exporting students:', error);
+        toast.error('Failed to export students');
+        return;
+      }
+
+      if (!allStudents || allStudents.length === 0) {
+        toast.error('No students to export');
+        return;
+      }
+
+      // Convert to CSV format
+      const headers = [
+        'Admission Number',
+        'Full Name',
+        'Date of Birth',
+        'Gender',
+        'Class ID',
+        'Guardian Name',
+        'Address',
+        'Phone Contact',
+        'Email',
+        'Admission Fee',
+        'Academic Year',
+        'Term',
+        'Date of Admission'
+      ];
+
+      const rows = allStudents.map(s => [
+        s.admission_number || '',
+        s.full_name || '',
+        s.date_of_birth || '',
+        s.gender || '',
+        s.class_id || '',
+        s.guardian_name || '',
+        s.address || '',
+        s.phone_contact || '',
+        s.email || '',
+        s.admission_fee || '',
+        s.academic_year || '',
+        s.term || '',
+        s.date_of_admission || ''
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => 
+          `"${String(cell).replace(/"/g, '""')}"`
+        ).join(','))
+      ].join('\n');
+
+      // Download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `students_export_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${allStudents.length} students`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export students');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Generate page numbers for pagination
   const getPageNumbers = () => {
     const pages: (number | 'ellipsis')[] = [];
@@ -239,6 +336,14 @@ export default function Students() {
             </Select>
           </div>
           <div className="flex gap-2 md:self-end">
+            <Button variant="outline" onClick={handleExportStudents} disabled={isExporting}>
+              {isExporting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              Export CSV
+            </Button>
             <Button variant="outline" onClick={() => setBulkImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
               Bulk Import
