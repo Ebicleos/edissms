@@ -84,15 +84,37 @@ export default function Fees() {
   const [newPaymentTerm, setNewPaymentTerm] = useState('First Term');
   const [newPaymentYear, setNewPaymentYear] = useState('2024/2025');
 
+  const [schoolId, setSchoolId] = useState<string | null>(null);
+
+  // Get user's school_id first
   useEffect(() => {
-    fetchFeePayments();
-    fetchStudents();
+    const getSchoolId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('school_id')
+          .eq('id', user.id)
+          .single();
+        setSchoolId(profile?.school_id || null);
+      }
+    };
+    getSchoolId();
   }, []);
 
+  useEffect(() => {
+    if (schoolId) {
+      fetchFeePayments();
+      fetchStudents();
+    }
+  }, [schoolId]);
+
   const fetchStudents = async () => {
+    if (!schoolId) return;
     const { data, error } = await supabase
       .from('students')
       .select('id, full_name, admission_number, class_id')
+      .eq('school_id', schoolId)
       .order('full_name');
 
     if (!error && data) {
@@ -101,9 +123,11 @@ export default function Fees() {
   };
 
   const fetchFeePayments = async () => {
+    if (!schoolId) return;
     const { data, error } = await supabase
       .from('fee_payments')
       .select('*')
+      .eq('school_id', schoolId)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
