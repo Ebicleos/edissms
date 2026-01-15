@@ -91,6 +91,7 @@ export default function Students() {
       updateFilters(search, classFilter);
     }, 300);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, classFilter]);
 
   const formatCurrency = (amount: number) => {
