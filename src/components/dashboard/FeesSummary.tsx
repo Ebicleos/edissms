@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, AlertCircle } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import { TrendingUp, AlertCircle, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 export function FeesSummary() {
   const [feesData, setFeesData] = useState({
@@ -58,48 +58,73 @@ export function FeesSummary() {
   };
 
   return (
-    <div className="bg-card rounded-xl border border-border/50 p-4 sm:p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <h3 className="font-semibold text-foreground text-sm sm:text-base">Fees Collection</h3>
-        <span className="text-xs sm:text-sm text-muted-foreground">Current Term</span>
+    <div className="content-card">
+      <div className="flex items-center justify-between mb-4 sm:mb-5">
+        <h3 className="section-heading flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+          Fees Collection
+        </h3>
+        <span className="text-xs sm:text-sm text-muted-foreground font-medium px-2.5 py-1 bg-muted/50 rounded-lg">
+          Current Term
+        </span>
       </div>
 
-      <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-4 sm:space-y-5">
+        {/* Progress Bar */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs sm:text-sm text-muted-foreground">Collection Progress</span>
-            <span className="text-xs sm:text-sm font-medium text-foreground">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-xs sm:text-sm text-muted-foreground font-medium">Collection Progress</span>
+            <span className={cn(
+              "text-sm sm:text-base font-bold",
+              percentage >= 70 ? "text-success" : percentage >= 40 ? "text-warning" : "text-destructive"
+            )}>
               {feesData.isLoading ? '...' : `${percentage.toFixed(1)}%`}
             </span>
           </div>
-          <Progress value={feesData.isLoading ? 0 : percentage} className="h-2" />
+          <div className="progress-enhanced">
+            <div 
+              className="progress-enhanced-bar"
+              style={{ width: feesData.isLoading ? '0%' : `${percentage}%` }}
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:gap-4">
-          <div className="p-2.5 sm:p-3 rounded-lg bg-success/10">
-            <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-              <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-success" />
-              <span className="text-xs sm:text-sm text-success font-medium">Collected</span>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="summary-card summary-card-success">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-8 w-8 rounded-lg bg-success/15 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-success" />
+              </div>
+              <span className="text-xs sm:text-sm text-success font-semibold">Collected</span>
             </div>
-            <p className="text-sm sm:text-lg font-bold text-foreground truncate">
+            <p className="text-base sm:text-xl font-bold text-foreground truncate">
               {feesData.isLoading ? '...' : formatCurrency(feesData.collected)}
             </p>
           </div>
-          <div className="p-2.5 sm:p-3 rounded-lg bg-warning/10">
-            <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-              <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-warning" />
-              <span className="text-xs sm:text-sm text-warning font-medium">Pending</span>
+          <div className="summary-card summary-card-warning">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-8 w-8 rounded-lg bg-warning/15 flex items-center justify-center">
+                <AlertCircle className="h-4 w-4 text-warning" />
+              </div>
+              <span className="text-xs sm:text-sm text-warning font-semibold">Pending</span>
             </div>
-            <p className="text-sm sm:text-lg font-bold text-foreground truncate">
+            <p className="text-base sm:text-xl font-bold text-foreground truncate">
               {feesData.isLoading ? '...' : formatCurrency(feesData.pending)}
             </p>
           </div>
         </div>
 
-        <div className="pt-2 sm:pt-3 border-t border-border">
+        {/* Total Expected */}
+        <div className="pt-3 sm:pt-4 border-t border-border/50">
           <div className="flex items-center justify-between">
-            <span className="text-xs sm:text-sm text-muted-foreground">Total Expected</span>
-            <span className="font-semibold text-foreground text-sm sm:text-base">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Wallet className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <span className="text-xs sm:text-sm text-muted-foreground font-medium">Total Expected</span>
+            </div>
+            <span className="font-bold text-foreground text-base sm:text-lg">
               {feesData.isLoading ? '...' : formatCurrency(feesData.totalExpected)}
             </span>
           </div>

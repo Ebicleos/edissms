@@ -74,15 +74,15 @@ export function MobileBottomNav() {
       <nav 
         className={cn(
           "md:hidden fixed bottom-0 left-0 right-0 z-50",
-          "bg-background/95 backdrop-blur-md border-t border-border",
-          "safe-area-inset-bottom"
+          "bg-background/90 backdrop-blur-xl border-t border-border/40",
+          "safe-area-inset-bottom shadow-[0_-4px_20px_-8px_rgba(0,0,0,0.1)]"
         )}
         role="navigation"
         aria-label="Main navigation"
       >
         <div 
-          className="flex items-stretch justify-around"
-          style={{ height: 'calc(env(safe-area-inset-bottom) + 3.5rem)', minHeight: '56px' }}
+          className="flex items-stretch justify-around px-2"
+          style={{ height: 'calc(env(safe-area-inset-bottom) + 4rem)', minHeight: '64px' }}
         >
           {navItems.map((item) => {
             const isActive = !item.isMore && (
@@ -96,23 +96,28 @@ export function MobileBottomNav() {
                 key={item.path}
                 onClick={() => handleNavClick(item)}
                 className={cn(
-                  "flex flex-col items-center justify-center flex-1 gap-0.5 py-2",
-                  "transition-all duration-200 touch-manipulation",
-                  "active:scale-95 active:bg-muted/50",
-                  "min-h-[44px] min-w-[44px]",
+                  "flex flex-col items-center justify-center flex-1 gap-1 py-2.5 mx-0.5 rounded-xl",
+                  "transition-all duration-300 touch-manipulation",
+                  "active:scale-90",
+                  "min-h-[48px] min-w-[48px]",
                   isActive 
-                    ? "text-primary" 
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-primary bg-primary/10" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <item.icon className={cn(
-                  "h-5 w-5 transition-transform",
-                  isActive && "scale-110"
-                )} />
+                <div className={cn(
+                  "p-1.5 rounded-lg transition-all duration-300",
+                  isActive && "bg-primary/10"
+                )}>
+                  <item.icon className={cn(
+                    "h-5 w-5 transition-transform duration-300",
+                    isActive && "scale-110"
+                  )} />
+                </div>
                 <span className={cn(
-                  "text-[10px] sm:text-xs leading-tight",
-                  isActive && "font-semibold"
+                  "text-[10px] leading-tight font-medium",
+                  isActive && "font-semibold text-primary"
                 )}>
                   {item.label}
                 </span>
