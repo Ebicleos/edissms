@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useStudents, AdmissionFormData } from '@/hooks/useStudents';
-import { CLASS_LIST_DETAILED, ACADEMIC_YEARS, Term, Gender } from '@/types';
+import { CLASS_LIST_DETAILED, ACADEMIC_YEARS, Term, Gender, getCurrentAcademicYear } from '@/types';
 import { PhotoUpload } from '@/components/students/PhotoUpload';
 import { UserPlus, Check, Printer, Wallet } from 'lucide-react';
 import {
@@ -42,10 +42,10 @@ export default function Admission() {
     academicYear: string;
   } | null>(null);
 
-  const [formData, setFormData] = useState<AdmissionFormData>({
+  const [formData, setFormData] = useState<AdmissionFormData>(() => ({
     fullName: '',
     dateOfBirth: '',
-    gender: 'male',
+    gender: 'male' as Gender,
     classId: '',
     className: '',
     guardianName: '',
@@ -54,9 +54,9 @@ export default function Admission() {
     email: '',
     admissionFee: 25000,
     amountPaid: 0,
-    academicYear: '2024/2025',
-    term: 'second',
-  });
+    academicYear: getCurrentAcademicYear(),
+    term: 'first' as Term,
+  }));
 
   const handleInputChange = (field: keyof AdmissionFormData, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -139,8 +139,8 @@ export default function Admission() {
         email: '',
         admissionFee: 25000,
         amountPaid: 0,
-        academicYear: '2024/2025',
-        term: 'second',
+        academicYear: getCurrentAcademicYear(),
+        term: 'first',
       });
       setPhotoUrl(null);
     } catch (error) {

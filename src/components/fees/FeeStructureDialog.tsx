@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CLASS_LIST_DETAILED, ACADEMIC_YEARS } from '@/types';
+import { CLASS_LIST_DETAILED, ACADEMIC_YEARS, getCurrentAcademicYear } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -18,17 +18,17 @@ const TERMS = ['First Term', 'Second Term', 'Third Term'];
 
 export function FeeStructureDialog({ open, onOpenChange, onSuccess }: FeeStructureDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => ({
     class_id: '',
     term: '',
-    academic_year: '2024/2025',
+    academic_year: getCurrentAcademicYear(),
     tuition_fee: '',
     development_fee: '',
     uniform_fee: '',
     books_fee: '',
     exam_fee: '',
     other_fees: '',
-  });
+  }));
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -82,7 +82,7 @@ export function FeeStructureDialog({ open, onOpenChange, onSuccess }: FeeStructu
       setFormData({
         class_id: '',
         term: '',
-        academic_year: '2024/2025',
+        academic_year: getCurrentAcademicYear(),
         tuition_fee: '',
         development_fee: '',
         uniform_fee: '',

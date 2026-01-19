@@ -122,8 +122,25 @@ export const CLASS_LIST_DETAILED: { id: string; name: string; level: string }[] 
   { id: 'sss3', name: 'SSS 3', level: 'Senior Secondary' },
 ];
 
-export const ACADEMIC_YEARS = [
-  '2023/2024',
-  '2024/2025',
-  '2025/2026',
-];
+// Generate academic years dynamically based on current date
+const generateAcademicYears = (): string[] => {
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth(); // 0-11
+  // If we're in September or later, we're in the new academic year
+  const startYear = currentMonth >= 8 ? currentYear : currentYear - 1;
+  return [
+    `${startYear - 1}/${startYear}`,
+    `${startYear}/${startYear + 1}`,
+    `${startYear + 1}/${startYear + 2}`,
+  ];
+};
+
+export const ACADEMIC_YEARS = generateAcademicYears();
+
+// Get current academic year
+export const getCurrentAcademicYear = (): string => {
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth();
+  const startYear = currentMonth >= 8 ? currentYear : currentYear - 1;
+  return `${startYear}/${startYear + 1}`;
+};

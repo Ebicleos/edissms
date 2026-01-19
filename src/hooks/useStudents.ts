@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Student, Term, Gender, CLASS_LIST_DETAILED } from '@/types';
+import { Student, Term, Gender, CLASS_LIST_DETAILED, getCurrentAcademicYear } from '@/types';
 
 export interface AdmissionFormData {
   fullName: string;
@@ -170,7 +170,7 @@ export function useStudents() {
         fullName: s.full_name,
         dateOfAdmission: s.date_of_admission || '',
         admissionFee: Number(s.admission_fee) || 0,
-        academicYear: s.academic_year || '2024/2025',
+        academicYear: s.academic_year || getCurrentAcademicYear(),
         term: (s.term as Term) || 'first',
         gender: s.gender as Gender,
         classId: s.class_id,
@@ -316,7 +316,7 @@ export function useStudents() {
       fullName: inserted.full_name,
       dateOfAdmission: inserted.date_of_admission || '',
       admissionFee: Number(inserted.admission_fee) || 0,
-      academicYear: inserted.academic_year || '2024/2025',
+      academicYear: inserted.academic_year || getCurrentAcademicYear(),
       term: (inserted.term as Term) || 'first',
       gender: inserted.gender as Gender,
       classId: inserted.class_id,

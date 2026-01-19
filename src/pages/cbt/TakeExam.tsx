@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -84,6 +84,9 @@ export default function TakeExam() {
   }, [showInstructions, isTestMode]);
 
   // Anti-cheating: Tab visibility detection (not in test mode)
+  // Note: handleSubmit is called via ref to avoid stale closure issues
+  const handleSubmitRef = React.useRef<() => void>();
+  
   useEffect(() => {
     if (isTestMode) return; // Disable anti-cheating in test mode
     
@@ -93,7 +96,7 @@ export default function TakeExam() {
           const newCount = prev + 1;
           if (newCount >= 3) {
             toast.error('Too many tab switches! Your exam will be submitted.');
-            handleSubmit();
+            handleSubmitRef.current?.();
           } else {
             setShowTabWarning(true);
           }
@@ -211,7 +214,7 @@ export default function TakeExam() {
         }
         
         if (prev <= 1) {
-          handleSubmit();
+          handleSubmitRef.current?.();
           return 0;
         }
         return prev - 1;
@@ -291,7 +294,7 @@ export default function TakeExam() {
     setAnswers(newAnswers);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     // In test mode, just show completion message and redirect
     if (isTestMode) {
       toast.success('Test completed! Returning to CBT Management...');
@@ -323,7 +326,12 @@ export default function TakeExam() {
       toast.error('Failed to submit exam');
       setIsSubmitting(false);
     }
-  };
+  }, [isTestMode, submissionId, user, navigate]);
+
+  // Keep the ref updated for use in visibility change handler
+  useEffect(() => {
+    handleSubmitRef.current = handleSubmit;
+  }, [handleSubmit]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

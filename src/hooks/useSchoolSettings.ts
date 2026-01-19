@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getCurrentAcademicYear } from '@/types';
 
 export interface SchoolSettings {
   id: string;
@@ -16,23 +17,23 @@ export interface SchoolSettings {
   logo_url: string | null;
 }
 
-const defaultSettings: SchoolSettings = {
+const getDefaultSettings = (): SchoolSettings => ({
   id: '',
   school_name: 'EduManage School',
   motto: 'Excellence in Education',
   email: '',
   phone: '',
   address: '',
-  academic_year: '2024/2025',
+  academic_year: getCurrentAcademicYear(),
   term: 'First Term',
   principal_name: '',
   closing_date: null,
   next_term_begins: null,
   logo_url: null,
-};
+});
 
 export function useSchoolSettings() {
-  const [settings, setSettings] = useState<SchoolSettings>(defaultSettings);
+  const [settings, setSettings] = useState<SchoolSettings>(getDefaultSettings);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -48,15 +49,16 @@ export function useSchoolSettings() {
       .maybeSingle();
 
     if (!error && data) {
+      const defaults = getDefaultSettings();
       setSettings({
         id: data.id,
-        school_name: data.school_name || defaultSettings.school_name,
-        motto: data.motto || defaultSettings.motto,
+        school_name: data.school_name || defaults.school_name,
+        motto: data.motto || defaults.motto,
         email: data.email || '',
         phone: data.phone || '',
         address: data.address || '',
-        academic_year: data.academic_year || defaultSettings.academic_year,
-        term: data.term || defaultSettings.term,
+        academic_year: data.academic_year || defaults.academic_year,
+        term: data.term || defaults.term,
         principal_name: data.principal_name || '',
         closing_date: data.closing_date,
         next_term_begins: data.next_term_begins,
