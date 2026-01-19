@@ -33,7 +33,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Search, Filter, MoreVertical, Receipt, FileSpreadsheet, CheckCircle, AlertCircle, Clock, Loader2, Printer } from 'lucide-react';
-import { PaymentStatus } from '@/types';
+import { PaymentStatus, getCurrentAcademicYear, ACADEMIC_YEARS } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { feePaymentSchema, paymentAmountSchema, validateInput } from '@/lib/validations';
@@ -82,7 +82,7 @@ export default function Fees() {
   const [newPaymentStudentId, setNewPaymentStudentId] = useState('');
   const [newPaymentAmount, setNewPaymentAmount] = useState('');
   const [newPaymentTerm, setNewPaymentTerm] = useState('First Term');
-  const [newPaymentYear, setNewPaymentYear] = useState('2024/2025');
+  const [newPaymentYear, setNewPaymentYear] = useState(() => getCurrentAcademicYear());
 
   const [schoolId, setSchoolId] = useState<string | null>(null);
 
@@ -710,8 +710,9 @@ export default function Fees() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="2024/2025">2024/2025</SelectItem>
-                    <SelectItem value="2025/2026">2025/2026</SelectItem>
+                    {ACADEMIC_YEARS.map((year) => (
+                      <SelectItem key={year} value={year}>{year}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

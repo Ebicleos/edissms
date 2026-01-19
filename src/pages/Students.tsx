@@ -53,7 +53,7 @@ import {
 } from '@/components/ui/pagination';
 import { useStudents } from '@/hooks/useStudents';
 import { useSchoolSettings } from '@/hooks/useSchoolSettings';
-import { CLASS_LIST_DETAILED, Student, Term } from '@/types';
+import { CLASS_LIST_DETAILED, Student, Term, getCurrentAcademicYear } from '@/types';
 import { EditStudentDialog } from '@/components/students/EditStudentDialog';
 import { BulkStudentImportDialog } from '@/components/students/BulkStudentImportDialog';
 import { printReceipt } from '@/utils/printReceipt';
@@ -699,7 +699,7 @@ export default function Students() {
         open={bulkImportOpen}
         onOpenChange={setBulkImportOpen}
         onImport={bulkAddStudents}
-        academicYear={schoolSettings?.academic_year || '2024/2025'}
+        academicYear={schoolSettings?.academic_year || getCurrentAcademicYear()}
         term={(schoolSettings?.term?.toLowerCase().includes('first') ? 'first' : 
                schoolSettings?.term?.toLowerCase().includes('second') ? 'second' : 'third') as Term}
       />
