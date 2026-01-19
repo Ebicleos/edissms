@@ -26,18 +26,19 @@ export function Header({ title, subtitle, onMobileMenuToggle }: HeaderProps) {
       className={cn(
         "sticky top-0 z-30",
         "flex items-center justify-between",
-        "border-b border-border bg-background/95 backdrop-blur-md",
-        "supports-[backdrop-filter]:bg-background/80",
-        "px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4",
-        "min-h-[56px] md:min-h-[64px]"
+        "border-b border-border/50 bg-background/80 backdrop-blur-xl",
+        "supports-[backdrop-filter]:bg-background/70",
+        "px-4 sm:px-5 md:px-6 py-3 sm:py-3.5 md:py-4",
+        "min-h-[60px] md:min-h-[68px]",
+        "shadow-sm"
       )}
     >
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
         {/* Mobile Menu Button */}
         <Button 
           variant="ghost" 
           size="icon" 
-          className="md:hidden h-10 w-10 flex-shrink-0 touch-manipulation" 
+          className="md:hidden h-10 w-10 flex-shrink-0 touch-manipulation rounded-xl hover:bg-muted/80" 
           onClick={onMobileMenuToggle}
           aria-label="Open menu"
         >
@@ -45,24 +46,24 @@ export function Header({ title, subtitle, onMobileMenuToggle }: HeaderProps) {
         </Button>
         
         <div className="min-w-0 flex-1">
-          <h1 className="text-base sm:text-lg md:text-2xl font-bold text-foreground truncate">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground truncate tracking-tight">
             {title}
           </h1>
           {subtitle && (
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate hidden sm:block">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate hidden sm:block font-medium">
               {subtitle}
             </p>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 flex-shrink-0">
+      <div className="flex items-center gap-2 sm:gap-2.5 md:gap-4 flex-shrink-0">
         {/* Search - Hidden on mobile, shown on tablet+ */}
         <div className="relative hidden lg:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search students, teachers..."
-            className="w-48 xl:w-64 pl-10 bg-muted/50 border-0 focus-visible:ring-1"
+            className="w-52 xl:w-72 pl-10 bg-muted/40 border-border/50 focus-visible:ring-1 focus-visible:ring-primary/30 rounded-xl h-10"
           />
         </div>
 
@@ -70,7 +71,7 @@ export function Header({ title, subtitle, onMobileMenuToggle }: HeaderProps) {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="lg:hidden h-10 w-10 touch-manipulation"
+          className="lg:hidden h-10 w-10 touch-manipulation rounded-xl hover:bg-muted/80"
           aria-label="Search"
         >
           <Search className="h-5 w-5" />
@@ -82,50 +83,61 @@ export function Header({ title, subtitle, onMobileMenuToggle }: HeaderProps) {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="relative h-10 w-10 touch-manipulation"
+              className="relative h-10 w-10 touch-manipulation rounded-xl hover:bg-muted/80"
               aria-label="Notifications"
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <Badge className="absolute -top-0.5 -right-0.5 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-[10px] sm:text-xs bg-destructive">
+                <Badge className="absolute -top-0.5 -right-0.5 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-destructive border-2 border-background">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </Badge>
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-0" align="end">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h4 className="font-semibold">Notifications</h4>
+          <PopoverContent className="w-80 sm:w-96 p-0 rounded-2xl shadow-xl border-border/50" align="end">
+            <div className="flex items-center justify-between p-4 border-b border-border/50 bg-muted/30">
+              <h4 className="font-semibold text-base">Notifications</h4>
               {unreadCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+                <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs font-medium text-primary hover:text-primary">
                   Mark all read
                 </Button>
               )}
             </div>
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="h-[320px]">
               {notifications.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No notifications</p>
+                <div className="p-8 text-center text-muted-foreground">
+                  <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                    <Bell className="h-7 w-7 opacity-40" />
+                  </div>
+                  <p className="text-sm font-medium">No notifications yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">We'll notify you when something arrives</p>
                 </div>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-border/30">
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
                       className={cn(
-                        "p-4 hover:bg-muted/50 cursor-pointer transition-colors",
+                        "p-4 hover:bg-muted/40 cursor-pointer transition-colors duration-200",
                         !notification.is_read && "bg-primary/5"
                       )}
                       onClick={() => markAsRead(notification.id)}
                     >
-                      <p className="font-medium text-sm">{notification.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {notification.content}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                      </p>
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          "h-2 w-2 rounded-full mt-2 flex-shrink-0",
+                          !notification.is_read ? "bg-primary" : "bg-transparent"
+                        )} />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{notification.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            {notification.content}
+                          </p>
+                          <p className="text-xs text-muted-foreground/70 mt-2">
+                            {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -128,56 +128,61 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar border-r border-sidebar-border">
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar border-r border-sidebar-border/50 shadow-xl">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border flex-shrink-0">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-primary">
+        <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border/50 flex-shrink-0">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-secondary to-secondary/80 shadow-lg">
             <School className="h-6 w-6 text-sidebar-primary-foreground" />
           </div>
           <div>
-            <h1 className="font-bold text-lg text-sidebar-foreground">EduManage</h1>
-            <p className="text-xs text-sidebar-foreground/60">School Management</p>
+            <h1 className="font-bold text-lg text-sidebar-foreground tracking-tight">EduManage</h1>
+            <p className="text-xs text-sidebar-foreground/50 font-medium">School Portal</p>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
-          {filteredItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  'sidebar-link',
-                  isActive && 'active'
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
+        <nav className="flex-1 space-y-1 px-3 py-5 overflow-y-auto no-scrollbar" style={{ overscrollBehavior: 'contain' }}>
+          <div className="space-y-1">
+            {filteredItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    'sidebar-link group',
+                    isActive && 'active'
+                  )}
+                >
+                  <item.icon className={cn(
+                    "h-5 w-5 transition-colors duration-200",
+                    isActive ? "text-secondary" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
+                  )} />
+                  <span className="truncate">{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
         </nav>
 
         {/* User Section */}
-        <div className="flex-shrink-0 border-t border-sidebar-border p-4">
+        <div className="flex-shrink-0 border-t border-sidebar-border/50 p-4 bg-sidebar-accent/30">
           <div className="flex items-center gap-3 mb-3">
-            <div className="h-10 w-10 rounded-full bg-sidebar-primary flex items-center justify-center">
-              <span className="text-sm font-semibold text-sidebar-primary-foreground">
-                {profile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+            <div className="h-11 w-11 rounded-full bg-gradient-to-br from-secondary to-secondary/80 flex items-center justify-center shadow-md">
+              <span className="text-sm font-bold text-sidebar-primary-foreground tracking-wide">
+                {profile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">
+              <p className="text-sm font-semibold text-sidebar-foreground truncate">
                 {profile?.full_name || 'User'}
               </p>
               {canSwitchView ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className={cn(
-                      "text-xs px-2 py-0.5 rounded-full text-white capitalize inline-flex items-center gap-1 hover:opacity-90 transition-opacity",
+                      "text-xs px-2.5 py-1 rounded-full text-white capitalize inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity font-medium shadow-sm",
                       getRoleBadgeColor(viewMode === 'admin' ? 'admin' : 'superadmin')
                     )}>
                       {viewMode === 'admin' ? 'Admin View' : 'SuperAdmin'}
@@ -205,7 +210,7 @@ export function Sidebar() {
                 </DropdownMenu>
               ) : (
                 <span className={cn(
-                  "text-xs px-2 py-0.5 rounded-full text-white capitalize",
+                  "text-xs px-2.5 py-1 rounded-full text-white capitalize font-medium shadow-sm inline-block",
                   getRoleBadgeColor(role)
                 )}>
                   {role || 'Guest'}
@@ -215,7 +220,7 @@ export function Sidebar() {
           </div>
           <button 
             onClick={handleLogout}
-            className="sidebar-link w-full text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+            className="sidebar-link w-full text-red-400/80 hover:text-red-400 hover:bg-red-500/10"
           >
             <LogOut className="h-5 w-5" />
             <span>Logout</span>
