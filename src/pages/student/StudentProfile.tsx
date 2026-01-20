@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { User, Mail, Phone, MapPin, Calendar, Loader2, Save, GraduationCap } from 'lucide-react';
+import { formatClassName } from '@/lib/formatClassName';
 
 interface StudentInfo {
   id: string;
@@ -49,12 +50,24 @@ export default function StudentProfile() {
     }
 
     try {
-      // Get class name
-      const { data: classData } = await supabase
-        .from('classes')
-        .select('name')
-        .eq('id', studentRecord.class_id)
-        .maybeSingle();
+      // Get class name - try database first, fallback to class_id as display name
+      let className: string | null = null;
+      
+      if (studentRecord.class_id) {
+        // First try to query by UUID
+        const { data: classData } = await supabase
+          .from('classes')
+          .select('name')
+          .eq('id', studentRecord.class_id)
+          .maybeSingle();
+
+        if (classData?.name) {
+          className = classData.name;
+        } else {
+          // Fallback: use shared utility to format class_id
+          className = formatClassName(studentRecord.class_id);
+        }
+      }
 
       setStudentInfo({
         id: studentRecord.id,
@@ -66,7 +79,7 @@ export default function StudentProfile() {
         date_of_birth: studentRecord.date_of_birth,
         gender: studentRecord.gender,
         guardian_name: studentRecord.guardian_name,
-        class_name: classData?.name || null,
+        class_name: className,
         photo_url: studentRecord.photo_url,
       });
       setPhoneContact(studentRecord.phone_contact || '');

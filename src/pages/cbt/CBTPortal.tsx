@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClipboardList, Clock, Play, CheckCircle2, AlertCircle, Loader2, Lock } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatClassName } from '@/lib/formatClassName';
 
 interface Exam {
   id: string;
@@ -157,7 +158,7 @@ export default function CBTPortal() {
           </div>
           {studentRecord?.class_id && (
             <Badge variant="outline" className="text-lg px-4 py-2">
-              Class: {studentRecord.class_id}
+              Class: {formatClassName(studentRecord.class_id)}
             </Badge>
           )}
         </div>
