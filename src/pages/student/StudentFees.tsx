@@ -10,6 +10,7 @@ import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { toast } from 'sonner';
 import { printReceipt } from '@/utils/printReceipt';
 import { useSchoolSettings } from '@/hooks/useSchoolSettings';
+import { formatClassName } from '@/lib/formatClassName';
 
 interface FeePayment {
   id: string;
@@ -164,10 +165,15 @@ export default function StudentFees() {
       return;
     }
 
+    // Format class name properly
+    const formattedClassName = feePayment.class_id 
+      ? formatClassName(feePayment.class_id) 
+      : 'N/A';
+
     printReceipt({
       studentName: studentRecord?.full_name || profile?.full_name || 'Student',
       admissionNumber: studentRecord?.admission_number || 'N/A',
-      className: feePayment.class_id || 'N/A',
+      className: formattedClassName,
       amountPaid: Number(feePayment.amount_paid),
       totalFee: Number(feePayment.amount_payable),
       balance: Number(feePayment.balance),

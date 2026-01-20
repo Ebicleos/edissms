@@ -10,6 +10,7 @@ import { BookOpen, ClipboardList, Calendar, IdCard, GraduationCap, CreditCard, M
 import { format } from 'date-fns';
 import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { CLASS_LIST_DETAILED } from '@/types';
+import { formatClassName } from '@/lib/formatClassName';
 
 interface Exam {
   id: string;
@@ -45,8 +46,13 @@ interface Assignment {
 // Helper function to get class display name
 const getClassDisplayName = (classId: string | null): string => {
   if (!classId) return 'Not Assigned';
+  
+  // First check CLASS_LIST_DETAILED
   const cls = CLASS_LIST_DETAILED.find(c => c.id === classId);
-  return cls?.name || classId;
+  if (cls?.name) return cls.name;
+  
+  // Fallback: use shared utility to format class_id
+  return formatClassName(classId);
 };
 
 export default function StudentDashboard() {

@@ -9,6 +9,7 @@ import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { Download, Printer, Loader2, School, QrCode, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatClassName } from '@/lib/formatClassName';
 
 interface StudentInfo {
   fullName: string;
@@ -41,25 +42,28 @@ export default function StudentIDCard() {
     }
 
     try {
-      let className = studentRecord.class_id;
+      let className = 'N/A';
 
       // Fetch class name if we have a class_id
-      if (className) {
+      if (studentRecord.class_id) {
         const { data: classData } = await supabase
           .from('classes')
           .select('name')
-          .eq('id', className)
+          .eq('id', studentRecord.class_id)
           .maybeSingle();
         
         if (classData?.name) {
           className = classData.name;
+        } else {
+          // Fallback: format class_id as display name
+          className = formatClassName(studentRecord.class_id);
         }
       }
 
       const info: StudentInfo = {
         fullName: studentRecord.full_name,
         admissionNumber: studentRecord.admission_number,
-        className: className || 'N/A',
+        className,
         photoUrl: studentRecord.photo_url,
       };
       
