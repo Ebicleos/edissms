@@ -226,7 +226,7 @@ export default function Auth() {
       const { data: studentByAdmission } = await supabase
         .from('students')
         .select('id, email, admission_number, user_id')
-        .eq('admission_number', loginIdentifier.trim())
+        .ilike('admission_number', loginIdentifier.trim())
         .maybeSingle();
       
       if (studentByAdmission) {

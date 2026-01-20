@@ -398,8 +398,8 @@ export default function Fees() {
     setIsSubmitting(false);
 
     if (error) {
-      console.error('Fee record error:', error);
-      toast.error('Failed to create fee record');
+      console.error('Fee record error details:', error.message, error.details, error.hint, error.code);
+      toast.error(`Failed to create fee record: ${error.message}`);
       return;
     }
 
