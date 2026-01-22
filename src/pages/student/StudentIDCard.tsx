@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 import { supabase } from '@/integrations/supabase/client';
-import { Download, Printer, Loader2, School, QrCode, User } from 'lucide-react';
+import { Download, Printer, Loader2, School, QrCode, User, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatClassName } from '@/lib/formatClassName';
 
@@ -20,12 +20,13 @@ interface StudentInfo {
 
 export default function StudentIDCard() {
   const { user } = useAuth();
-  const { studentRecord, isLoading: studentLoading } = useStudentRecord();
+  const { studentRecord, isLoading: studentLoading, refetch: refetchStudent } = useStudentRecord();
   const { settings: schoolSettings, isLoading: settingsLoading } = useSchoolSettings();
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [signedPhotoUrl, setSignedPhotoUrl] = useState<string | null>(null);
   const [photoLoading, setPhotoLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (studentRecord) {
@@ -99,6 +100,18 @@ export default function StudentIDCard() {
     setIsLoading(false);
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refetchStudent();
+      toast.success('ID card refreshed');
+    } catch (error) {
+      toast.error('Failed to refresh data');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handlePrint = () => {
     toast.success('Preparing ID card for printing...');
     window.print();
@@ -140,6 +153,9 @@ export default function StudentIDCard() {
             <p className="text-muted-foreground">View and print your student ID card</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={isRefreshing}>
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
             <Button variant="outline" onClick={handlePrint}>
               <Printer className="mr-2 h-4 w-4" />
               Print
