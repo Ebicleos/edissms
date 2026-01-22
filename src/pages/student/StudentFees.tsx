@@ -28,7 +28,8 @@ interface FeePayment {
 export default function StudentFees() {
   const { user, profile } = useAuth();
   const { studentRecord, studentId, isLoading: studentLoading } = useStudentRecord();
-  const { settings: schoolSettings } = useSchoolSettings();
+  // Pass student's school_id to get correct school settings
+  const { settings: schoolSettings } = useSchoolSettings(studentRecord?.school_id);
   const [feePayments, setFeePayments] = useState<FeePayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [payingFeeId, setPayingFeeId] = useState<string | null>(null);

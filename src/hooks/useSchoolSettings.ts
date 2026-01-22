@@ -32,21 +32,27 @@ const getDefaultSettings = (): SchoolSettings => ({
   logo_url: null,
 });
 
-export function useSchoolSettings() {
+export function useSchoolSettings(schoolId?: string | null) {
   const [settings, setSettings] = useState<SchoolSettings>(getDefaultSettings);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [schoolId]);
 
   const fetchSettings = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
+    
+    let query = supabase
       .from('school_settings')
-      .select('*')
-      .limit(1)
-      .maybeSingle();
+      .select('*');
+    
+    // If a specific school_id is provided, filter by it
+    if (schoolId) {
+      query = query.eq('school_id', schoolId);
+    }
+    
+    const { data, error } = await query.limit(1).maybeSingle();
 
     if (!error && data) {
       const defaults = getDefaultSettings();

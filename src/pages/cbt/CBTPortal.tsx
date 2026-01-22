@@ -60,17 +60,26 @@ export default function CBTPortal() {
   const fetchExams = async () => {
     if (!studentRecord?.class_id) return;
     
+    // Normalize the student's class_id for comparison
+    const normalizedStudentClass = studentRecord.class_id.toLowerCase().replace(/\s+/g, '');
+    
+    // Fetch all published exams and filter by normalized class_id
     const { data, error } = await supabase
       .from('exams')
       .select('*')
-      .eq('class_id', studentRecord.class_id)
       .eq('is_published', true)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      setExams(data);
+      // Filter exams for this student's class (case-insensitive, space-tolerant)
+      const filteredExams = data.filter((exam: Exam) => {
+        const normalizedExamClass = exam.class_id.toLowerCase().replace(/\s+/g, '');
+        return normalizedExamClass === normalizedStudentClass;
+      });
+      
+      setExams(filteredExams);
       // Check if any exam is active
-      const hasActiveExam = data.some((exam: Exam) => exam.is_exam_active);
+      const hasActiveExam = filteredExams.some((exam: Exam) => exam.is_exam_active);
       setExamSystemActive(hasActiveExam);
     }
     setIsLoading(false);
