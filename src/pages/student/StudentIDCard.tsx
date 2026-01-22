@@ -21,7 +21,8 @@ interface StudentInfo {
 export default function StudentIDCard() {
   const { user } = useAuth();
   const { studentRecord, isLoading: studentLoading, refetch: refetchStudent } = useStudentRecord();
-  const { settings: schoolSettings, isLoading: settingsLoading } = useSchoolSettings();
+  // Pass student's school_id to get correct school settings
+  const { settings: schoolSettings, isLoading: settingsLoading } = useSchoolSettings(studentRecord?.school_id);
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [signedPhotoUrl, setSignedPhotoUrl] = useState<string | null>(null);

@@ -104,16 +104,23 @@ export default function StudentDashboard() {
       return;
     }
 
+    // Normalize class_id for comparison
+    const normalizedClassId = effectiveClassId.toLowerCase().replace(/\s+/g, '');
+
     try {
-      // Fetch upcoming exams for student's class
+      // Fetch upcoming exams - all published, then filter by normalized class
       const { data: examsData } = await supabase
         .from('exams')
-        .select('id, title, subject, start_time, duration_minutes')
-        .eq('class_id', effectiveClassId)
+        .select('id, title, subject, start_time, duration_minutes, class_id')
         .eq('is_published', true)
         .gte('start_time', new Date().toISOString())
         .order('start_time', { ascending: true })
-        .limit(5);
+        .limit(20);
+
+      // Filter exams by normalized class_id
+      const filteredExams = examsData?.filter(exam => 
+        exam.class_id?.toLowerCase().replace(/\s+/g, '') === normalizedClassId
+      )?.slice(0, 5) || [];
 
       // Fetch announcements for students
       const { data: announcementsData } = await supabase
@@ -133,20 +140,35 @@ export default function StudentDashboard() {
         .order('event_date', { ascending: true })
         .limit(3);
 
-      // Fetch assignments for student's class
+      // Fetch assignments - all published, then filter by normalized class
       const { data: assignmentsData } = await supabase
         .from('assignments')
-        .select('id, title, subject, due_date')
-        .eq('class_id', effectiveClassId)
+        .select('id, title, subject, due_date, class_id')
         .eq('is_published', true)
         .gte('due_date', new Date().toISOString())
         .order('due_date', { ascending: true })
-        .limit(3);
+        .limit(20);
 
-      setUpcomingExams(examsData || []);
+      // Filter assignments by normalized class_id
+      const filteredAssignments = assignmentsData?.filter(a => 
+        a.class_id?.toLowerCase().replace(/\s+/g, '') === normalizedClassId
+      )?.slice(0, 3) || [];
+
+      setUpcomingExams(filteredExams.map(e => ({
+        id: e.id,
+        title: e.title,
+        subject: e.subject,
+        start_time: e.start_time,
+        duration_minutes: e.duration_minutes,
+      })));
       setAnnouncements(announcementsData || []);
       setEvents(eventsData || []);
-      setAssignments(assignmentsData || []);
+      setAssignments(filteredAssignments.map(a => ({
+        id: a.id,
+        title: a.title,
+        subject: a.subject,
+        due_date: a.due_date,
+      })));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
