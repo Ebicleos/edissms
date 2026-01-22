@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { WelcomeCard } from '@/components/dashboard/WelcomeCard';
+import { EmojiStatCard } from '@/components/dashboard/EmojiStatCard';
+import { ActionCard } from '@/components/dashboard/ActionCard';
 import { useNavigate } from 'react-router-dom';
-import { Users, ClipboardList, Calendar, Plus } from 'lucide-react';
+import { Users, ClipboardList, Calendar, Plus, BookOpen, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function TeacherDashboard() {
@@ -62,108 +64,67 @@ export default function TeacherDashboard() {
   }, [user]);
 
   const quickActions = [
-    {
-      title: 'My Students',
-      description: 'View students in your classes',
-      icon: Users,
-      path: '/teacher/students',
-      color: 'from-blue-500 to-cyan-500',
-    },
-    {
-      title: 'Create Exam',
-      description: 'Create new exams or assignments',
-      icon: Plus,
-      path: '/teacher/exams/create',
-      color: 'from-green-500 to-emerald-500',
-    },
-    {
-      title: 'Manage Exams',
-      description: 'View and edit your exams',
-      icon: ClipboardList,
-      path: '/teacher/exams',
-      color: 'from-purple-500 to-pink-500',
-    },
-    {
-      title: 'Attendance',
-      description: 'Mark student attendance',
-      icon: Calendar,
-      path: '/attendance',
-      color: 'from-orange-500 to-red-500',
-    },
+    { title: 'My Students', description: 'View students in your classes', icon: Users, path: '/teacher/students', variant: 'blue' as const },
+    { title: 'Create Exam', description: 'Create new exams or assignments', icon: Plus, path: '/teacher/exams/create', variant: 'green' as const },
+    { title: 'Manage Exams', description: 'View and edit your exams', icon: ClipboardList, path: '/teacher/exams', variant: 'purple' as const },
+    { title: 'Attendance', description: 'Mark student attendance', icon: Calendar, path: '/attendance', variant: 'orange' as const },
+    { title: 'Grade Entry', description: 'Enter student grades', icon: BookOpen, path: '/teacher/grade-entry', variant: 'pink' as const },
+    { title: 'Results', description: 'View exam results', icon: BarChart3, path: '/teacher/exams', variant: 'cyan' as const },
   ];
 
   return (
     <MainLayout>
-      <div className="space-y-4 md:space-y-8">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl md:rounded-2xl p-4 md:p-8 text-white">
-          <h1 className="text-xl md:text-3xl font-bold mb-1 md:mb-2">
-            Welcome, {profile?.full_name?.split(' ')[0] || 'Teacher'}! 📚
-          </h1>
-          <p className="text-white/80 text-sm md:text-lg">
-            {userClass ? `Assigned Class: ${userClass}` : 'Manage your classes and students'}
-          </p>
+      <div className="space-y-4 md:space-y-6">
+        {/* Welcome Card */}
+        <WelcomeCard
+          name={profile?.full_name || 'Teacher'}
+          role="Teacher"
+          subtitle={userClass ? `Assigned Class: ${userClass}` : 'Manage your classes'}
+          avatarUrl={profile?.photo_url}
+          variant="green"
+          emoji="📚"
+        />
+
+        {/* Stats Grid - Emoji Cards */}
+        <div className="grid grid-cols-3 gap-3 md:gap-4">
+          <EmojiStatCard
+            emoji="🏫"
+            value={stats.isLoading ? '...' : stats.classCount}
+            label="My Classes"
+            variant="blue"
+            onClick={() => navigate('/teacher/students')}
+          />
+          <EmojiStatCard
+            emoji="👨‍🎓"
+            value={stats.isLoading ? '...' : stats.studentCount}
+            label="Students"
+            variant="purple"
+          />
+          <EmojiStatCard
+            emoji="📝"
+            value={stats.isLoading ? '...' : stats.examCount}
+            label="Exams"
+            variant="green"
+            onClick={() => navigate('/teacher/exams')}
+          />
         </div>
 
         {/* Quick Actions Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Card
+        <div className="content-card">
+          <h3 className="section-heading mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {quickActions.map((action) => (
+              <ActionCard
                 key={action.path}
-                className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                onClick={() => navigate(action.path)}
-              >
-                <CardHeader className="p-3 md:pb-3">
-                  <div
-                    className={`w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-2 md:mb-3 group-hover:scale-110 transition-transform`}
-                  >
-                    <Icon className="h-5 w-5 md:h-6 md:w-6 text-white" />
-                  </div>
-                  <CardTitle className="text-sm md:text-lg">{action.title}</CardTitle>
-                  <CardDescription className="text-xs md:text-sm hidden md:block">{action.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-3 gap-3 md:gap-6">
-          <Card>
-            <CardHeader className="p-3 md:p-6 pb-2 md:pb-3">
-              <CardTitle className="text-sm md:text-lg">My Classes</CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 md:p-6 pt-0">
-              <p className="text-2xl md:text-3xl font-bold text-primary">
-                {stats.isLoading ? '...' : stats.classCount}
-              </p>
-              <p className="text-xs md:text-sm text-muted-foreground">Assigned</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="p-3 md:p-6 pb-2 md:pb-3">
-              <CardTitle className="text-sm md:text-lg">Students</CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 md:p-6 pt-0">
-              <p className="text-2xl md:text-3xl font-bold text-blue-600">
-                {stats.isLoading ? '...' : stats.studentCount}
-              </p>
-              <p className="text-xs md:text-sm text-muted-foreground">In classes</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="p-3 md:p-6 pb-2 md:pb-3">
-              <CardTitle className="text-sm md:text-lg">Exams</CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 md:p-6 pt-0">
-              <p className="text-2xl md:text-3xl font-bold text-green-600">
-                {stats.isLoading ? '...' : stats.examCount}
-              </p>
-              <p className="text-xs md:text-sm text-muted-foreground">Published</p>
-            </CardContent>
-          </Card>
+                title={action.title}
+                description={action.description}
+                icon={action.icon}
+                path={action.path}
+                variant={action.variant}
+                compact
+              />
+            ))}
+          </div>
         </div>
       </div>
     </MainLayout>

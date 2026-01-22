@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { WelcomeCard } from '@/components/dashboard/WelcomeCard';
+import { ActionCard } from '@/components/dashboard/ActionCard';
+import { ScheduleCarousel } from '@/components/dashboard/ScheduleCarousel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, ClipboardList, Calendar, IdCard, GraduationCap, CreditCard, Megaphone, CalendarDays, Bell, Loader2, User, FileText } from 'lucide-react';
+import { BookOpen, ClipboardList, Calendar, IdCard, GraduationCap, CreditCard, Megaphone, CalendarDays, Loader2, User, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { useStudentRecord } from '@/hooks/useStudentRecord';
 import { CLASS_LIST_DETAILED } from '@/types';
@@ -152,99 +155,62 @@ export default function StudentDashboard() {
   };
 
   const quickActions = [
-    {
-      title: 'CBT Portal',
-      description: 'Take exams',
-      icon: ClipboardList,
-      path: '/cbt',
-      color: 'from-blue-500 to-cyan-500',
-    },
-    {
-      title: 'My Results',
-      description: 'View results',
-      icon: GraduationCap,
-      path: '/student/results',
-      color: 'from-green-500 to-emerald-500',
-    },
-    {
-      title: 'Report Cards',
-      description: 'Download reports',
-      icon: FileText,
-      path: '/student/report-cards',
-      color: 'from-purple-500 to-pink-500',
-    },
-    {
-      title: 'School Fees',
-      description: 'Pay online',
-      icon: CreditCard,
-      path: '/student/fees',
-      color: 'from-yellow-500 to-orange-500',
-    },
-    {
-      title: 'ID Card',
-      description: 'View ID',
-      icon: IdCard,
-      path: '/student/id-card',
-      color: 'from-red-500 to-pink-500',
-    },
-    {
-      title: 'Materials',
-      description: 'Study resources',
-      icon: BookOpen,
-      path: '/student/materials',
-      color: 'from-indigo-500 to-purple-500',
-    },
-    {
-      title: 'Attendance',
-      description: 'View records',
-      icon: Calendar,
-      path: '/student/attendance',
-      color: 'from-amber-500 to-yellow-500',
-    },
-    {
-      title: 'My Profile',
-      description: 'Edit profile',
-      icon: User,
-      path: '/student/profile',
-      color: 'from-teal-500 to-cyan-500',
-    },
+    { title: 'CBT Portal', description: 'Take exams', icon: ClipboardList, path: '/cbt', variant: 'blue' as const },
+    { title: 'My Results', description: 'View results', icon: GraduationCap, path: '/student/results', variant: 'green' as const },
+    { title: 'Report Cards', description: 'Download reports', icon: FileText, path: '/student/report-cards', variant: 'purple' as const },
+    { title: 'School Fees', description: 'Pay online', icon: CreditCard, path: '/student/fees', variant: 'orange' as const },
+    { title: 'ID Card', description: 'View ID', icon: IdCard, path: '/student/id-card', variant: 'pink' as const },
+    { title: 'Materials', description: 'Study resources', icon: BookOpen, path: '/student/materials', variant: 'cyan' as const },
+    { title: 'Attendance', description: 'View records', icon: Calendar, path: '/student/attendance', variant: 'orange' as const },
+    { title: 'My Profile', description: 'Edit profile', icon: User, path: '/student/profile', variant: 'blue' as const },
   ];
+
+  // Transform exams for schedule carousel
+  const scheduleItems = upcomingExams.map(exam => ({
+    id: exam.id,
+    title: exam.title,
+    subject: exam.subject,
+    time: exam.start_time,
+    duration: `${exam.duration_minutes} mins`,
+    type: 'exam' as const,
+  }));
 
   return (
     <MainLayout>
-      <div className="space-y-4 md:space-y-8">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-primary to-primary/80 rounded-xl md:rounded-2xl p-4 md:p-8 text-primary-foreground">
-          <h1 className="text-xl md:text-3xl font-bold mb-1 md:mb-2">
-            Welcome back, {studentRecord?.full_name?.split(' ')[0] || profile?.full_name?.split(' ')[0] || 'Student'}! 👋
-          </h1>
-          <p className="text-primary-foreground/80 text-sm md:text-lg">
-            {className ? `Class: ${className}` : effectiveClassId ? `Class: ${effectiveClassId}` : 'Ready to learn something new today?'}
-          </p>
-        </div>
+      <div className="space-y-4 md:space-y-6">
+        {/* Welcome Card */}
+        <WelcomeCard
+          name={studentRecord?.full_name || profile?.full_name || 'Student'}
+          role="Student"
+          subtitle={className || effectiveClassId || undefined}
+          avatarUrl={studentRecord?.photo_url || profile?.photo_url}
+          variant="purple"
+          emoji="📚"
+        />
 
         {/* Quick Actions Grid */}
-        <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-2 md:gap-4">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Card
-                key={action.path}
-                className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                onClick={() => navigate(action.path)}
-              >
-                <CardHeader className="p-2 md:pb-2 md:pt-4 md:px-3">
-                  <div
-                    className={`w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br ${action.color} flex items-center justify-center mb-1 md:mb-2 group-hover:scale-110 transition-transform mx-auto md:mx-0`}
-                  >
-                    <Icon className="h-4 w-4 md:h-5 md:w-5 text-white" />
-                  </div>
-                  <CardTitle className="text-[10px] md:text-sm text-center md:text-left">{action.title}</CardTitle>
-                </CardHeader>
-              </Card>
-            );
-          })}
+        <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-2 md:gap-3">
+          {quickActions.map((action) => (
+            <ActionCard
+              key={action.path}
+              title={action.title}
+              icon={action.icon}
+              path={action.path}
+              variant={action.variant}
+              compact
+            />
+          ))}
         </div>
+
+        {/* Upcoming Exams Carousel */}
+        {scheduleItems.length > 0 && (
+          <ScheduleCarousel
+            items={scheduleItems}
+            title="Upcoming Exams"
+            onViewAll={() => navigate('/cbt')}
+            emptyMessage="No upcoming exams"
+          />
+        )}
 
         {isLoading ? (
           <div className="flex justify-center py-8 md:py-12">
@@ -252,55 +218,13 @@ export default function StudentDashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-            {/* Upcoming Exams */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5" />
-                  Upcoming Exams
-                </CardTitle>
-                <CardDescription>Your scheduled exams and assessments</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {upcomingExams.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                    <p>No upcoming exams scheduled</p>
-                    <Button variant="outline" className="mt-3" onClick={() => navigate('/cbt')}>
-                      Go to CBT Portal
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {upcomingExams.map((exam) => (
-                      <div key={exam.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                        <div>
-                          <p className="font-medium">{exam.title}</p>
-                          <p className="text-sm text-muted-foreground">{exam.subject}</p>
-                        </div>
-                        <div className="text-right">
-                          {exam.start_time && (
-                            <p className="text-sm font-medium">
-                              {format(new Date(exam.start_time), 'MMM d, h:mm a')}
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground">{exam.duration_minutes} mins</p>
-                        </div>
-                      </div>
-                    ))}
-                    <Button variant="outline" className="w-full" onClick={() => navigate('/cbt')}>
-                      View All Exams
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
             {/* Announcements */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Megaphone className="h-5 w-5" />
+            <Card className="border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <div className="p-2 rounded-lg bg-pink-100">
+                    <Megaphone className="h-4 w-4 text-pink-600" />
+                  </div>
                   Latest Announcements
                 </CardTitle>
                 <CardDescription>Important school updates</CardDescription>
@@ -314,12 +238,12 @@ export default function StudentDashboard() {
                 ) : (
                   <div className="space-y-3">
                     {announcements.map((announcement) => (
-                      <div key={announcement.id} className="p-3 rounded-lg bg-muted/50">
+                      <div key={announcement.id} className="p-3 rounded-xl bg-muted/40 hover:bg-muted/60 transition-colors">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="font-medium">{announcement.title}</p>
+                          <p className="font-medium text-sm">{announcement.title}</p>
                           <Badge variant="outline" className="text-xs">{announcement.type}</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{announcement.content}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{announcement.content}</p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {format(new Date(announcement.created_at), 'MMM d, yyyy')}
                         </p>
@@ -334,10 +258,12 @@ export default function StudentDashboard() {
             </Card>
 
             {/* Upcoming Events */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CalendarDays className="h-5 w-5" />
+            <Card className="border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <div className="p-2 rounded-lg bg-blue-100">
+                    <CalendarDays className="h-4 w-4 text-blue-600" />
+                  </div>
                   Upcoming Events
                 </CardTitle>
                 <CardDescription>School activities and events</CardDescription>
@@ -351,11 +277,11 @@ export default function StudentDashboard() {
                 ) : (
                   <div className="space-y-3">
                     {events.map((event) => (
-                      <div key={event.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                      <div key={event.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 hover:bg-muted/60 transition-colors">
                         <div>
-                          <p className="font-medium">{event.title}</p>
+                          <p className="font-medium text-sm">{event.title}</p>
                           {event.location && (
-                            <p className="text-sm text-muted-foreground">{event.location}</p>
+                            <p className="text-xs text-muted-foreground">{event.location}</p>
                           )}
                         </div>
                         <div className="text-right">
@@ -377,10 +303,12 @@ export default function StudentDashboard() {
             </Card>
 
             {/* Pending Assignments */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
+            <Card className="border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <div className="p-2 rounded-lg bg-amber-100">
+                    <BookOpen className="h-4 w-4 text-amber-600" />
+                  </div>
                   Pending Assignments
                 </CardTitle>
                 <CardDescription>Assignments due soon</CardDescription>
@@ -394,13 +322,13 @@ export default function StudentDashboard() {
                 ) : (
                   <div className="space-y-3">
                     {assignments.map((assignment) => (
-                      <div key={assignment.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                      <div key={assignment.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 hover:bg-muted/60 transition-colors">
                         <div>
-                          <p className="font-medium">{assignment.title}</p>
-                          <p className="text-sm text-muted-foreground">{assignment.subject}</p>
+                          <p className="font-medium text-sm">{assignment.title}</p>
+                          <p className="text-xs text-muted-foreground">{assignment.subject}</p>
                         </div>
                         {assignment.due_date && (
-                          <Badge variant="secondary">
+                          <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200">
                             Due {format(new Date(assignment.due_date), 'MMM d')}
                           </Badge>
                         )}
@@ -408,6 +336,52 @@ export default function StudentDashboard() {
                     ))}
                     <Button variant="outline" className="w-full" onClick={() => navigate('/student/assignments')}>
                       View All Assignments
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* CBT Exams */}
+            <Card className="border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <div className="p-2 rounded-lg bg-green-100">
+                    <ClipboardList className="h-4 w-4 text-green-600" />
+                  </div>
+                  Upcoming Exams
+                </CardTitle>
+                <CardDescription>Your scheduled exams and assessments</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {upcomingExams.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                    <p>No upcoming exams scheduled</p>
+                    <Button variant="outline" className="mt-3" onClick={() => navigate('/cbt')}>
+                      Go to CBT Portal
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {upcomingExams.map((exam) => (
+                      <div key={exam.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 hover:bg-muted/60 transition-colors">
+                        <div>
+                          <p className="font-medium text-sm">{exam.title}</p>
+                          <p className="text-xs text-muted-foreground">{exam.subject}</p>
+                        </div>
+                        <div className="text-right">
+                          {exam.start_time && (
+                            <p className="text-sm font-medium">
+                              {format(new Date(exam.start_time), 'MMM d, h:mm a')}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground">{exam.duration_minutes} mins</p>
+                        </div>
+                      </div>
+                    ))}
+                    <Button variant="outline" className="w-full" onClick={() => navigate('/cbt')}>
+                      View All Exams
                     </Button>
                   </div>
                 )}
