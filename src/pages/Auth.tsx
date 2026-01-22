@@ -20,6 +20,11 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
+const studentLoginSchema = z.object({
+  identifier: z.string().min(1, 'Admission Number is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
 const signupSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
@@ -210,7 +215,9 @@ export default function Auth() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const result = loginSchema.safeParse({ identifier: loginIdentifier, password: loginPassword });
+    // Use different validation schema for students
+    const schema = selectedRole === 'student' ? studentLoginSchema : loginSchema;
+    const result = schema.safeParse({ identifier: loginIdentifier, password: loginPassword });
     if (!result.success) {
       toast.error(result.error.errors[0].message);
       return;
@@ -220,119 +227,71 @@ export default function Auth() {
     
     let emailToUse = loginIdentifier;
     
-    if (selectedRole === 'student' && !loginIdentifier.includes('@')) {
-      let studentEmail: string | null = null;
+    // Student login: ONLY admission number allowed (no email, no name)
+    if (selectedRole === 'student') {
+      const normalizedAdmission = loginIdentifier.trim();
       
-      const { data: studentByAdmission } = await supabase
+      // Step 1: Find student by admission number (case-insensitive)
+      const { data: studentRecord, error: studentError } = await supabase
         .from('students')
         .select('id, email, admission_number, user_id')
-        .ilike('admission_number', loginIdentifier.trim())
+        .ilike('admission_number', normalizedAdmission)
         .maybeSingle();
       
-      if (studentByAdmission) {
-        if (studentByAdmission.user_id) {
+      if (studentError || !studentRecord) {
+        setIsLoading(false);
+        toast.error('Student not found', {
+          description: 'No student exists with this admission number.',
+        });
+        return;
+      }
+      
+      // Step 2: Get email from linked user account
+      let studentEmail: string | null = null;
+      
+      // Try via user_id in students table
+      if (studentRecord.user_id) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', studentRecord.user_id)
+          .maybeSingle();
+        
+        if (profileData?.email) {
+          studentEmail = profileData.email;
+        }
+      }
+      
+      // Fallback: Try via student_classes admission_number
+      if (!studentEmail) {
+        const { data: classData } = await supabase
+          .from('student_classes')
+          .select('student_id')
+          .ilike('admission_number', normalizedAdmission)
+          .maybeSingle();
+        
+        if (classData?.student_id) {
           const { data: profileData } = await supabase
             .from('profiles')
             .select('email')
-            .eq('id', studentByAdmission.user_id)
+            .eq('id', classData.student_id)
             .maybeSingle();
           
           if (profileData?.email) {
             studentEmail = profileData.email;
           }
         }
-        
-        if (!studentEmail) {
-          const { data: classData } = await supabase
-            .from('student_classes')
-            .select('student_id')
-            .eq('admission_number', loginIdentifier.trim())
-            .maybeSingle();
-          
-          if (classData?.student_id) {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('email')
-              .eq('id', classData.student_id)
-              .maybeSingle();
-            
-            if (profileData?.email) {
-              studentEmail = profileData.email;
-            }
-          }
-        }
-        
-        if (!studentEmail && studentByAdmission.email) {
-          studentEmail = studentByAdmission.email;
-        }
-        
-        if (!studentEmail) {
-          setIsLoading(false);
-          toast.error('Account not created yet', {
-            description: 'Please sign up first using your admission number.',
-          });
-          return;
-        }
-      } else {
-        const normalizedInput = loginIdentifier.trim().toLowerCase().replace(/\s+/g, ' ');
-        const { data: studentByName } = await supabase
-          .from('students')
-          .select('id, email, user_id, full_name, admission_number')
-          .limit(10);
-        
-        const matchedStudent = studentByName?.find(s => 
-          s.full_name.toLowerCase().replace(/\s+/g, ' ') === normalizedInput
-        );
-        
-        if (matchedStudent) {
-          if (matchedStudent.user_id) {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('email')
-              .eq('id', matchedStudent.user_id)
-              .maybeSingle();
-            
-            if (profileData?.email) {
-              studentEmail = profileData.email;
-            }
-          }
-          
-          if (!studentEmail && matchedStudent.admission_number) {
-            const { data: classData } = await supabase
-              .from('student_classes')
-              .select('student_id')
-              .eq('admission_number', matchedStudent.admission_number)
-              .maybeSingle();
-            
-            if (classData?.student_id) {
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('email')
-                .eq('id', classData.student_id)
-                .maybeSingle();
-              
-              if (profileData?.email) {
-                studentEmail = profileData.email;
-              }
-            }
-          }
-          
-          if (!studentEmail && matchedStudent.email) {
-            studentEmail = matchedStudent.email;
-          }
-          
-          if (!studentEmail) {
-            setIsLoading(false);
-            toast.error('Account not created yet');
-            return;
-          }
-        }
+      }
+      
+      // Final fallback: Use email from students table
+      if (!studentEmail && studentRecord.email) {
+        studentEmail = studentRecord.email;
       }
       
       if (!studentEmail) {
         setIsLoading(false);
-        toast.error('Student not found', {
-          description: 'Please enter your admission number or exact registered name.',
+        toast.error('Account not created yet', {
+          description: 'Please sign up first using your admission number.',
         });
         return;
       }
@@ -345,7 +304,15 @@ export default function Auth() {
 
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
-        toast.error('Invalid credentials');
+        // For students, we know the admission number exists at this point
+        // so it must be a password issue
+        if (selectedRole === 'student') {
+          toast.error('Incorrect password', {
+            description: 'Please check your password and try again.',
+          });
+        } else {
+          toast.error('Invalid credentials');
+        }
       } else {
         toast.error(error.message);
       }
@@ -615,12 +582,12 @@ export default function Auth() {
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="login-identifier">
-                        {selectedRole === 'student' ? 'Email, Admission No., or Name' : 'Email'}
+                        {selectedRole === 'student' ? 'Admission Number' : 'Email'}
                       </Label>
                       <Input
                         id="login-identifier"
                         type={selectedRole === 'student' ? 'text' : 'email'}
-                        placeholder={selectedRole === 'student' ? 'Enter email, admission no., or name' : 'Enter your email'}
+                        placeholder={selectedRole === 'student' ? 'Enter your admission number' : 'Enter your email'}
                         value={loginIdentifier}
                         onChange={(e) => setLoginIdentifier(e.target.value)}
                         required
@@ -628,7 +595,7 @@ export default function Auth() {
                       />
                       {selectedRole === 'student' && (
                         <p className="text-xs text-muted-foreground">
-                          Login with admission number (e.g., 0001) or full name
+                          Use your admission number (e.g., GIS20252002)
                         </p>
                       )}
                     </div>
