@@ -50,6 +50,15 @@
     --cyan: 185 80% 45%;
     --cyan-foreground: 0 0% 100%;
 
+    /* Pastel backgrounds for stat cards */
+    --stat-blue: 210 100% 97%;
+    --stat-purple: 270 100% 97%;
+    --stat-green: 150 100% 96%;
+    --stat-orange: 35 100% 96%;
+    --stat-pink: 330 100% 97%;
+    --stat-cyan: 185 100% 96%;
+    --stat-yellow: 45 100% 96%;
+
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 217 91% 40%;
