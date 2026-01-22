@@ -3,7 +3,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Wallet, CreditCard, Loader2, CheckCircle, AlertCircle, Clock, Printer } from 'lucide-react';
+import { Wallet, CreditCard, Loader2, CheckCircle, AlertCircle, Clock, Printer, RefreshCw, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentRecord } from '@/hooks/useStudentRecord';
@@ -32,6 +32,8 @@ export default function StudentFees() {
   const [feePayments, setFeePayments] = useState<FeePayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [payingFeeId, setPayingFeeId] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (studentId) {
@@ -62,6 +64,7 @@ export default function StudentFees() {
       return;
     }
 
+    setLoadError(null);
     try {
       const { data, error } = await supabase
         .from('fee_payments')
@@ -70,13 +73,28 @@ export default function StudentFees() {
         .order('academic_year', { ascending: false })
         .order('term', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Fee payments fetch error:', error);
+        setLoadError('Unable to load fee records. Please contact the school admin.');
+        throw error;
+      }
       setFeePayments(data || []);
     } catch (error) {
       console.error('Error fetching fee payments:', error);
-      toast.error('Failed to load fee records');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchFeePayments();
+      toast.success('Fee records refreshed');
+    } catch (error) {
+      toast.error('Failed to refresh');
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -204,10 +222,25 @@ export default function StudentFees() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">School Fees</h1>
-          <p className="text-muted-foreground">View and pay your school fees online</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">School Fees</h1>
+            <p className="text-muted-foreground">View and pay your school fees online</p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
+
+        {/* Error State */}
+        {loadError && (
+          <Card className="border-destructive/50 bg-destructive/10">
+            <CardContent className="py-4 flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <p className="text-sm text-destructive">{loadError}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -232,11 +265,12 @@ export default function StudentFees() {
         </div>
 
         {/* Fee Records */}
-        {feePayments.length === 0 ? (
+        {feePayments.length === 0 && !loadError ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
               <Wallet className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No fee records found</p>
+              <p className="text-sm mt-2">If you believe this is an error, please contact the school administration.</p>
             </CardContent>
           </Card>
         ) : (
