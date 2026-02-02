@@ -1733,6 +1733,15 @@ export type Database = {
         Args: { p_admission_number: string; p_email: string; p_user_id: string }
         Returns: boolean
       }
+      lookup_student_for_login: {
+        Args: { p_admission_number: string }
+        Returns: {
+          admission_number: string
+          email: string
+          id: string
+          user_id: string
+        }[]
+      }
       validate_student_for_signup: {
         Args: { admission_num: string; student_name: string }
         Returns: boolean
