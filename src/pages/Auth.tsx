@@ -231,12 +231,15 @@ export default function Auth() {
     if (selectedRole === 'student') {
       const normalizedAdmission = loginIdentifier.trim();
       
-      // Step 1: Find student by admission number (case-insensitive)
-      const { data: studentRecord, error: studentError } = await supabase
-        .from('students')
-        .select('id, email, admission_number, user_id')
-        .ilike('admission_number', normalizedAdmission)
-        .maybeSingle();
+      console.log('[Student Login] Looking up admission:', normalizedAdmission);
+      
+      // Step 1: Use RPC function to find student (bypasses RLS for anon users)
+      const { data: studentRecords, error: studentError } = await supabase
+        .rpc('lookup_student_for_login', { p_admission_number: normalizedAdmission });
+      
+      console.log('[Student Login] RPC result:', { studentRecords, studentError });
+      
+      const studentRecord = studentRecords?.[0];
       
       if (studentError || !studentRecord) {
         setIsLoading(false);
