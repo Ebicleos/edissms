@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Trash2, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { CLASS_LIST } from '@/types';
 import { examDetailsSchema, examQuestionSchema, validateInput, validateArray } from '@/lib/validations';
+import { AIQuestionGenerator } from '@/components/exams/AIQuestionGenerator';
 
 interface Question {
   id: string;
@@ -29,6 +30,7 @@ export default function CreateExam() {
   const navigate = useNavigate();
   const { user, userClass } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [aiGeneratorOpen, setAiGeneratorOpen] = useState(false);
 
   const [examData, setExamData] = useState({
     title: '',
@@ -78,6 +80,14 @@ export default function CreateExam() {
     setQuestions(questions.map(q => 
       q.id === id ? { ...q, [field]: value } : q
     ));
+  };
+
+  const handleAddAIQuestions = (generatedQuestions: Omit<Question, 'id'>[]) => {
+    const newQuestions = generatedQuestions.map(q => ({
+      ...q,
+      id: crypto.randomUUID(),
+    }));
+    setQuestions([...questions, ...newQuestions]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -224,10 +234,16 @@ export default function CreateExam() {
                   <CardTitle>Questions</CardTitle>
                   <CardDescription>{questions.length} question(s)</CardDescription>
                 </div>
-                <Button type="button" variant="outline" onClick={addQuestion}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Question
-                </Button>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" onClick={() => setAiGeneratorOpen(true)}>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate with AI
+                  </Button>
+                  <Button type="button" variant="outline" onClick={addQuestion}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Question
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -346,6 +362,14 @@ export default function CreateExam() {
             </Button>
           </div>
         </form>
+
+        <AIQuestionGenerator
+          open={aiGeneratorOpen}
+          onOpenChange={setAiGeneratorOpen}
+          subject={examData.subject}
+          classLevel={examData.class_id}
+          onAddQuestions={handleAddAIQuestions}
+        />
       </div>
     </MainLayout>
   );
