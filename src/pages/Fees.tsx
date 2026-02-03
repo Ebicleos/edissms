@@ -32,7 +32,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Search, Filter, MoreVertical, Receipt, FileSpreadsheet, CheckCircle, AlertCircle, Clock, Loader2, Printer } from 'lucide-react';
+import { Search, Filter, MoreVertical, Receipt, FileSpreadsheet, CheckCircle, AlertCircle, Clock, Loader2, Printer, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { PaymentStatus, getCurrentAcademicYear, ACADEMIC_YEARS } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,6 +87,8 @@ export default function Fees() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedForBulk, setSelectedForBulk] = useState<string[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<FeePayment | null>(null);
 
   // New payment form state
   const [newPaymentStudentId, setNewPaymentStudentId] = useState('');
@@ -281,6 +293,45 @@ export default function Fees() {
     toast.success('Reminder sent!', {
       description: `Payment reminder sent to ${payment.student_name}'s parents`,
     });
+  };
+
+  const handleDeleteClick = (payment: FeePayment) => {
+    setPaymentToDelete(payment);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!paymentToDelete) return;
+
+    // Warn if there are payments made
+    if (Number(paymentToDelete.amount_paid) > 0) {
+      const confirmed = window.confirm(
+        `This record has ${formatCurrency(paymentToDelete.amount_paid)} already paid. Are you sure you want to delete it?`
+      );
+      if (!confirmed) {
+        setDeleteDialogOpen(false);
+        setPaymentToDelete(null);
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    const { error } = await supabase
+      .from('fee_payments')
+      .delete()
+      .eq('id', paymentToDelete.id);
+
+    setIsSubmitting(false);
+
+    if (error) {
+      toast.error('Failed to delete fee record');
+      return;
+    }
+
+    toast.success('Fee record deleted successfully');
+    setDeleteDialogOpen(false);
+    setPaymentToDelete(null);
+    fetchFeePayments();
   };
 
   const handleGenerateBillSheet = () => {
@@ -506,6 +557,13 @@ export default function Fees() {
                         <DropdownMenuItem onClick={() => handleUpdatePayment(payment)}>Update</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handlePrintReceipt(payment)}>Print Receipt</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleSendReminder(payment)}>Send Reminder</DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteClick(payment)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Record
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -589,6 +647,13 @@ export default function Fees() {
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleSendReminder(payment)}>
                             Send Reminder
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteClick(payment)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Record
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -730,6 +795,41 @@ export default function Fees() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Fee Record</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this fee record for {paymentToDelete?.student_name}?
+              {paymentToDelete && Number(paymentToDelete.amount_paid) > 0 && (
+                <span className="block mt-2 text-warning font-medium">
+                  Warning: This record has {formatCurrency(paymentToDelete.amount_paid)} already paid.
+                </span>
+              )}
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }
