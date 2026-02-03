@@ -787,3 +787,55 @@
     @apply scale-[0.98];
   }
 }
+
+/* Print styles for ID cards and documents */
+@media print {
+  /* Hide all layout elements */
+  .md\:pl-64,
+  [class*="Sidebar"],
+  header,
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset body and main container */
+  body {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Center and style the printable content */
+  .print\:flex {
+    display: flex !important;
+  }
+
+  .print\:justify-center {
+    justify-content: center !important;
+  }
+
+  .print\:items-start {
+    align-items: flex-start !important;
+  }
+
+  .print\:pt-8 {
+    padding-top: 2rem !important;
+  }
+
+  .print\:min-h-screen {
+    min-height: 100vh !important;
+  }
+
+  /* ID card specific print styles */
+  .id-card-printable {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    page-break-inside: avoid !important;
+  }
+}

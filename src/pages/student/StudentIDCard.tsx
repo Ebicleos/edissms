@@ -148,7 +148,7 @@ export default function StudentIDCard() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between print:hidden">
           <div>
             <h1 className="text-3xl font-bold">My ID Card</h1>
             <p className="text-muted-foreground">View and print your student ID card</p>
@@ -168,9 +168,9 @@ export default function StudentIDCard() {
           </div>
         </div>
 
-        <div className="flex justify-center">
+        <div className="flex justify-center print:flex print:justify-center print:items-start print:pt-8 print:min-h-screen">
           {/* ID Card - Matching Admin Style */}
-          <div className="bg-card rounded-2xl border-2 border-primary/20 shadow-lg overflow-hidden max-w-sm print:shadow-none">
+          <div className="bg-card rounded-2xl border-2 border-primary/20 shadow-lg overflow-hidden max-w-sm id-card-printable">
             {/* Header */}
             <div className="bg-gradient-primary p-4 text-center text-primary-foreground">
               <div className="flex items-center justify-center gap-2 mb-1">
@@ -227,7 +227,7 @@ export default function StudentIDCard() {
           </div>
         </div>
 
-        <div className="text-center text-sm text-muted-foreground">
+        <div className="text-center text-sm text-muted-foreground print:hidden">
           <p>This ID card is the property of {schoolSettings.school_name}.</p>
           <p>If found, please return to the school administration.</p>
         </div>
