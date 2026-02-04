@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, AlertCircle, Wallet } from 'lucide-react';
+import { TrendingUp, AlertCircle, Wallet, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -58,13 +58,13 @@ export function FeesSummary() {
   };
 
   return (
-    <div className="content-card">
+    <div className="glass-card p-5 sm:p-6">
       <div className="flex items-center justify-between mb-4 sm:mb-5">
         <h3 className="section-heading flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+          <Sparkles className="h-5 w-5 text-accent" />
           Fees Collection
         </h3>
-        <span className="text-xs sm:text-sm text-muted-foreground font-medium px-2.5 py-1 bg-muted/50 rounded-lg">
+        <span className="text-xs sm:text-sm text-muted-foreground font-semibold px-3 py-1.5 bg-gradient-to-r from-muted/60 to-muted/40 rounded-full">
           Current Term
         </span>
       </div>
@@ -72,7 +72,7 @@ export function FeesSummary() {
       <div className="space-y-4 sm:space-y-5">
         {/* Progress Bar */}
         <div>
-          <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center justify-between mb-3">
             <span className="text-xs sm:text-sm text-muted-foreground font-medium">Collection Progress</span>
             <span className={cn(
               "text-sm sm:text-base font-bold",
@@ -81,9 +81,16 @@ export function FeesSummary() {
               {feesData.isLoading ? '...' : `${percentage.toFixed(1)}%`}
             </span>
           </div>
-          <div className="progress-enhanced">
+          <div className="h-3 rounded-full bg-muted/50 overflow-hidden">
             <div 
-              className="progress-enhanced-bar"
+              className={cn(
+                "h-full rounded-full transition-all duration-700 ease-out",
+                percentage >= 70 
+                  ? "bg-gradient-to-r from-accent to-lime" 
+                  : percentage >= 40 
+                    ? "bg-gradient-to-r from-warning to-secondary" 
+                    : "bg-gradient-to-r from-destructive to-pink"
+              )}
               style={{ width: feesData.isLoading ? '0%' : `${percentage}%` }}
             />
           </div>
@@ -91,36 +98,42 @@ export function FeesSummary() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <div className="summary-card summary-card-success">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-8 w-8 rounded-lg bg-success/15 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-success" />
+          <div className="relative overflow-hidden rounded-2xl p-4 border border-accent/20 bg-gradient-to-br from-accent/10 to-lime/5">
+            <div className="absolute -top-4 -right-4 w-16 h-16 bg-accent/20 rounded-full blur-2xl" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-accent to-lime flex items-center justify-center shadow-lg">
+                  <TrendingUp className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-xs sm:text-sm text-accent font-semibold">Collected</span>
               </div>
-              <span className="text-xs sm:text-sm text-success font-semibold">Collected</span>
+              <p className="text-lg sm:text-xl font-bold text-foreground truncate">
+                {feesData.isLoading ? '...' : formatCurrency(feesData.collected)}
+              </p>
             </div>
-            <p className="text-base sm:text-xl font-bold text-foreground truncate">
-              {feesData.isLoading ? '...' : formatCurrency(feesData.collected)}
-            </p>
           </div>
-          <div className="summary-card summary-card-warning">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-8 w-8 rounded-lg bg-warning/15 flex items-center justify-center">
-                <AlertCircle className="h-4 w-4 text-warning" />
+          <div className="relative overflow-hidden rounded-2xl p-4 border border-warning/20 bg-gradient-to-br from-warning/10 to-secondary/5">
+            <div className="absolute -top-4 -right-4 w-16 h-16 bg-warning/20 rounded-full blur-2xl" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-warning to-secondary flex items-center justify-center shadow-lg">
+                  <AlertCircle className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-xs sm:text-sm text-warning font-semibold">Pending</span>
               </div>
-              <span className="text-xs sm:text-sm text-warning font-semibold">Pending</span>
+              <p className="text-lg sm:text-xl font-bold text-foreground truncate">
+                {feesData.isLoading ? '...' : formatCurrency(feesData.pending)}
+              </p>
             </div>
-            <p className="text-base sm:text-xl font-bold text-foreground truncate">
-              {feesData.isLoading ? '...' : formatCurrency(feesData.pending)}
-            </p>
           </div>
         </div>
 
         {/* Total Expected */}
-        <div className="pt-3 sm:pt-4 border-t border-border/50">
+        <div className="pt-4 border-t border-border/30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Wallet className="h-3.5 w-3.5 text-primary" />
+              <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/20 to-purple/10 flex items-center justify-center">
+                <Wallet className="h-4 w-4 text-primary" />
               </div>
               <span className="text-xs sm:text-sm text-muted-foreground font-medium">Total Expected</span>
             </div>
