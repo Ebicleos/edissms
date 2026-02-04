@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, UserCircle, Users } from 'lucide-react';
+import { ArrowRight, Users, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,12 +19,12 @@ const getClassName = (classId: string): string => {
   return cls?.name || classId;
 };
 
-const avatarColors = [
-  'bg-primary/15 text-primary',
-  'bg-secondary/15 text-secondary',
-  'bg-accent/15 text-accent',
-  'bg-info/15 text-info',
-  'bg-warning/15 text-warning',
+const avatarGradients = [
+  'bg-gradient-to-br from-primary to-purple text-white',
+  'bg-gradient-to-br from-secondary to-coral text-white',
+  'bg-gradient-to-br from-accent to-lime text-white',
+  'bg-gradient-to-br from-info to-cyan text-white',
+  'bg-gradient-to-br from-pink to-purple text-white',
 ];
 
 export function RecentStudents() {
@@ -59,15 +59,15 @@ export function RecentStudents() {
   }, []);
 
   return (
-    <div className="content-card">
+    <div className="glass-card p-5 sm:p-6">
       <div className="flex items-center justify-between mb-4 sm:mb-5">
         <h3 className="section-heading flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
+          <Sparkles className="h-5 w-5 text-secondary" />
           Recent Admissions
         </h3>
-        <Button variant="ghost" size="sm" asChild className="h-9 px-3 rounded-xl hover:bg-primary/10">
-          <Link to="/students" className="text-primary text-sm font-medium">
-            View all <ArrowRight className="ml-1.5 h-4 w-4" />
+        <Button variant="ghost" size="sm" asChild className="h-9 px-3 rounded-xl hover:bg-primary/10 group">
+          <Link to="/students" className="text-primary text-sm font-semibold">
+            View all <ArrowRight className="ml-1.5 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </Button>
       </div>
@@ -76,7 +76,7 @@ export function RecentStudents() {
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className="list-item animate-pulse">
-                <div className="h-11 w-11 rounded-full bg-muted" />
+                <div className="h-11 w-11 rounded-xl bg-muted" />
                 <div className="flex-1 space-y-2">
                   <div className="h-4 bg-muted rounded-lg w-3/4" />
                   <div className="h-3 bg-muted rounded-lg w-1/2" />
@@ -85,22 +85,22 @@ export function RecentStudents() {
             ))}
           </div>
         ) : recentStudents.length === 0 ? (
-          <div className="empty-state py-8">
-            <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
-              <Users className="empty-state-icon h-8 w-8" />
+          <div className="empty-state py-10">
+            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 flex items-center justify-center mb-4">
+              <Users className="h-10 w-10 text-muted-foreground/40" />
             </div>
-            <p className="text-sm font-medium text-muted-foreground">No students found</p>
+            <p className="text-sm font-semibold text-muted-foreground">No students found</p>
             <p className="text-xs text-muted-foreground/70 mt-1">Add your first student to get started</p>
           </div>
         ) : (
           recentStudents.map((student, index) => (
             <div
               key={student.id}
-              className="list-item group cursor-pointer"
+              className="list-item group cursor-pointer hover:shadow-md"
             >
               <div className={cn(
-                "h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center flex-shrink-0 font-semibold text-sm transition-transform duration-200 group-hover:scale-105",
-                avatarColors[index % avatarColors.length]
+                "h-11 w-11 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg",
+                avatarGradients[index % avatarGradients.length]
               )}>
                 {student.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
               </div>
@@ -108,12 +108,12 @@ export function RecentStudents() {
                 <p className="font-semibold text-foreground text-sm sm:text-base truncate">{student.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <p className="text-xs sm:text-sm text-muted-foreground font-medium">{student.admissionNumber}</p>
-                  <Badge variant="secondary" className="text-[10px] sm:text-xs sm:hidden font-medium">
+                  <Badge className="text-[10px] sm:text-xs sm:hidden font-semibold bg-primary/10 text-primary border-primary/20">
                     {student.class}
                   </Badge>
                 </div>
               </div>
-              <Badge variant="secondary" className="hidden sm:inline-flex text-xs font-medium px-2.5 py-1">
+              <Badge className="hidden sm:inline-flex text-xs font-semibold px-3 py-1.5 bg-gradient-to-r from-primary/10 to-purple/10 text-primary border-primary/20">
                 {student.class}
               </Badge>
             </div>

@@ -25,6 +25,7 @@ import {
   Shield,
   ShieldCheck,
   Check,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, AppRole } from '@/contexts/AuthContext';
@@ -117,26 +118,33 @@ export function Sidebar() {
     await signOut();
   };
 
-  const getRoleBadgeColor = (r: AppRole | null) => {
+  const getRoleBadgeStyles = (r: AppRole | null) => {
     switch (r) {
-      case 'superadmin': return 'bg-purple-600';
-      case 'admin': return 'bg-red-500';
-      case 'teacher': return 'bg-blue-500';
-      case 'student': return 'bg-green-500';
-      default: return 'bg-gray-500';
+      case 'superadmin': return 'bg-gradient-to-r from-purple-500 to-pink-500';
+      case 'admin': return 'bg-gradient-to-r from-primary to-purple-500';
+      case 'teacher': return 'bg-gradient-to-r from-cyan-500 to-info';
+      case 'student': return 'bg-gradient-to-r from-accent to-lime-500';
+      default: return 'bg-muted-foreground';
     }
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar border-r border-sidebar-border/50 shadow-xl">
-      <div className="flex h-full flex-col">
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border/50 flex-shrink-0">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-secondary to-secondary/80 shadow-lg">
-            <School className="h-6 w-6 text-sidebar-primary-foreground" />
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 rounded-full -translate-y-20 translate-x-20 blur-3xl" />
+      <div className="absolute bottom-20 left-0 w-32 h-32 bg-secondary/10 rounded-full translate-y-10 -translate-x-10 blur-3xl" />
+      
+      <div className="relative flex h-full flex-col">
+        {/* Logo Header */}
+        <div className="flex items-center gap-3 px-5 py-6 border-b border-white/5 flex-shrink-0">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-secondary via-secondary to-coral shadow-lg shadow-secondary/30">
+            <School className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-lg text-sidebar-foreground tracking-tight">EduManage</h1>
+            <h1 className="font-display font-bold text-lg text-sidebar-foreground tracking-tight flex items-center gap-1.5">
+              EduManage
+              <Sparkles className="h-4 w-4 text-secondary" />
+            </h1>
             <p className="text-xs text-sidebar-foreground/50 font-medium">School Portal</p>
           </div>
         </div>
@@ -151,15 +159,20 @@ export function Sidebar() {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    'sidebar-link group',
+                    'sidebar-link group relative overflow-hidden',
                     isActive && 'active'
                   )}
                 >
+                  {isActive && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-purple-500/10 to-transparent" />
+                  )}
                   <item.icon className={cn(
-                    "h-5 w-5 transition-colors duration-200",
-                    isActive ? "text-secondary" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
+                    "relative h-5 w-5 transition-all duration-300",
+                    isActive 
+                      ? "text-secondary scale-110" 
+                      : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground group-hover:scale-105"
                   )} />
-                  <span className="truncate">{item.label}</span>
+                  <span className="relative truncate">{item.label}</span>
                 </NavLink>
               );
             })}
@@ -167,10 +180,10 @@ export function Sidebar() {
         </nav>
 
         {/* User Section */}
-        <div className="flex-shrink-0 border-t border-sidebar-border/50 p-4 bg-sidebar-accent/30">
+        <div className="flex-shrink-0 border-t border-white/5 p-4 bg-gradient-to-t from-black/20 to-transparent">
           <div className="flex items-center gap-3 mb-3">
-            <div className="h-11 w-11 rounded-full bg-gradient-to-br from-secondary to-secondary/80 flex items-center justify-center shadow-md">
-              <span className="text-sm font-bold text-sidebar-primary-foreground tracking-wide">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-secondary via-secondary to-pink-500 flex items-center justify-center shadow-lg shadow-secondary/20">
+              <span className="text-sm font-bold text-white tracking-wide">
                 {profile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
               </span>
             </div>
@@ -182,8 +195,8 @@ export function Sidebar() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className={cn(
-                      "text-xs px-2.5 py-1 rounded-full text-white capitalize inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity font-medium shadow-sm",
-                      getRoleBadgeColor(viewMode === 'admin' ? 'admin' : 'superadmin')
+                      "text-xs px-3 py-1.5 rounded-full text-white capitalize inline-flex items-center gap-1.5 hover:opacity-90 transition-all font-semibold shadow-md",
+                      getRoleBadgeStyles(viewMode === 'admin' ? 'admin' : 'superadmin')
                     )}>
                       {viewMode === 'admin' ? 'Admin View' : 'SuperAdmin'}
                       <ChevronDown className="h-3 w-3" />
@@ -196,7 +209,7 @@ export function Sidebar() {
                     >
                       <Shield className="h-4 w-4" />
                       <span>SuperAdmin View</span>
-                      {viewMode === 'superadmin' && <Check className="h-4 w-4 ml-auto" />}
+                      {viewMode === 'superadmin' && <Check className="h-4 w-4 ml-auto text-primary" />}
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => handleViewModeChange('admin')}
@@ -204,14 +217,14 @@ export function Sidebar() {
                     >
                       <ShieldCheck className="h-4 w-4" />
                       <span>Admin View</span>
-                      {viewMode === 'admin' && <Check className="h-4 w-4 ml-auto" />}
+                      {viewMode === 'admin' && <Check className="h-4 w-4 ml-auto text-primary" />}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
                 <span className={cn(
-                  "text-xs px-2.5 py-1 rounded-full text-white capitalize font-medium shadow-sm inline-block",
-                  getRoleBadgeColor(role)
+                  "text-xs px-3 py-1.5 rounded-full text-white capitalize font-semibold shadow-md inline-block",
+                  getRoleBadgeStyles(role)
                 )}>
                   {role || 'Guest'}
                 </span>
@@ -220,9 +233,9 @@ export function Sidebar() {
           </div>
           <button 
             onClick={handleLogout}
-            className="sidebar-link w-full text-red-400/80 hover:text-red-400 hover:bg-red-500/10"
+            className="sidebar-link w-full text-red-400/80 hover:text-red-400 hover:bg-red-500/15 group"
           >
-            <LogOut className="h-5 w-5" />
+            <LogOut className="h-5 w-5 group-hover:scale-110 transition-transform" />
             <span>Logout</span>
           </button>
         </div>
