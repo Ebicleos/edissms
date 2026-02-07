@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/card';
 import { PasswordInput } from '@/components/ui/password-input';
 import { School, User, Lock, Bell, Shield, Save, Loader2, FileText, CreditCard, Upload, Camera } from 'lucide-react';
+import { SignatureUpload } from '@/components/settings/SignatureUpload';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,6 +44,8 @@ export default function Settings() {
   const [closingDate, setClosingDate] = useState('');
   const [nextTermBegins, setNextTermBegins] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [teacherSignatureUrl, setTeacherSignatureUrl] = useState<string | null>(null);
+  const [principalSignatureUrl, setPrincipalSignatureUrl] = useState<string | null>(null);
 
   // Account settings
   const [fullName, setFullName] = useState('');
@@ -89,6 +92,8 @@ export default function Settings() {
       setClosingDate(schoolData.closing_date || '');
       setNextTermBegins(schoolData.next_term_begins || '');
       setLogoUrl(schoolData.logo_url || '');
+      setTeacherSignatureUrl((schoolData as any).teacher_signature_url || null);
+      setPrincipalSignatureUrl((schoolData as any).principal_signature_url || null);
     }
 
     // Set account settings from profile
@@ -149,6 +154,8 @@ export default function Settings() {
       closing_date: closingDate || null,
       next_term_begins: nextTermBegins || null,
       logo_url: logoUrl || null,
+      teacher_signature_url: teacherSignatureUrl || null,
+      principal_signature_url: principalSignatureUrl || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -738,6 +745,29 @@ export default function Settings() {
                       type="date"
                       value={nextTermBegins}
                       onChange={(e) => setNextTermBegins(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-medium text-foreground mb-4">✍️ Signatures</h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Upload signature images to appear on printed report cards
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <SignatureUpload
+                      label="Class Teacher's Signature"
+                      currentUrl={teacherSignatureUrl}
+                      onUploadComplete={(path) => setTeacherSignatureUrl(path)}
+                      onRemove={() => setTeacherSignatureUrl(null)}
+                    />
+                    <SignatureUpload
+                      label="Principal/Proprietor's Signature"
+                      currentUrl={principalSignatureUrl}
+                      onUploadComplete={(path) => setPrincipalSignatureUrl(path)}
+                      onRemove={() => setPrincipalSignatureUrl(null)}
                     />
                   </div>
                 </div>

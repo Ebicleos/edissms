@@ -28,6 +28,7 @@ export interface ReportCardData {
   closingDate?: string;
   nextTermBegins?: string;
   termSummary?: TermSummary[];
+  photoUrl?: string;
 }
 
 export interface SubjectGrade {
@@ -245,6 +246,7 @@ export function useReportCards() {
           promotionStatus: existingCard?.promotion_status || '',
           closingDate: schoolSettings?.closing_date || '',
           nextTermBegins: schoolSettings?.next_term_begins || '',
+          photoUrl: student.photo_url || undefined,
         };
       });
 
