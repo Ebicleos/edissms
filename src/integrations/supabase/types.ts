@@ -925,6 +925,7 @@ export type Database = {
           correct_option: string
           exam_id: string
           id: string
+          image_url: string | null
           marks: number | null
           option_a: string
           option_b: string
@@ -937,6 +938,7 @@ export type Database = {
           correct_option: string
           exam_id: string
           id?: string
+          image_url?: string | null
           marks?: number | null
           option_a: string
           option_b: string
@@ -949,6 +951,7 @@ export type Database = {
           correct_option?: string
           exam_id?: string
           id?: string
+          image_url?: string | null
           marks?: number | null
           option_a?: string
           option_b?: string
@@ -1097,10 +1100,12 @@ export type Database = {
           next_term_begins: string | null
           phone: string | null
           principal_name: string | null
+          principal_signature_url: string | null
           report_card_config: Json | null
           school_id: string | null
           school_initials: string | null
           school_name: string | null
+          teacher_signature_url: string | null
           term: string | null
           updated_at: string | null
         }
@@ -1117,10 +1122,12 @@ export type Database = {
           next_term_begins?: string | null
           phone?: string | null
           principal_name?: string | null
+          principal_signature_url?: string | null
           report_card_config?: Json | null
           school_id?: string | null
           school_initials?: string | null
           school_name?: string | null
+          teacher_signature_url?: string | null
           term?: string | null
           updated_at?: string | null
         }
@@ -1137,10 +1144,12 @@ export type Database = {
           next_term_begins?: string | null
           phone?: string | null
           principal_name?: string | null
+          principal_signature_url?: string | null
           report_card_config?: Json | null
           school_id?: string | null
           school_initials?: string | null
           school_name?: string | null
+          teacher_signature_url?: string | null
           term?: string | null
           updated_at?: string | null
         }

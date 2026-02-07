@@ -1,4 +1,6 @@
 import { ReportCardData } from '@/hooks/useReportCards';
+import { supabase } from '@/integrations/supabase/client';
+import { useSignedPhotoUrl } from '@/hooks/useSignedPhotoUrl';
 
 interface ReportCardTemplateProps {
   data: ReportCardData;
@@ -12,6 +14,8 @@ interface ReportCardTemplateProps {
     principalName?: string;
     closingDate?: string;
     nextTermBegins?: string;
+    teacherSignatureUrl?: string;
+    principalSignatureUrl?: string;
   };
   showAnnualSummary?: boolean;
 }
@@ -21,10 +25,11 @@ export function ReportCardTemplate({
   schoolSettings,
   showAnnualSummary = true 
 }: ReportCardTemplateProps) {
-  // Calculate totals
   const totalCa = data.grades.reduce((sum, g) => sum + g.caScore, 0);
   const totalExam = data.grades.reduce((sum, g) => sum + g.examScore, 0);
   const totalScore = data.grades.reduce((sum, g) => sum + g.totalScore, 0);
+
+  const { signedUrl: studentPhotoUrl } = useSignedPhotoUrl(data.photoUrl || null);
 
   return (
     <div className="bg-white text-black p-6 max-w-[800px] mx-auto print:p-4 print:max-w-full" style={{ fontFamily: 'Arial, sans-serif' }}>
@@ -54,55 +59,73 @@ export function ReportCardTemplate({
         STUDENT TERMLY REPORT CARD
       </h2>
 
-      {/* Student Info Grid */}
-      <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm mb-4 border border-black p-3">
-        <div className="flex">
-          <span className="font-semibold w-32">Student Name:</span>
-          <span className="uppercase">{data.studentName}</span>
+      {/* Student Info Grid with Photo */}
+      <div className="flex gap-4 mb-4 border border-black p-3">
+        {/* Student Photo */}
+        <div className="flex-shrink-0">
+          {studentPhotoUrl ? (
+            <img
+              src={studentPhotoUrl}
+              alt={data.studentName}
+              className="w-[80px] h-[80px] object-cover border-2 border-black"
+            />
+          ) : (
+            <div className="w-[80px] h-[80px] border-2 border-black bg-gray-100 flex items-center justify-center text-gray-400 text-xs text-center">
+              Passport<br/>Photo
+            </div>
+          )}
         </div>
-        <div className="flex">
-          <span className="font-semibold w-36">Next term begins:</span>
-          <span>{schoolSettings.nextTermBegins || data.nextTermBegins || 'TBA'}</span>
-        </div>
-        <div className="flex">
-          <span className="font-semibold w-32">Admission No.:</span>
-          <span>{data.admissionNumber}</span>
-        </div>
-        <div className="flex">
-          <span className="font-semibold w-36">Attendance:</span>
-          <span>{data.attendancePresent} out of {data.attendanceTotal}</span>
-        </div>
-        <div className="flex">
-          <span className="font-semibold w-32">Class/Form:</span>
-          <span className="uppercase">{data.className}</span>
-        </div>
-        <div className="flex">
-          <span className="font-semibold w-36">Number in Class:</span>
-          <span>{data.totalStudents}</span>
-        </div>
-        <div className="flex">
-          <span className="font-semibold w-32">Gender:</span>
-          <span className="uppercase">{data.gender}</span>
-        </div>
-        <div className="flex">
-          <span className="font-semibold w-36">Position in Class:</span>
-          <span>{data.classPosition}</span>
-        </div>
-        <div className="flex">
-          <span className="font-semibold w-32">Term:</span>
-          <span className="uppercase">{data.term} TERM</span>
-        </div>
-        <div className="flex">
-          <span className="font-semibold w-36">Average Score:</span>
-          <span>{data.averageScore.toFixed(2)}</span>
-        </div>
-        <div className="flex">
-          <span className="font-semibold w-32">Closing Date:</span>
-          <span>{schoolSettings.closingDate || data.closingDate || ''}</span>
-        </div>
-        <div className="flex">
-          <span className="font-semibold w-32">Academic Year:</span>
-          <span>{data.academicYear}</span>
+        
+        {/* Info Grid */}
+        <div className="flex-1 grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
+          <div className="flex">
+            <span className="font-semibold w-32">Student Name:</span>
+            <span className="uppercase">{data.studentName}</span>
+          </div>
+          <div className="flex">
+            <span className="font-semibold w-36">Next term begins:</span>
+            <span>{schoolSettings.nextTermBegins || data.nextTermBegins || 'TBA'}</span>
+          </div>
+          <div className="flex">
+            <span className="font-semibold w-32">Admission No.:</span>
+            <span>{data.admissionNumber}</span>
+          </div>
+          <div className="flex">
+            <span className="font-semibold w-36">Attendance:</span>
+            <span>{data.attendancePresent} out of {data.attendanceTotal}</span>
+          </div>
+          <div className="flex">
+            <span className="font-semibold w-32">Class/Form:</span>
+            <span className="uppercase">{data.className}</span>
+          </div>
+          <div className="flex">
+            <span className="font-semibold w-36">Number in Class:</span>
+            <span>{data.totalStudents}</span>
+          </div>
+          <div className="flex">
+            <span className="font-semibold w-32">Gender:</span>
+            <span className="uppercase">{data.gender}</span>
+          </div>
+          <div className="flex">
+            <span className="font-semibold w-36">Position in Class:</span>
+            <span>{data.classPosition}</span>
+          </div>
+          <div className="flex">
+            <span className="font-semibold w-32">Term:</span>
+            <span className="uppercase">{data.term} TERM</span>
+          </div>
+          <div className="flex">
+            <span className="font-semibold w-36">Average Score:</span>
+            <span>{data.averageScore.toFixed(2)}</span>
+          </div>
+          <div className="flex">
+            <span className="font-semibold w-32">Closing Date:</span>
+            <span>{schoolSettings.closingDate || data.closingDate || ''}</span>
+          </div>
+          <div className="flex">
+            <span className="font-semibold w-32">Academic Year:</span>
+            <span>{data.academicYear}</span>
+          </div>
         </div>
       </div>
 
@@ -131,7 +154,6 @@ export function ReportCardTemplate({
               <td className="border border-black p-2">{grade.remarks}</td>
             </tr>
           ))}
-          {/* Total Row */}
           <tr className="bg-gray-300 font-bold">
             <td className="border border-black p-2">Total</td>
             <td className="border border-black p-2 text-center">{totalCa}</td>
@@ -222,11 +244,25 @@ export function ReportCardTemplate({
       {/* Signatures */}
       <div className="grid grid-cols-2 gap-8 mt-8 text-sm">
         <div className="text-center">
+          {schoolSettings.teacherSignatureUrl && (
+            <img 
+              src={schoolSettings.teacherSignatureUrl} 
+              alt="Teacher Signature" 
+              className="h-[50px] w-auto mx-auto mb-1 object-contain"
+            />
+          )}
           <div className="border-t border-black pt-1 mx-8">
             Class Teacher's Signature
           </div>
         </div>
         <div className="text-center">
+          {schoolSettings.principalSignatureUrl && (
+            <img 
+              src={schoolSettings.principalSignatureUrl} 
+              alt="Principal Signature" 
+              className="h-[50px] w-auto mx-auto mb-1 object-contain"
+            />
+          )}
           <div className="border-t border-black pt-1 mx-8">
             {schoolSettings.principalName ? `${schoolSettings.principalName}'s Signature` : "Proprietor's Signature"}
           </div>

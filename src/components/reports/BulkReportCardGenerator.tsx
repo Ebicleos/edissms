@@ -24,6 +24,8 @@ interface SchoolSettings {
   principalName?: string;
   closingDate?: string;
   nextTermBegins?: string;
+  teacherSignatureUrl?: string;
+  principalSignatureUrl?: string;
 }
 
 export function BulkReportCardGenerator() {
@@ -56,6 +58,10 @@ export function BulkReportCardGenerator() {
         principalName: data.principal_name || undefined,
         closingDate: data.closing_date || undefined,
         nextTermBegins: data.next_term_begins || undefined,
+        teacherSignatureUrl: (data as any).teacher_signature_url ? 
+          supabase.storage.from('school-signatures').getPublicUrl((data as any).teacher_signature_url).data.publicUrl : undefined,
+        principalSignatureUrl: (data as any).principal_signature_url ? 
+          supabase.storage.from('school-signatures').getPublicUrl((data as any).principal_signature_url).data.publicUrl : undefined,
       });
     }
   };
@@ -224,11 +230,17 @@ export function BulkReportCardGenerator() {
         </div>
       ` : ''}
       <div class="grid grid-cols-2 gap-4" style="margin-top: 32px;">
-        <div style="text-align: center; border-top: 1px solid black; padding-top: 4px; margin: 0 32px;">
-          Class Teacher's Signature
+        <div style="text-align: center;">
+          ${settings.teacherSignatureUrl ? `<img src="${escapeHtml(settings.teacherSignatureUrl)}" alt="Teacher Signature" style="height: 50px; margin: 0 auto 4px; object-fit: contain;" />` : ''}
+          <div style="border-top: 1px solid black; padding-top: 4px; margin: 0 32px;">
+            Class Teacher's Signature
+          </div>
         </div>
-        <div style="text-align: center; border-top: 1px solid black; padding-top: 4px; margin: 0 32px;">
-          ${escapeHtml(settings.principalName) ? `${escapeHtml(settings.principalName)}'s Signature` : "Proprietor's Signature"}
+        <div style="text-align: center;">
+          ${settings.principalSignatureUrl ? `<img src="${escapeHtml(settings.principalSignatureUrl)}" alt="Principal Signature" style="height: 50px; margin: 0 auto 4px; object-fit: contain;" />` : ''}
+          <div style="border-top: 1px solid black; padding-top: 4px; margin: 0 32px;">
+            ${escapeHtml(settings.principalName) ? `${escapeHtml(settings.principalName)}'s Signature` : "Proprietor's Signature"}
+          </div>
         </div>
       </div>
     `;

@@ -11,6 +11,7 @@ import { useStudents, AdmissionFormData } from '@/hooks/useStudents';
 import { CLASS_LIST_DETAILED, ACADEMIC_YEARS, Term, Gender, getCurrentAcademicYear } from '@/types';
 import { PhotoUpload } from '@/components/students/PhotoUpload';
 import { UserPlus, Check, Printer, Wallet } from 'lucide-react';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 import {
   Dialog,
   DialogContent,
@@ -193,6 +194,12 @@ export default function Admission() {
   return (
     <MainLayout title="Student Admission" subtitle="Register a new student">
       <div className="max-w-4xl animate-slide-up">
+        <PageGradientHeader 
+          emoji="🌟" 
+          title="New Student Admission" 
+          subtitle="Fill in the student details to complete registration"
+          gradient="from-primary/10 via-purple-500/5 to-pink-500/5"
+        />
         {!schoolId && (
           <div className="mb-6 p-4 rounded-lg border border-warning bg-warning/10">
             <p className="text-sm text-warning-foreground font-medium">

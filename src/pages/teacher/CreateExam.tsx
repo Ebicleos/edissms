@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Trash2, Save, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Loader2, Sparkles, ImagePlus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { CLASS_LIST } from '@/types';
 import { examDetailsSchema, examQuestionSchema, validateInput, validateArray } from '@/lib/validations';
@@ -24,6 +24,7 @@ interface Question {
   option_d: string;
   correct_option: string;
   marks: number;
+  image_url?: string;
 }
 
 export default function CreateExam() {
@@ -90,6 +91,40 @@ export default function CreateExam() {
     setQuestions([...questions, ...newQuestions]);
   };
 
+  const handleDiagramUpload = async (questionId: string, file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${questionId}-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('exam-assets')
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) {
+      toast.error('Failed to upload diagram');
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('exam-assets')
+      .getPublicUrl(fileName);
+
+    updateQuestion(questionId, 'image_url', publicUrl);
+    toast.success('Diagram uploaded!');
+  };
+
+  const removeDiagram = (questionId: string) => {
+    updateQuestion(questionId, 'image_url', '');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -137,6 +172,7 @@ export default function CreateExam() {
       correct_option: q.correct_option,
       marks: q.marks,
       order_index: idx,
+      image_url: q.image_url || null,
     }));
 
     const { error: questionsError } = await supabase
@@ -306,6 +342,40 @@ export default function CreateExam() {
                         onChange={(e) => updateQuestion(question.id, 'option_d', e.target.value)}
                       />
                     </div>
+                  </div>
+
+                  {/* Diagram Upload */}
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">📊 Diagram / Image (Optional)</Label>
+                    {question.image_url ? (
+                      <div className="relative inline-block">
+                        <img src={question.image_url} alt="Question diagram" className="max-h-40 rounded-lg border" />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6"
+                          onClick={() => removeDiagram(question.id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <label className="flex items-center gap-2 px-3 py-2 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 transition-colors w-fit">
+                        <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Attach diagram</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleDiagramUpload(question.id, file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">

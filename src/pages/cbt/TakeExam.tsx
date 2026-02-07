@@ -624,6 +624,16 @@ export default function TakeExam() {
             <CardContent className="space-y-6">
               <p className="text-lg font-medium">{currentQuestion?.question_text}</p>
 
+              {/* Question Diagram/Image */}
+              {(currentQuestion as any)?.image_url && (
+                <div className="rounded-lg border bg-muted/30 p-2 flex justify-center">
+                  <img 
+                    src={(currentQuestion as any).image_url} 
+                    alt="Question diagram" 
+                    className="max-h-64 object-contain rounded"
+                  />
+                </div>
+              )}
               <div className="space-y-3">
                 {['A', 'B', 'C', 'D'].map((option) => {
                   const optionKey = `option_${option.toLowerCase()}` as keyof Question;
