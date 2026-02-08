@@ -7,6 +7,7 @@ import { useStudents } from '@/hooks/useStudents';
 import { Users, GraduationCap, ChevronRight, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AddClassDialog } from '@/components/classes/AddClassDialog';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 const levelColors: Record<string, string> = {
   'Early Years': 'bg-pink-100 text-pink-700 border-pink-200',
@@ -41,8 +42,9 @@ export default function Classes() {
   }, {} as Record<string, Array<typeof CLASS_LIST_DETAILED[0] & { studentCount: number }>>);
 
   return (
-    <MainLayout title="Classes" subtitle="Manage all school classes and levels">
+    <MainLayout>
       <div className="space-y-8 animate-fade-in">
+        <PageGradientHeader emoji="🏫" title="Classes" subtitle="Manage all school classes and levels" gradient="from-purple-500/10 via-pink-500/5 to-rose-500/5" />
         {/* Header */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">

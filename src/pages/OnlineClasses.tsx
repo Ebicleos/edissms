@@ -32,6 +32,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { CLASS_LIST_DETAILED } from '@/types';
 import { format } from 'date-fns';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 interface OnlineClass {
   id: string;
@@ -277,7 +278,7 @@ export default function OnlineClasses() {
 
   if (isLoading) {
     return (
-      <MainLayout title="Online Classes" subtitle="Live classes, lessons, and learning materials">
+      <MainLayout>
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -286,8 +287,9 @@ export default function OnlineClasses() {
   }
 
   return (
-    <MainLayout title="Online Classes" subtitle="Live classes, lessons, and learning materials">
+    <MainLayout>
       <div className="space-y-8 animate-fade-in">
+        <PageGradientHeader emoji="🎥" title="Online Classes" subtitle="Live classes, lessons, and learning materials" gradient="from-cyan-500/10 via-blue-500/5 to-primary/5" />
         {/* Live Classes Section */}
         <section>
           <div className="flex justify-between items-center mb-4">

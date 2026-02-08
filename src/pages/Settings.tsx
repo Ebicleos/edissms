@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/card';
 import { PasswordInput } from '@/components/ui/password-input';
 import { School, User, Lock, Bell, Shield, Save, Loader2, FileText, CreditCard, Upload, Camera } from 'lucide-react';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 import { SignatureUpload } from '@/components/settings/SignatureUpload';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -312,7 +313,7 @@ export default function Settings() {
 
   if (isLoading) {
     return (
-      <MainLayout title="Settings" subtitle="Manage your school settings and preferences">
+      <MainLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -321,8 +322,9 @@ export default function Settings() {
   }
 
   return (
-    <MainLayout title="Settings" subtitle="Manage your school settings and preferences">
-      <div className="max-w-4xl animate-fade-in">
+    <MainLayout>
+      <div className="max-w-4xl animate-fade-in space-y-6">
+        <PageGradientHeader emoji="⚙️" title="Settings" subtitle="Manage your school settings and preferences" gradient="from-muted/30 via-primary/5 to-blue-500/5" />
         <Tabs defaultValue="school" className="space-y-6">
           <TabsList>
             <TabsTrigger value="school" className="gap-2">

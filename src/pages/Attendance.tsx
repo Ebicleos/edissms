@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Check, X, Clock, AlertCircle, Save, CalendarDays, Loader2 } from 'lucide-react';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 interface StudentRecord {
   id: string;
@@ -164,8 +165,9 @@ export default function Attendance() {
   const lateCount = Object.values(attendance).filter((s) => s === 'late').length;
 
   return (
-    <MainLayout title="Attendance" subtitle="Mark and track student attendance">
+    <MainLayout>
       <div className="space-y-6 animate-fade-in">
+        <PageGradientHeader emoji="✅" title="Attendance" subtitle="Mark and track student attendance" gradient="from-purple-500/10 via-primary/5 to-blue-500/5" />
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Column - Calendar and Class Selection */}
           <div className="space-y-4">

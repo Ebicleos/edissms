@@ -36,6 +36,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { CLASS_LIST_DETAILED } from '@/types';
 import { Checkbox } from '@/components/ui/checkbox';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 interface Teacher {
   id: string;
@@ -317,7 +318,7 @@ export default function Teachers() {
 
   if (isLoading) {
     return (
-      <MainLayout title="Teachers" subtitle="Loading...">
+      <MainLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -326,8 +327,9 @@ export default function Teachers() {
   }
 
   return (
-    <MainLayout title="Teachers" subtitle={`${teachers.length} teaching staff`}>
+    <MainLayout>
       <div className="space-y-6 animate-fade-in">
+        <PageGradientHeader emoji="👩‍🏫" title="Teachers" subtitle={`${teachers.length} teaching staff`} gradient="from-orange-500/10 via-rose-500/5 to-amber-500/5" />
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
           <div className="relative flex-1 max-w-sm">

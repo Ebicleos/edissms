@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Megaphone, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 interface Announcement {
   id: string;
@@ -53,8 +54,9 @@ export default function StudentAnnouncements() {
   };
 
   return (
-    <MainLayout title="Announcements" subtitle="School news and updates">
+    <MainLayout>
       <div className="space-y-6">
+        <PageGradientHeader emoji="📢" title="Announcements" subtitle="School news and updates" gradient="from-orange-500/10 via-rose-500/5 to-pink-500/5" />
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -45,6 +45,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, isSameDay, parseISO, isAfter, isBefore, startOfToday } from 'date-fns';
 import { eventSchema, validateInput } from '@/lib/validations';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 interface Event {
   id: string;
@@ -240,7 +241,7 @@ export default function Events() {
 
   if (isLoading) {
     return (
-      <MainLayout title="Events Calendar" subtitle="Manage school events and calendar">
+      <MainLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -249,8 +250,10 @@ export default function Events() {
   }
 
   return (
-    <MainLayout title="Events Calendar" subtitle="Manage school events and calendar">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+    <MainLayout>
+      <div className="space-y-6 animate-fade-in">
+        <PageGradientHeader emoji="🎉" title="Events Calendar" subtitle="Manage school events and calendar" gradient="from-primary/10 via-purple-500/5 to-pink-500/5" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar */}
         <Card className="lg:col-span-1">
           <CardHeader className="pb-2">
@@ -397,6 +400,7 @@ export default function Events() {
             )}
           </CardContent>
         </Card>
+      </div>
       </div>
 
       {/* Create/Edit Dialog */}

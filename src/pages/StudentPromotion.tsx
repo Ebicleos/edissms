@@ -12,6 +12,7 @@ import { ArrowUpRight, Users, CheckCircle2, XCircle, Loader2, AlertTriangle } fr
 import { CLASS_LIST, ACADEMIC_YEARS } from '@/types';
 import { useStudentPromotion } from '@/hooks/useStudentPromotion';
 import { toast } from 'sonner';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 export default function StudentPromotion() {
   const [selectedClass, setSelectedClass] = useState('');
@@ -47,11 +48,9 @@ export default function StudentPromotion() {
   const selectedCount = students.filter(s => s.selected).length;
 
   return (
-    <MainLayout
-      title="Student Promotion"
-      subtitle="Promote students to the next class"
-    >
+    <MainLayout>
       <div className="space-y-6 animate-fade-in">
+        <PageGradientHeader emoji="⬆️" title="Student Promotion" subtitle="Promote students to the next class" gradient="from-emerald-500/10 via-lime-500/5 to-accent/5" />
         {/* Selection Controls */}
         <Card>
           <CardHeader>
