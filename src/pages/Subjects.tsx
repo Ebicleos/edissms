@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CLASS_LIST_DETAILED } from '@/types';
 import { subjectSchema, validateInput } from '@/lib/validations';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 interface Subject {
   id: string;
@@ -187,13 +188,8 @@ export default function Subjects() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Subjects</h1>
-            <p className="text-muted-foreground">
-              Manage subjects for grade entry and report cards
-            </p>
-          </div>
+        <PageGradientHeader emoji="📖" title="Subjects" subtitle="Manage subjects for grade entry and report cards" gradient="from-rose-500/10 via-orange-500/5 to-amber-500/5">
+          <div className="flex gap-2">
           <div className="flex gap-2">
             {subjects.length === 0 && (
               <Button variant="outline" onClick={handleSeedSubjects} disabled={isSubmitting}>
@@ -261,7 +257,8 @@ export default function Subjects() {
               </DialogContent>
             </Dialog>
           </div>
-        </div>
+          </div>
+        </PageGradientHeader>
 
         <Card>
           <CardHeader>

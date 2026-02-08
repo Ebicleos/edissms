@@ -50,6 +50,7 @@ import { feePaymentSchema, paymentAmountSchema, validateInput } from '@/lib/vali
 import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 import { printReceipt } from '@/utils/printReceipt';
 import { generateBillSheet } from '@/utils/generateBillSheet';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 interface FeePayment {
   id: string;
@@ -463,7 +464,7 @@ export default function Fees() {
 
   if (isLoading) {
     return (
-      <MainLayout title="Fees Management" subtitle="Track and manage school fee payments">
+      <MainLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -472,8 +473,9 @@ export default function Fees() {
   }
 
   return (
-    <MainLayout title="Fees Management" subtitle="Track and manage school fee payments">
+    <MainLayout>
       <div className="space-y-4 md:space-y-6 animate-fade-in">
+        <PageGradientHeader emoji="💰" title="Fees Management" subtitle="Track and manage school fee payments" gradient="from-emerald-500/10 via-accent/5 to-cyan-500/5" />
         {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-2 md:gap-4">
           <div className="bg-card rounded-xl border border-border/50 p-3 md:p-5 shadow-sm">

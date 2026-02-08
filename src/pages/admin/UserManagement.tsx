@@ -42,6 +42,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { logAudit } from '@/lib/auditLog';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 type AppRole = 'admin' | 'teacher' | 'student';
 
@@ -302,7 +303,7 @@ export default function UserManagement() {
 
   if (isLoading) {
     return (
-      <MainLayout title="User Management" subtitle="Manage all system users">
+      <MainLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -311,8 +312,9 @@ export default function UserManagement() {
   }
 
   return (
-    <MainLayout title="User Management" subtitle="Manage all system users and reset passwords">
+    <MainLayout>
       <div className="space-y-6 animate-fade-in">
+        <PageGradientHeader emoji="🛡️" title="User Management" subtitle="Manage all system users and reset passwords" gradient="from-primary/10 via-accent/5 to-emerald-500/5" />
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-card rounded-xl border border-border/50 p-4 shadow-sm">

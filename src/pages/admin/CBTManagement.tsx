@@ -25,6 +25,7 @@ import {
   Play
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 interface Exam {
   id: string;
@@ -172,7 +173,7 @@ export default function CBTManagement() {
 
   if (isLoading) {
     return (
-      <MainLayout title="CBT Management" subtitle="Loading...">
+      <MainLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -181,8 +182,9 @@ export default function CBTManagement() {
   }
 
   return (
-    <MainLayout title="CBT Management" subtitle="Monitor and control computer-based testing">
+    <MainLayout>
       <div className="space-y-6 animate-fade-in">
+        <PageGradientHeader emoji="🖥️" title="CBT Management" subtitle="Monitor and control computer-based testing" gradient="from-red-500/10 via-rose-500/5 to-orange-500/5" />
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>

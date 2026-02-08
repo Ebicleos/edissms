@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Plus, Upload, FileText, ClipboardList, Download, Eye, Clock, Power, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 interface Exam {
   id: string;
@@ -111,8 +112,9 @@ export default function Exams() {
   };
 
   return (
-    <MainLayout title="Exams & Assignments" subtitle="Manage exams, assignments, and results">
+    <MainLayout>
       <div className="space-y-6 animate-fade-in">
+        <PageGradientHeader emoji="📝" title="Exams & Assignments" subtitle="Manage exams, assignments, and results" gradient="from-blue-500/10 via-sky-500/5 to-cyan-500/5" />
         {/* Admin CBT Control Panel */}
         {role === 'admin' && (
           <CBTControlPanel

@@ -58,6 +58,7 @@ import { EditStudentDialog } from '@/components/students/EditStudentDialog';
 import { BulkStudentImportDialog } from '@/components/students/BulkStudentImportDialog';
 import { printReceipt } from '@/utils/printReceipt';
 import { Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Printer, IdCard, Camera, Upload, Download, Loader2 } from 'lucide-react';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -307,8 +308,9 @@ export default function Students() {
   };
 
   return (
-    <MainLayout title="Students Database" subtitle={`${totalStudents} registered students`}>
+    <MainLayout>
       <div className="space-y-4 md:space-y-6 animate-fade-in">
+        <PageGradientHeader emoji="🎓" title="Students Database" subtitle={`${totalStudents} registered students`} gradient="from-accent/10 via-emerald-500/5 to-cyan-500/5" />
         {/* Header Actions */}
         <div className="flex flex-col gap-3 md:gap-4">
           <div className="flex gap-2 md:gap-3">

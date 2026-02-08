@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { messageSchema, validateInput } from '@/lib/validations';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 interface Message {
   id: string;
@@ -160,8 +161,10 @@ export default function Messages() {
   };
 
   return (
-    <MainLayout title="Messages" subtitle="Send emails, SMS, and WhatsApp messages">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+    <MainLayout>
+      <div className="space-y-6 animate-fade-in">
+        <PageGradientHeader emoji="✉️" title="Messages" subtitle="Send emails, SMS, and WhatsApp messages" gradient="from-accent/10 via-blue-500/5 to-primary/5" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Compose Message */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-card rounded-xl border border-border/50 p-6 shadow-sm">
@@ -351,6 +354,7 @@ export default function Messages() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </MainLayout>
   );

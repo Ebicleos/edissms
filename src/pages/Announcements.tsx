@@ -44,6 +44,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { announcementSchema, validateInput } from '@/lib/validations';
+import { PageGradientHeader } from '@/components/ui/page-gradient-header';
 
 interface Announcement {
   id: string;
@@ -236,7 +237,7 @@ export default function Announcements() {
 
   if (isLoading) {
     return (
-      <MainLayout title="Announcements" subtitle="Manage school announcements">
+      <MainLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -245,8 +246,9 @@ export default function Announcements() {
   }
 
   return (
-    <MainLayout title="Announcements" subtitle="Manage school announcements">
+    <MainLayout>
       <div className="space-y-6 animate-fade-in">
+        <PageGradientHeader emoji="📢" title="Announcements" subtitle="Manage school announcements" gradient="from-orange-500/10 via-rose-500/5 to-pink-500/5" />
         {/* Header */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
