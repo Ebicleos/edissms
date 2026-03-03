@@ -271,7 +271,13 @@ export default function CreateExam() {
                   <CardDescription>{questions.length} question(s)</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={() => setAiGeneratorOpen(true)}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setAiGeneratorOpen(true)}
+                    disabled={!examData.subject.trim() || !examData.class_id.trim()}
+                    title={!examData.subject.trim() || !examData.class_id.trim() ? 'Select a subject and class first' : 'Generate questions with AI'}
+                  >
                     <Sparkles className="h-4 w-4 mr-2" />
                     Generate with AI
                   </Button>
