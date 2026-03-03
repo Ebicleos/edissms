@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Sparkles, Plus, RefreshCw, BookOpen, GraduationCap, AlertTriangle, Check } from 'lucide-react';
+import { Loader2, Sparkles, Plus, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -42,24 +42,8 @@ export function AIQuestionGenerator({
   const [count, setCount] = useState(5);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
-  const [addedCount, setAddedCount] = useState(0);
-
-  const missingContext = !subject.trim() || !classLevel.trim();
-
-  const handleDialogChange = (isOpen: boolean) => {
-    if (!isOpen) {
-      setAddedCount(0);
-      setGeneratedQuestions([]);
-      setTopic('');
-    }
-    onOpenChange(isOpen);
-  };
 
   const handleGenerate = async () => {
-    if (missingContext) {
-      toast.error('Please select a subject and class on the exam form first');
-      return;
-    }
     if (!topic.trim()) {
       toast.error('Please enter a topic');
       return;
@@ -68,12 +52,27 @@ export function AIQuestionGenerator({
     setIsGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-questions', {
-        body: { subject, topic, classLevel, difficulty, count },
+        body: {
+          subject: subject || 'General',
+          topic,
+          classLevel: classLevel || 'Primary',
+          difficulty,
+          count,
+        },
       });
 
-      if (error) throw new Error(error.message || 'Failed to generate questions');
-      if (data?.error) throw new Error(data.error);
-      if (!data?.questions || !Array.isArray(data.questions)) throw new Error('Invalid response format');
+      if (error) {
+        console.error('Function error:', error);
+        throw new Error(error.message || 'Failed to generate questions');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (!data?.questions || !Array.isArray(data.questions)) {
+        throw new Error('Invalid response format');
+      }
 
       const questionsWithIds: GeneratedQuestion[] = data.questions.map((q: any) => ({
         ...q,
@@ -112,17 +111,16 @@ export function AIQuestionGenerator({
     }
 
     onAddQuestions(selectedQuestions);
-    setAddedCount(prev => prev + selectedQuestions.length);
     toast.success(`Added ${selectedQuestions.length} questions to exam`);
     setGeneratedQuestions([]);
     setTopic('');
-    // Dialog stays open for "Generate More"
+    onOpenChange(false);
   };
 
   const selectedCount = generatedQuestions.filter(q => q.selected).length;
 
   return (
-    <Dialog open={open} onOpenChange={handleDialogChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -135,25 +133,6 @@ export function AIQuestionGenerator({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Context Banner */}
-          {missingContext ? (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-sm text-destructive">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>Please select a <strong>subject</strong> and <strong>class</strong> on the exam form before generating questions.</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-4 p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
-              <span className="flex items-center gap-1.5 font-medium">
-                <BookOpen className="h-4 w-4 text-primary" />
-                {subject}
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <GraduationCap className="h-4 w-4 text-primary" />
-                {classLevel}
-              </span>
-            </div>
-          )}
-
           {/* Generation Form */}
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-2">
@@ -195,7 +174,7 @@ export function AIQuestionGenerator({
 
           <Button 
             onClick={handleGenerate} 
-            disabled={isGenerating || !topic.trim() || missingContext}
+            disabled={isGenerating || !topic.trim()}
             className="w-full"
           >
             {isGenerating ? (
@@ -251,11 +230,18 @@ export function AIQuestionGenerator({
                             {idx + 1}. {q.question_text}
                           </p>
                           <div className="grid grid-cols-2 gap-1 text-xs">
-                            {(['A', 'B', 'C', 'D'] as const).map(opt => (
-                              <div key={opt} className={q.correct_option === opt ? 'text-green-600 font-medium' : 'text-muted-foreground'}>
-                                {opt}. {q[`option_${opt.toLowerCase()}` as keyof typeof q] as string}
-                              </div>
-                            ))}
+                            <div className={q.correct_option === 'A' ? 'text-green-600 font-medium' : 'text-muted-foreground'}>
+                              A. {q.option_a}
+                            </div>
+                            <div className={q.correct_option === 'B' ? 'text-green-600 font-medium' : 'text-muted-foreground'}>
+                              B. {q.option_b}
+                            </div>
+                            <div className={q.correct_option === 'C' ? 'text-green-600 font-medium' : 'text-muted-foreground'}>
+                              C. {q.option_c}
+                            </div>
+                            <div className={q.correct_option === 'D' ? 'text-green-600 font-medium' : 'text-muted-foreground'}>
+                              D. {q.option_d}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -264,40 +250,15 @@ export function AIQuestionGenerator({
                 </div>
               </ScrollArea>
 
-              <div className="flex items-center gap-2">
-                <Button 
-                  onClick={handleAddSelected}
-                  disabled={selectedCount === 0}
-                  className="flex-1"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add {selectedCount} Question{selectedCount !== 1 ? 's' : ''} to Exam
-                </Button>
-                <Button variant="outline" onClick={() => handleDialogChange(false)}>
-                  Done
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Cumulative count + Done (when no questions shown) */}
-          {addedCount > 0 && generatedQuestions.length === 0 && (
-            <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm">
-              <span className="flex items-center gap-1.5 text-primary">
-                <Check className="h-4 w-4" />
-                {addedCount} question{addedCount !== 1 ? 's' : ''} added this session
-              </span>
-              <Button size="sm" variant="outline" onClick={() => handleDialogChange(false)}>
-                Done
+              <Button 
+                onClick={handleAddSelected}
+                disabled={selectedCount === 0}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add {selectedCount} Question{selectedCount !== 1 ? 's' : ''} to Exam
               </Button>
             </div>
-          )}
-
-          {/* Running total shown alongside questions */}
-          {addedCount > 0 && generatedQuestions.length > 0 && (
-            <p className="text-xs text-muted-foreground text-center">
-              {addedCount} question{addedCount !== 1 ? 's' : ''} added so far this session
-            </p>
           )}
         </div>
       </DialogContent>
