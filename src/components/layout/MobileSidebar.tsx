@@ -1,4 +1,4 @@
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu, LogOut, ChevronDown } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -141,7 +141,8 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-72 p-0">
+      <SheetContent side="left" className="w-72 p-0" aria-describedby={undefined}>
+        <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-4 border-b border-border">
