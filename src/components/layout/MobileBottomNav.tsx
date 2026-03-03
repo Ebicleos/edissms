@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Users, Wallet, Settings, PenTool, Trophy, Calendar, GraduationCap, FileText, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { MobileSidebar } from './MobileSidebar';
 
 interface NavItem {
@@ -40,10 +41,14 @@ export function MobileBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { role } = useAuth();
+  const { viewMode } = useViewMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Use effective role: superadmin in admin view mode should see admin nav
+  const effectiveRole = role === 'superadmin' && viewMode === 'admin' ? 'admin' : role;
+
   const getNavItems = () => {
-    switch (role) {
+    switch (effectiveRole) {
       case 'admin':
         return adminNavItems;
       case 'teacher':
@@ -57,7 +62,7 @@ export function MobileBottomNav() {
 
   const navItems = getNavItems();
 
-  if (navItems.length === 0 || role === 'superadmin') {
+  if (navItems.length === 0 || effectiveRole === 'superadmin') {
     return null;
   }
 

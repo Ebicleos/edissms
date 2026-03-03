@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, AppRole } from '@/contexts/AuthContext';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -9,6 +10,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, role, profile, isLoading } = useAuth();
+  const { viewMode } = useViewMode();
   const location = useLocation();
 
   if (isLoading) {
@@ -39,7 +41,8 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   const isSuperadmin = role === 'superadmin';
   
   // Special case: Redirect superadmins from admin dashboard (/) to their dashboard
-  if (isSuperadmin && location.pathname === '/') {
+  // BUT only if they're in superadmin view mode
+  if (isSuperadmin && viewMode === 'superadmin' && location.pathname === '/') {
     return <Navigate to="/superadmin" replace />;
   }
   
