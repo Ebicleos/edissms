@@ -26,6 +26,7 @@ import AuditLogs from "./pages/superadmin/AuditLogs";
 
 // Admin pages
 import Dashboard from "./pages/Dashboard";
+import Index from "./pages/Index";
 import Admission from "./pages/Admission";
 import Students from "./pages/Students";
 import Classes from "./pages/Classes";
