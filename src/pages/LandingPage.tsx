@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,8 +32,44 @@ import {
   Globe,
   Lock,
   HeadphonesIcon,
+  BookOpen,
+  
+  Award,
+  Play,
 } from "lucide-react";
 
+/* ──────────────── Scroll-reveal wrapper ──────────────── */
+function Reveal({ children, className = "", delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold: 0.15 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(28px)",
+        transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ──────────────── Data ──────────────── */
 const NAV_LINKS = [
   { label: "Features", href: "#features" },
   { label: "Benefits", href: "#benefits" },
@@ -44,92 +80,116 @@ const NAV_LINKS = [
 ];
 
 const FEATURES = [
-  { icon: Users, title: "Student Records", description: "Complete digital profiles with photos, grades, and history — all in one place.", color: "from-blue-500 to-indigo-600" },
-  { icon: ClipboardCheck, title: "Smart Attendance", description: "Mark and track attendance in seconds. Instant reports for parents and admins.", color: "from-emerald-500 to-teal-600" },
-  { icon: CreditCard, title: "Fees Management", description: "Automate fee collection, send reminders, and generate receipts effortlessly.", color: "from-amber-500 to-orange-600" },
-  { icon: Monitor, title: "CBT Exams", description: "Create, manage, and auto-grade computer-based tests with AI question generation.", color: "from-purple-500 to-violet-600" },
-  { icon: FileText, title: "Results & Report Cards", description: "Generate beautiful report cards with grades, positions, and teacher remarks.", color: "from-pink-500 to-rose-600" },
-  { icon: MessageSquare, title: "Parent Communication", description: "Send SMS, email, and WhatsApp notifications to parents instantly.", color: "from-cyan-500 to-blue-600" },
+  { icon: Users, title: "Student Management", description: "Complete digital profiles with photos, grades, and academic history — organized and accessible.", color: "from-blue-500 to-indigo-600", emoji: "👨‍🎓" },
+  { icon: ClipboardCheck, title: "Attendance Tracking", description: "Mark attendance in seconds. Generate instant reports for parents and administrators.", color: "from-emerald-500 to-teal-600", emoji: "✅" },
+  { icon: CreditCard, title: "Fees & Payments", description: "Automate fee collection, send payment reminders, and generate receipts automatically.", color: "from-amber-500 to-orange-600", emoji: "💳" },
+  { icon: Monitor, title: "CBT Examinations", description: "Create, manage, and auto-grade computer-based tests with AI-powered question generation.", color: "from-purple-500 to-violet-600", emoji: "💻" },
+  { icon: FileText, title: "Result Processing", description: "Generate professional report cards with grades, class positions, and teacher remarks.", color: "from-pink-500 to-rose-600", emoji: "📊" },
+  { icon: MessageSquare, title: "Communication Hub", description: "Send SMS, email, and WhatsApp notifications to parents and staff instantly.", color: "from-cyan-500 to-blue-600", emoji: "💬" },
 ];
 
 const BENEFITS = [
-  { icon: Clock, title: "Save 10+ Hours Weekly", description: "Automate repetitive tasks like attendance, grading, and report generation.", emoji: "⏰" },
-  { icon: FileText, title: "Go Paperless", description: "Eliminate paper records. Everything is digital, searchable, and backed up.", emoji: "📄" },
-  { icon: BarChart3, title: "Track Performance", description: "Real-time analytics on student progress, attendance trends, and fee collection.", emoji: "📊" },
-  { icon: Shield, title: "Bank-Level Security", description: "Your data is encrypted, backed up daily, and protected with role-based access.", emoji: "🔒" },
-  { icon: Zap, title: "Instant Setup", description: "Get your school running on EDISSMS in under 30 minutes. No training needed.", emoji: "⚡" },
-  { icon: Globe, title: "Access Anywhere", description: "Works on any device — phone, tablet, or computer. No app download required.", emoji: "🌍" },
+  { icon: Clock, title: "Save 10+ Hours Weekly", description: "Automate attendance, grading, fee tracking, and report generation — so you can focus on teaching.", emoji: "⏰" },
+  { icon: BookOpen, title: "Go 100% Paperless", description: "Digitize every record. Search, export, and share data instantly — no more filing cabinets.", emoji: "📱" },
+  { icon: BarChart3, title: "Real-Time Analytics", description: "Track student performance, attendance patterns, and revenue insights from a single dashboard.", emoji: "📈" },
+  { icon: Shield, title: "Enterprise Security", description: "Bank-level encryption, daily backups, and role-based access control protect your school's data.", emoji: "🔒" },
+  { icon: Zap, title: "30-Minute Setup", description: "No training required. Our guided onboarding gets your school running in under 30 minutes.", emoji: "⚡" },
+  { icon: Globe, title: "Access From Anywhere", description: "Works on phones, tablets, and computers. No app downloads — just open your browser.", emoji: "🌍" },
 ];
 
 const TESTIMONIALS = [
-  { name: "Mrs. Adebayo", role: "Principal, Grace International Academy", quote: "EDISSMS transformed how we manage our school. Parents love the instant updates, and our teachers save hours every week.", rating: 5 },
-  { name: "Mr. Okechukwu", role: "Director, Bright Future Schools", quote: "The CBT exam feature alone was worth it. Our students now take tests seamlessly, and results are instant. Remarkable!", rating: 5 },
-  { name: "Mrs. Ibrahim", role: "Admin, Al-Hikma Primary School", quote: "Fee collection used to be a nightmare. Now parents pay online and we track everything automatically. Best decision ever.", rating: 5 },
-  { name: "Dr. Mensah", role: "Proprietor, Excel Preparatory School", quote: "We've tried 3 other systems before EDISSMS. None come close in terms of ease of use and features for Nigerian schools.", rating: 5 },
+  { name: "Mrs. Adebayo", role: "Principal, Grace International Academy", quote: "EDISSMS transformed how we manage our school. Parents love the instant updates, and our teachers save hours every week.", avatar: "A" },
+  { name: "Mr. Okechukwu", role: "Director, Bright Future Schools", quote: "The CBT exam feature alone was worth it. Our students now take tests seamlessly, and results are instant. Remarkable!", avatar: "O" },
+  { name: "Mrs. Ibrahim", role: "Admin, Al-Hikma Primary School", quote: "Fee collection used to be a nightmare. Now parents pay online and we track everything automatically. Best decision ever.", avatar: "I" },
+  { name: "Dr. Mensah", role: "Proprietor, Excel Preparatory School", quote: "We've tried 3 other systems before EDISSMS. None come close in terms of ease of use and features for Nigerian schools.", avatar: "M" },
 ];
 
 const PRICING = [
   {
-    name: "Basic",
+    name: "Starter",
     price: "₦15,000",
     period: "/term",
-    description: "Perfect for small nursery & primary schools",
-    features: ["Up to 100 students", "Student records & profiles", "Attendance tracking", "Basic fee management", "SMS notifications (50/month)", "Email support"],
+    description: "For small nursery & primary schools just getting started",
+    features: ["Up to 100 students", "Student profiles & records", "Attendance tracking", "Basic fee management", "SMS notifications (50/month)", "Email support"],
     popular: false,
     cta: "Start Free Trial",
   },
   {
-    name: "Standard",
+    name: "Professional",
     price: "₦35,000",
     period: "/term",
-    description: "Ideal for growing primary & secondary schools",
-    features: ["Up to 500 students", "Everything in Basic", "CBT Exam management", "Report card generation", "Parent portal access", "WhatsApp notifications", "Priority support"],
+    description: "For growing schools that need powerful tools",
+    features: ["Up to 500 students", "Everything in Starter", "CBT exam management", "Report card generation", "Parent portal access", "WhatsApp notifications", "Priority support"],
     popular: true,
     cta: "Start Free Trial",
   },
   {
-    name: "Premium",
+    name: "Enterprise",
     price: "₦65,000",
     period: "/term",
     description: "For large schools & multi-branch institutions",
-    features: ["Unlimited students", "Everything in Standard", "AI question generation", "Multi-branch management", "Custom branding", "API access", "Dedicated account manager", "24/7 phone support"],
+    features: ["Unlimited students", "Everything in Professional", "AI question generation", "Multi-branch management", "Custom branding & domain", "API access", "Dedicated account manager", "24/7 phone support"],
     popular: false,
     cta: "Contact Sales",
   },
 ];
 
 const FAQS = [
-  { q: "How long does it take to set up EDISSMS?", a: "You can have your school fully set up in under 30 minutes. Our onboarding wizard guides you through adding classes, subjects, and students. We also offer free data migration for schools switching from other systems." },
-  { q: "Is my school's data safe?", a: "Absolutely. We use bank-level encryption, automated daily backups, and role-based access control. Your data is hosted on secure cloud servers with 99.9% uptime guarantee." },
-  { q: "Can parents access the system?", a: "Yes! Parents can view their child's attendance, exam results, fee status, and school announcements through a dedicated parent portal accessible on any device." },
-  { q: "Do you support the Nigerian curriculum?", a: "Yes, EDISSMS is specifically built for Nigerian schools — nursery, primary, and secondary. Our grading system, report cards, and exam formats align with Nigerian educational standards." },
-  { q: "What payment methods are supported?", a: "We support bank transfers, card payments via Paystack, and mobile money. Parents can pay fees online, and you get instant notification when payments are made." },
-  { q: "Can I try before I buy?", a: "Yes! Every plan comes with a 14-day free trial. No credit card required. You can explore all features and decide which plan works best for your school." },
+  { q: "How quickly can I set up EDISSMS for my school?", a: "Most schools are fully operational within 30 minutes. Our step-by-step onboarding wizard guides you through adding classes, subjects, and students. We also offer free data migration if you're switching from another system." },
+  { q: "How secure is my school's data?", a: "We use bank-level AES-256 encryption, automated daily backups, and role-based access control. Your data is hosted on secure cloud servers with a 99.9% uptime guarantee. We are fully NDPR compliant." },
+  { q: "Can parents access student information?", a: "Yes! Parents get a dedicated portal where they can view their child's attendance, exam results, fee status, and school announcements — accessible from any device, anytime." },
+  { q: "Is EDISSMS designed for the Nigerian curriculum?", a: "Absolutely. EDISSMS is purpose-built for Nigerian schools — nursery, primary, and secondary. Our grading system, report cards, and exam formats fully align with Nigerian educational standards." },
+  { q: "What payment methods do you support?", a: "We support bank transfers, debit/credit cards via Paystack, and mobile payments. Parents can pay fees online, and schools receive instant confirmation when payments are completed." },
+  { q: "Is there a free trial available?", a: "Yes! Every plan includes a 14-day free trial with full access to all features. No credit card required — just sign up and start exploring." },
 ];
 
+const STATS = [
+  { value: "200+", label: "Schools Trust Us", emoji: "🏫" },
+  { value: "50,000+", label: "Students Managed", emoji: "👨‍🎓" },
+  { value: "99.9%", label: "System Uptime", emoji: "⚡" },
+  { value: "4.9/5", label: "User Rating", emoji: "⭐" },
+];
+
+/* ──────────────── Component ──────────────── */
 export default function LandingPage() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    setMobileMenuOpen(false);
+  };
 
   return (
-    <div className="min-h-screen bg-background font-sans antialiased">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
+    <div className="min-h-screen bg-background font-sans antialiased overflow-x-hidden">
+      {/* ───── Sticky Navigation ───── */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "backdrop-blur-xl bg-background/90 shadow-sm border-b border-border/40" : "bg-transparent"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-18">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center">
+          <div className="flex items-center justify-between h-16 lg:h-[72px]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center shadow-md shadow-primary/20">
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
-              <span className="font-display text-xl font-bold text-foreground">EDISSMS</span>
+              <span className="font-display text-xl font-bold text-foreground tracking-tight">EDISSMS</span>
             </div>
 
             {/* Desktop nav */}
-            <div className="hidden lg:flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-1">
               {NAV_LINKS.map((link) => (
-                <a key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                <button
+                  key={link.href}
+                  onClick={() => scrollTo(link.href.slice(1))}
+                  className="px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/60 transition-all duration-200"
+                >
                   {link.label}
-                </a>
+                </button>
               ))}
             </div>
 
@@ -137,13 +197,12 @@ export default function LandingPage() {
               <Button variant="ghost" onClick={() => navigate("/auth")} className="font-medium">
                 Sign In
               </Button>
-              <Button onClick={() => navigate("/auth/register-school")} className="bg-gradient-primary hover:opacity-90 transition-opacity font-medium shadow-md">
-                Get Started <ArrowRight className="w-4 h-4 ml-1" />
+              <Button onClick={() => navigate("/auth/register-school")} className="bg-gradient-primary hover:opacity-90 transition-all font-semibold shadow-md shadow-primary/25 rounded-xl px-5">
+                Get Started Free <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
 
-            {/* Mobile menu button */}
-            <button className="lg:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            <button className="lg:hidden p-2 rounded-lg hover:bg-muted/60 transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
@@ -151,440 +210,517 @@ export default function LandingPage() {
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl animate-fade-in">
-            <div className="px-4 py-4 space-y-3">
+          <div className="lg:hidden border-t border-border/40 bg-background/98 backdrop-blur-xl" style={{ animation: "fade-in 0.2s ease-out" }}>
+            <div className="px-4 py-4 space-y-1">
               {NAV_LINKS.map((link) => (
-                <a key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                <button key={link.href} onClick={() => scrollTo(link.href.slice(1))} className="block w-full text-left py-2.5 px-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors">
                   {link.label}
-                </a>
+                </button>
               ))}
-              <div className="pt-3 flex flex-col gap-2 border-t border-border/50">
-                <Button variant="outline" onClick={() => navigate("/auth")} className="w-full">Sign In</Button>
-                <Button onClick={() => navigate("/auth/register-school")} className="w-full bg-gradient-primary">Get Started</Button>
+              <div className="pt-3 flex flex-col gap-2 border-t border-border/40 mt-2">
+                <Button variant="outline" onClick={() => navigate("/auth")} className="w-full rounded-xl">Sign In</Button>
+                <Button onClick={() => navigate("/auth/register-school")} className="w-full bg-gradient-primary rounded-xl">Get Started Free</Button>
               </div>
             </div>
           </div>
         )}
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-28 pb-20 lg:pt-40 lg:pb-32 overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-accent/5 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-secondary/3 rounded-full blur-3xl" />
+      {/* ───── Hero Section ───── */}
+      <section className="relative pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden">
+        {/* Decorative blobs */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute -top-20 left-1/4 w-[600px] h-[600px] bg-primary/6 rounded-full blur-[100px]" />
+          <div className="absolute bottom-0 right-1/6 w-[500px] h-[500px] bg-accent/6 rounded-full blur-[100px]" />
+          <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] bg-secondary/5 rounded-full blur-[80px]" />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-fade-in">
+          <Reveal className="text-center max-w-4xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-8 border border-primary/15">
               <Sparkles className="w-4 h-4" />
               Trusted by 200+ Schools Across Nigeria
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-display font-extrabold text-foreground leading-tight tracking-tight mb-6">
-              All-in-One School{" "}
-              <span className="bg-gradient-primary bg-clip-text text-transparent">Management</span>{" "}
-              Made Simple
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-display font-extrabold text-foreground leading-[1.1] tracking-tight mb-6">
+              The Smarter Way to{" "}
+              <span className="bg-gradient-primary bg-clip-text text-transparent">Manage</span>{" "}
+              Your School
             </h1>
 
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              From admissions to report cards, manage your entire school digitally. Save time, reduce paperwork, and give parents real-time updates — all from one powerful platform.
+              From admissions to report cards — manage students, fees, exams, and communication from one powerful platform built for Nigerian schools.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" onClick={() => navigate("/auth/register-school")} className="bg-gradient-primary hover:opacity-90 transition-all shadow-lg shadow-primary/25 text-base px-8 py-6 h-auto font-semibold">
-                Get Started Free <ArrowRight className="w-5 h-5 ml-2" />
+              <Button
+                size="lg"
+                onClick={() => navigate("/auth/register-school")}
+                className="bg-gradient-primary hover:opacity-90 transition-all shadow-lg shadow-primary/25 text-base px-8 h-13 font-semibold rounded-xl group"
+              >
+                Get Started Free <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-0.5 transition-transform" />
               </Button>
-              <Button size="lg" variant="outline" onClick={() => { const el = document.getElementById('contact'); el?.scrollIntoView({ behavior: 'smooth' }); }} className="text-base px-8 py-6 h-auto font-semibold border-2">
-                Request Demo
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => scrollTo("contact")}
+                className="text-base px-8 h-13 font-semibold border-2 rounded-xl hover:bg-muted/50 group"
+              >
+                <Play className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" /> Request a Demo
               </Button>
             </div>
 
             {/* Trust indicators */}
-            <div className="flex flex-wrap items-center justify-center gap-6 mt-12 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-success" /> 14-day free trial</div>
-              <div className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-success" /> No credit card required</div>
-              <div className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-success" /> Setup in 30 minutes</div>
+            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 mt-12 text-sm text-muted-foreground">
+              {["14-day free trial", "No credit card required", "Setup in 30 minutes"].map((text) => (
+                <div key={text} className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
+                  <span>{text}</span>
+                </div>
+              ))}
             </div>
-          </div>
+          </Reveal>
 
           {/* Dashboard mockup */}
-          <div className="mt-16 lg:mt-20 max-w-5xl mx-auto relative">
-            <div className="rounded-2xl overflow-hidden shadow-2xl border border-border/50 bg-card">
+          <Reveal className="mt-16 lg:mt-20 max-w-5xl mx-auto relative" delay={200}>
+            <div className="rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 border border-border/40 bg-card group hover:shadow-3xl transition-shadow duration-500">
               {/* Browser chrome */}
-              <div className="h-10 bg-muted/50 flex items-center px-4 gap-2 border-b border-border/30">
-                <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                <div className="w-3 h-3 rounded-full bg-warning/60" />
-                <div className="w-3 h-3 rounded-full bg-success/60" />
-                <div className="ml-4 flex-1 max-w-xs h-6 bg-background/80 rounded-md" />
+              <div className="h-11 bg-muted/60 flex items-center px-4 gap-2 border-b border-border/30">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-400/70" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-400/70" />
+                  <div className="w-3 h-3 rounded-full bg-green-400/70" />
+                </div>
+                <div className="ml-4 flex-1 max-w-sm h-6 bg-background/80 rounded-md flex items-center px-3">
+                  <Lock className="w-3 h-3 text-muted-foreground/60 mr-2" />
+                  <span className="text-[10px] text-muted-foreground/60">app.edissms.com/dashboard</span>
+                </div>
               </div>
-              {/* Dashboard preview content */}
-              <div className="p-6 sm:p-8 bg-gradient-to-br from-background via-background to-muted/30">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+              {/* Dashboard content */}
+              <div className="p-5 sm:p-8 bg-gradient-to-br from-background via-background to-muted/20">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-5">
                   {[
-                    { label: "Total Students", value: "1,247", emoji: "👨‍🎓", bg: "from-blue-500/10 to-indigo-500/10" },
-                    { label: "Teachers", value: "48", emoji: "👩‍🏫", bg: "from-emerald-500/10 to-teal-500/10" },
-                    { label: "Fees Collected", value: "₦4.2M", emoji: "💰", bg: "from-amber-500/10 to-orange-500/10" },
-                    { label: "Attendance", value: "94.7%", emoji: "✅", bg: "from-purple-500/10 to-violet-500/10" },
+                    { label: "Total Students", value: "1,247", emoji: "👨‍🎓", bg: "from-blue-500/10 to-indigo-500/10 border-blue-200/30" },
+                    { label: "Active Teachers", value: "48", emoji: "👩‍🏫", bg: "from-emerald-500/10 to-teal-500/10 border-emerald-200/30" },
+                    { label: "Fees Collected", value: "₦4.2M", emoji: "💰", bg: "from-amber-500/10 to-orange-500/10 border-amber-200/30" },
+                    { label: "Attendance Rate", value: "94.7%", emoji: "✅", bg: "from-purple-500/10 to-violet-500/10 border-purple-200/30" },
                   ].map((stat) => (
-                    <div key={stat.label} className={`rounded-xl p-4 bg-gradient-to-br ${stat.bg} border border-border/30`}>
-                      <div className="text-2xl mb-1">{stat.emoji}</div>
+                    <div key={stat.label} className={`rounded-xl p-3.5 bg-gradient-to-br ${stat.bg} border`}>
+                      <div className="text-xl mb-1">{stat.emoji}</div>
                       <div className="text-lg sm:text-xl font-bold text-foreground">{stat.value}</div>
-                      <div className="text-xs text-muted-foreground">{stat.label}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">{stat.label}</div>
                     </div>
                   ))}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                  <div className="sm:col-span-2 h-32 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-border/30 flex items-center justify-center">
-                    <div className="flex items-end gap-2">
-                      {[40, 65, 45, 80, 55, 70, 90, 60, 75].map((h, i) => (
-                        <div key={i} className="w-4 sm:w-6 rounded-t-md bg-gradient-to-t from-primary/40 to-primary/80" style={{ height: `${h}%` }} />
+                  <div className="sm:col-span-2 h-28 sm:h-32 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-border/30 flex items-end justify-center pb-4 px-4">
+                    <div className="flex items-end gap-1.5 w-full max-w-xs">
+                      {[40, 65, 45, 80, 55, 70, 90, 60, 75, 50, 85].map((h, i) => (
+                        <div key={i} className="flex-1 rounded-t-sm bg-gradient-to-t from-primary/30 to-primary/70 transition-all duration-700" style={{ height: `${h}%` }} />
                       ))}
                     </div>
                   </div>
-                  <div className="h-32 rounded-xl bg-gradient-to-br from-secondary/5 to-pink/5 border border-border/30 p-4">
-                    <div className="text-xs font-medium text-muted-foreground mb-2">Recent Activity</div>
-                    {["Fee payment received", "Attendance marked", "Exam published"].map((text, i) => (
-                      <div key={i} className="flex items-center gap-2 mb-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-success" />
-                        <span className="text-xs text-foreground truncate">{text}</span>
+                  <div className="h-28 sm:h-32 rounded-xl bg-gradient-to-br from-muted/40 to-muted/20 border border-border/30 p-4">
+                    <div className="text-xs font-semibold text-muted-foreground mb-2.5">Recent Activity</div>
+                    {["💳 Fee payment received", "✅ Attendance marked — JSS2", "📝 Exam published — Math"].map((text, i) => (
+                      <div key={i} className="flex items-center gap-2 mb-2">
+                        <span className="text-[11px] text-foreground/80 truncate">{text}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
             </div>
-            {/* Glow effect */}
-            <div className="absolute -inset-4 bg-gradient-primary opacity-5 blur-3xl rounded-3xl -z-10" />
+            <div className="absolute -inset-6 bg-gradient-primary opacity-[0.04] blur-3xl rounded-3xl -z-10" />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ───── Social Proof Stats ───── */}
+      <section className="py-12 lg:py-16 border-y border-border/30 bg-muted/20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
+            {STATS.map((stat, i) => (
+              <Reveal key={stat.label} delay={i * 80} className="text-center">
+                <div className="text-2xl mb-1">{stat.emoji}</div>
+                <div className="text-2xl sm:text-3xl font-display font-extrabold text-foreground">{stat.value}</div>
+                <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 lg:py-28 bg-muted/30">
+      {/* ───── Features Section ───── */}
+      <section id="features" className="py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 text-accent text-sm font-medium mb-4">
+          <Reveal className="text-center max-w-2xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-5 border border-accent/15">
               ✨ Powerful Features
             </div>
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-4">
-              Everything Your School Needs
+            <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-display font-bold text-foreground mb-4 leading-tight">
+              Everything Your School Needs in One Place
             </h2>
-            <p className="text-muted-foreground text-lg">
-              One platform to manage students, teachers, fees, exams, and communication — designed for Nigerian schools.
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              Manage students, teachers, fees, exams, and parent communication — purpose-built for Nigerian schools.
             </p>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((feature) => (
-              <Card key={feature.title} className="group border-border/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 bg-card/80 backdrop-blur-sm overflow-hidden">
-                <CardContent className="p-6">
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                    <feature.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
-                </CardContent>
-              </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
+            {FEATURES.map((feature, i) => (
+              <Reveal key={feature.title} delay={i * 80}>
+                <Card className="group border-border/40 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-card/90 backdrop-blur-sm overflow-hidden h-full rounded-2xl">
+                  <CardContent className="p-6 lg:p-7">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg shadow-primary/10`}>
+                      <feature.icon className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground mb-2.5">{feature.title}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section id="benefits" className="py-20 lg:py-28">
+      {/* ───── Benefits Section ───── */}
+      <section id="benefits" className="py-20 lg:py-28 bg-gradient-to-b from-muted/30 via-muted/20 to-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/10 text-secondary text-sm font-medium mb-4">
-              🚀 Why Choose EDISSMS
+          <Reveal className="text-center max-w-2xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 text-secondary text-sm font-semibold mb-5 border border-secondary/15">
+              🚀 Why Schools Choose Us
             </div>
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-display font-bold text-foreground mb-4 leading-tight">
               Transform How You Run Your School
             </h2>
-            <p className="text-muted-foreground text-lg">
-              Join hundreds of schools already saving time, money, and effort with EDISSMS.
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              Join hundreds of schools already saving time, reducing costs, and improving student outcomes.
             </p>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {BENEFITS.map((benefit) => (
-              <div key={benefit.title} className="group p-6 rounded-2xl bg-card border border-border/50 hover:shadow-lg hover:border-primary/20 transition-all duration-300">
-                <div className="text-3xl mb-4">{benefit.emoji}</div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">{benefit.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{benefit.description}</p>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
+            {BENEFITS.map((benefit, i) => (
+              <Reveal key={benefit.title} delay={i * 70}>
+                <div className="group p-6 lg:p-7 rounded-2xl bg-card border border-border/40 hover:shadow-xl hover:shadow-accent/5 hover:border-accent/20 transition-all duration-300 h-full">
+                  <div className="text-3xl mb-4 group-hover:scale-110 transition-transform duration-300">{benefit.emoji}</div>
+                  <h3 className="text-lg font-bold text-foreground mb-2.5">{benefit.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{benefit.description}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 lg:py-28 bg-muted/30">
+      {/* ───── Testimonials Section ───── */}
+      <section id="testimonials" className="py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink/10 text-pink text-sm font-medium mb-4">
-              💬 Testimonials
+          <Reveal className="text-center max-w-2xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-pink-500/10 text-pink-600 text-sm font-semibold mb-5 border border-pink-500/15">
+              💬 What Schools Say
             </div>
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-4">
-              Loved by Schools Everywhere
+            <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-display font-bold text-foreground mb-4 leading-tight">
+              Trusted by School Leaders
             </h2>
-            <p className="text-muted-foreground text-lg">
-              See what school administrators and teachers are saying about EDISSMS.
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              Hear from administrators and educators who transformed their schools with EDISSMS.
             </p>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {TESTIMONIALS.map((t) => (
-              <Card key={t.name} className="border-border/50 bg-card/80 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex gap-1 mb-4">
-                    {Array.from({ length: t.rating }).map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-warning text-warning" />
-                    ))}
-                  </div>
-                  <p className="text-foreground leading-relaxed mb-4 italic">"{t.quote}"</p>
-                  <div>
-                    <div className="font-semibold text-foreground">{t.name}</div>
-                    <div className="text-sm text-muted-foreground">{t.role}</div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 lg:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-              💎 Simple Pricing
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-4">
-              Plans That Grow With Your School
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              Start free, upgrade when you're ready. No hidden fees, cancel anytime.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
-            {PRICING.map((plan) => (
-              <Card key={plan.name} className={`relative overflow-hidden border-border/50 ${plan.popular ? "border-primary shadow-xl shadow-primary/10 scale-[1.03]" : "bg-card/80"}`}>
-                {plan.popular && (
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-primary" />
-                )}
-                <CardContent className="p-6 lg:p-8">
-                  {plan.popular && (
-                    <div className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4">
-                      Most Popular
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6 max-w-5xl mx-auto">
+            {TESTIMONIALS.map((t, i) => (
+              <Reveal key={t.name} delay={i * 100}>
+                <Card className="border-border/40 bg-card/90 backdrop-blur-sm hover:shadow-lg transition-all duration-300 rounded-2xl h-full">
+                  <CardContent className="p-6 lg:p-7 flex flex-col h-full">
+                    <div className="flex gap-0.5 mb-5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-warning text-warning" />
+                      ))}
                     </div>
+                    <p className="text-foreground leading-relaxed mb-6 flex-1 text-[15px]">"{t.quote}"</p>
+                    <div className="flex items-center gap-3 pt-4 border-t border-border/30">
+                      <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white text-sm font-bold shadow-md">
+                        {t.avatar}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-foreground text-sm">{t.name}</div>
+                        <div className="text-xs text-muted-foreground">{t.role}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───── Pricing Section ───── */}
+      <section id="pricing" className="py-20 lg:py-28 bg-gradient-to-b from-muted/30 to-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Reveal className="text-center max-w-2xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-5 border border-primary/15">
+              💎 Transparent Pricing
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-display font-bold text-foreground mb-4 leading-tight">
+              Choose the Right Plan for Your School
+            </h2>
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              Start with a free trial. Upgrade anytime. No hidden fees, no long-term contracts.
+            </p>
+          </Reveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 max-w-5xl mx-auto items-start">
+            {PRICING.map((plan, i) => (
+              <Reveal key={plan.name} delay={i * 120}>
+                <Card className={`relative overflow-hidden rounded-2xl transition-all duration-300 h-full ${plan.popular ? "border-primary/50 shadow-xl shadow-primary/10 ring-1 ring-primary/20" : "border-border/40 hover:shadow-lg"}`}>
+                  {plan.popular && (
+                    <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-primary" />
                   )}
-                  <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
-                  <p className="text-sm text-muted-foreground mt-1 mb-4">{plan.description}</p>
-                  <div className="mb-6">
-                    <span className="text-4xl font-display font-extrabold text-foreground">{plan.price}</span>
-                    <span className="text-muted-foreground text-sm">{plan.period}</span>
-                  </div>
-                  <Button
-                    className={`w-full mb-6 font-semibold ${plan.popular ? "bg-gradient-primary hover:opacity-90 shadow-md" : ""}`}
-                    variant={plan.popular ? "default" : "outline"}
-                    onClick={() => navigate("/auth/register-school")}
-                  >
-                    {plan.cta}
-                  </Button>
-                  <ul className="space-y-3">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-sm">
-                        <CheckCircle2 className="w-4 h-4 text-success mt-0.5 shrink-0" />
-                        <span className="text-muted-foreground">{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+                  <CardContent className="p-6 lg:p-8">
+                    {plan.popular && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-4 border border-primary/15">
+                        <Award className="w-3 h-3" /> Most Popular
+                      </div>
+                    )}
+                    <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1.5 mb-5 leading-relaxed">{plan.description}</p>
+                    <div className="mb-6">
+                      <span className="text-4xl font-display font-extrabold text-foreground">{plan.price}</span>
+                      <span className="text-muted-foreground text-sm ml-1">{plan.period}</span>
+                    </div>
+                    <Button
+                      className={`w-full mb-6 font-semibold rounded-xl h-11 ${plan.popular ? "bg-gradient-primary hover:opacity-90 shadow-md shadow-primary/20" : ""}`}
+                      variant={plan.popular ? "default" : "outline"}
+                      onClick={() => navigate("/auth/register-school")}
+                    >
+                      {plan.cta} {plan.popular && <ArrowRight className="w-4 h-4 ml-1" />}
+                    </Button>
+                    <ul className="space-y-3">
+                      {plan.features.map((f) => (
+                        <li key={f} className="flex items-start gap-2.5 text-sm">
+                          <CheckCircle2 className="w-4 h-4 text-success mt-0.5 shrink-0" />
+                          <span className="text-muted-foreground">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Trust & Security */}
-      <section className="py-16 bg-muted/30">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center justify-center gap-8 lg:gap-16">
-            {[
-              { icon: Shield, label: "SSL Encrypted" },
-              { icon: Lock, label: "NDPR Compliant" },
-              { icon: Globe, label: "99.9% Uptime" },
-              { icon: HeadphonesIcon, label: "24/7 Support" },
-            ].map((badge) => (
-              <div key={badge.label} className="flex items-center gap-2 text-muted-foreground">
-                <badge.icon className="w-5 h-5" />
-                <span className="text-sm font-medium">{badge.label}</span>
-              </div>
-            ))}
+      {/* ───── Trust Badges ───── */}
+      <Reveal>
+        <section className="py-14 border-y border-border/30 bg-muted/15">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
+              {[
+                { icon: Shield, label: "SSL Encrypted" },
+                { icon: Lock, label: "NDPR Compliant" },
+                { icon: Globe, label: "99.9% Uptime" },
+                { icon: HeadphonesIcon, label: "24/7 Support" },
+              ].map((badge) => (
+                <div key={badge.label} className="flex items-center gap-2.5 text-muted-foreground">
+                  <badge.icon className="w-5 h-5" />
+                  <span className="text-sm font-semibold">{badge.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </Reveal>
 
-      {/* FAQ Section */}
+      {/* ───── FAQ Section ───── */}
       <section id="faq" className="py-20 lg:py-28">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 text-accent text-sm font-medium mb-4">
-              ❓ FAQ
+          <Reveal className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-5 border border-accent/15">
+              ❓ Common Questions
             </div>
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-4">
+            <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-4 leading-tight">
               Frequently Asked Questions
             </h2>
-          </div>
+            <p className="text-muted-foreground text-lg">
+              Everything you need to know before getting started.
+            </p>
+          </Reveal>
 
-          <Accordion type="single" collapsible className="space-y-3">
-            {FAQS.map((faq, i) => (
-              <AccordionItem key={i} value={`faq-${i}`} className="border border-border/50 rounded-xl px-6 bg-card/80 data-[state=open]:shadow-md transition-shadow">
-                <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-5">
-                  {faq.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground leading-relaxed pb-5">
-                  {faq.a}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          <Reveal delay={100}>
+            <Accordion type="single" collapsible className="space-y-3">
+              {FAQS.map((faq, i) => (
+                <AccordionItem key={i} value={`faq-${i}`} className="border border-border/40 rounded-xl px-5 bg-card/80 data-[state=open]:shadow-md data-[state=open]:border-primary/20 transition-all duration-200">
+                  <AccordionTrigger className="text-left font-semibold text-foreground hover:no-underline py-5 text-[15px]">
+                    {faq.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground leading-relaxed pb-5 text-sm">
+                    {faq.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </Reveal>
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section id="contact" className="py-20 lg:py-28 bg-muted/30">
+      {/* ───── Contact Section ───── */}
+      <section id="contact" className="py-20 lg:py-28 bg-gradient-to-b from-muted/30 to-muted/10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+            <Reveal>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-5 border border-primary/15">
                 📬 Get in Touch
               </div>
-              <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-4">
-                Ready to Transform Your School?
+              <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-4 leading-tight">
+                Ready to Modernize Your School?
               </h2>
               <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                Have questions? Want a personalized demo? Fill out the form and our team will reach out within 24 hours.
+                Have questions or need a personalized demo? Our team responds within 24 hours.
               </p>
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {[
-                  { emoji: "📧", text: "support@edissms.com" },
-                  { emoji: "📞", text: "+234 800 EDISSMS" },
-                  { emoji: "📍", text: "Lagos, Nigeria" },
+                  { emoji: "📧", label: "Email", text: "support@edissms.com" },
+                  { emoji: "📞", label: "Phone", text: "+234 800 EDISSMS" },
+                  { emoji: "📍", label: "Location", text: "Lagos, Nigeria" },
                 ].map((item) => (
-                  <div key={item.text} className="flex items-center gap-3">
-                    <span className="text-xl">{item.emoji}</span>
-                    <span className="text-muted-foreground">{item.text}</span>
+                  <div key={item.text} className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-muted/60 flex items-center justify-center text-lg">{item.emoji}</div>
+                    <div>
+                      <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{item.label}</div>
+                      <div className="text-foreground font-medium">{item.text}</div>
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </Reveal>
 
-            <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-6 lg:p-8">
-                <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1.5 block">Full Name</label>
-                      <Input placeholder="John Doe" />
+            <Reveal delay={150}>
+              <Card className="border-border/40 bg-card/90 backdrop-blur-sm rounded-2xl shadow-lg">
+                <CardContent className="p-6 lg:p-8">
+                  <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-semibold text-foreground mb-1.5 block">Full Name</label>
+                        <Input placeholder="John Doe" className="rounded-xl h-11" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-foreground mb-1.5 block">School Name</label>
+                        <Input placeholder="Grace Academy" className="rounded-xl h-11" />
+                      </div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-foreground mb-1.5 block">School Name</label>
-                      <Input placeholder="Grace Academy" />
+                      <label className="text-sm font-semibold text-foreground mb-1.5 block">Email Address</label>
+                      <Input type="email" placeholder="you@school.com" className="rounded-xl h-11" />
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-1.5 block">Email Address</label>
-                    <Input type="email" placeholder="you@school.com" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-1.5 block">Phone Number</label>
-                    <Input placeholder="+234 ..." />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-1.5 block">Message</label>
-                    <Textarea placeholder="Tell us about your school and what you need..." rows={4} />
-                  </div>
-                  <Button className="w-full bg-gradient-primary hover:opacity-90 font-semibold shadow-md" size="lg">
-                    Send Message <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                    <div>
+                      <label className="text-sm font-semibold text-foreground mb-1.5 block">Phone Number</label>
+                      <Input placeholder="+234 ..." className="rounded-xl h-11" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-foreground mb-1.5 block">Message</label>
+                      <Textarea placeholder="Tell us about your school and what you need..." rows={4} className="rounded-xl" />
+                    </div>
+                    <Button className="w-full bg-gradient-primary hover:opacity-90 font-semibold shadow-md shadow-primary/20 rounded-xl h-12 text-base" size="lg">
+                      Send Message <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* CTA Banner */}
+      {/* ───── Final CTA ───── */}
       <section className="py-20 lg:py-28 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-primary opacity-95" />
+        <div className="absolute inset-0 bg-gradient-primary" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,255,255,0.15),_transparent_60%)]" />
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white mb-6">
-            Start Managing Your School Smarter Today
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(255,255,255,0.08),_transparent_50%)]" />
+        <Reveal className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white mb-6 leading-tight">
+            Start Managing Your School Smarter — Today
           </h2>
-          <p className="text-white/80 text-lg max-w-2xl mx-auto mb-10">
-            Join 200+ schools already using EDISSMS. Free 14-day trial — no credit card needed.
+          <p className="text-white/80 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+            Join 200+ schools already using EDISSMS. Start your free 14-day trial — no credit card required.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate("/auth/register-school")} className="bg-white text-primary hover:bg-white/90 text-base px-8 py-6 h-auto font-semibold shadow-lg">
-              Get Started Free <ChevronRight className="w-5 h-5 ml-1" />
+            <Button
+              size="lg"
+              onClick={() => navigate("/auth/register-school")}
+              className="bg-white text-primary hover:bg-white/90 text-base px-8 h-13 font-semibold shadow-xl rounded-xl group"
+            >
+              Get Started Free <ChevronRight className="w-5 h-5 ml-1 group-hover:translate-x-0.5 transition-transform" />
             </Button>
-            <Button size="lg" variant="outline" onClick={() => { const el = document.getElementById('contact'); el?.scrollIntoView({ behavior: 'smooth' }); }} className="border-white/30 text-white hover:bg-white/10 text-base px-8 py-6 h-auto font-semibold">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => scrollTo("contact")}
+              className="border-white/30 text-white hover:bg-white/10 text-base px-8 h-13 font-semibold rounded-xl"
+            >
               Schedule a Demo
             </Button>
           </div>
-        </div>
+        </Reveal>
       </section>
 
-      {/* Footer */}
-      <footer className="py-16 border-t border-border/50 bg-card">
+      {/* ───── Footer ───── */}
+      <footer className="py-16 border-t border-border/40 bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12 mb-12">
             <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-                  <GraduationCap className="w-4 h-4 text-white" />
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center shadow-md shadow-primary/20">
+                  <GraduationCap className="w-5 h-5 text-white" />
                 </div>
                 <span className="font-display text-lg font-bold text-foreground">EDISSMS</span>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                The complete digital school management system built for Nigerian schools.
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+                The complete digital school management system built for Nigerian schools — nursery, primary, and secondary.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-foreground mb-3 text-sm">Product</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#features" className="hover:text-foreground transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a></li>
-                <li><a href="#testimonials" className="hover:text-foreground transition-colors">Testimonials</a></li>
-                <li><a href="#faq" className="hover:text-foreground transition-colors">FAQ</a></li>
+              <h4 className="font-bold text-foreground mb-4 text-sm">Product</h4>
+              <ul className="space-y-2.5 text-sm text-muted-foreground">
+                {["Features", "Pricing", "Testimonials", "FAQ"].map((label) => (
+                  <li key={label}>
+                    <button onClick={() => scrollTo(label.toLowerCase())} className="hover:text-foreground transition-colors">
+                      {label}
+                    </button>
+                  </li>
+                ))}
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-foreground mb-3 text-sm">Support</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#contact" className="hover:text-foreground transition-colors">Contact Us</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Status</a></li>
+              <h4 className="font-bold text-foreground mb-4 text-sm">Support</h4>
+              <ul className="space-y-2.5 text-sm text-muted-foreground">
+                {[{ label: "Contact Us", action: () => scrollTo("contact") }, { label: "Help Center" }, { label: "System Status" }].map((item) => (
+                  <li key={item.label}>
+                    <button onClick={item.action} className="hover:text-foreground transition-colors">{item.label}</button>
+                  </li>
+                ))}
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-foreground mb-3 text-sm">Legal</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Cookie Policy</a></li>
+              <h4 className="font-bold text-foreground mb-4 text-sm">Legal</h4>
+              <ul className="space-y-2.5 text-sm text-muted-foreground">
+                {["Privacy Policy", "Terms of Service", "Cookie Policy"].map((label) => (
+                  <li key={label}>
+                    <a href="#" className="hover:text-foreground transition-colors">{label}</a>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
-          <div className="border-t border-border/50 pt-8 text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} EDISSMS. All rights reserved. Built with ❤️ for Nigerian schools.
+          <div className="border-t border-border/40 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
+              © {new Date().getFullYear()} EDISSMS. All rights reserved.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Built with ❤️ for Nigerian schools
+            </p>
           </div>
         </div>
       </footer>
