@@ -26,6 +26,7 @@ import AuditLogs from "./pages/superadmin/AuditLogs";
 
 // Admin pages
 import Dashboard from "./pages/Dashboard";
+import Index from "./pages/Index";
 import Admission from "./pages/Admission";
 import Students from "./pages/Students";
 import Classes from "./pages/Classes";
@@ -124,11 +125,7 @@ const App = () => (
             } />
 
             {/* Admin routes */}
-            <Route path="/" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
+            <Route path="/" element={<Index />} />
             <Route path="/admission" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <Admission />
