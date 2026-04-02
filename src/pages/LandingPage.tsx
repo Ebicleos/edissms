@@ -33,7 +33,7 @@ import {
   Lock,
   HeadphonesIcon,
   BookOpen,
-  TrendingUp,
+  
   Award,
   Play,
 } from "lucide-react";
