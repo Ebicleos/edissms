@@ -306,14 +306,16 @@ export default function Exams() {
           </TabsContent>
 
           <TabsContent value="results">
-            <div className="bg-card rounded-xl border border-border/50 p-12 shadow-sm text-center">
-              <Download className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <div className="table-container p-12 text-center">
+              <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                <Download className="h-8 w-8 text-accent" />
+              </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">Generate Report Cards</h3>
-              <p className="text-muted-foreground mb-6">
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
                 Select a class and term to generate and download student report cards
               </p>
               <Button 
-                className="bg-gradient-primary hover:opacity-90"
+                className="btn-primary-gradient"
                 onClick={() => navigate('/report-cards')}
               >
                 Generate Reports

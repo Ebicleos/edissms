@@ -333,10 +333,12 @@ export default function Attendance() {
                 )}
               </div>
             ) : (
-              <div className="bg-card rounded-xl border border-border/50 p-12 shadow-sm text-center">
-                <CalendarDays className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <div className="table-container p-12 text-center">
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <CalendarDays className="h-8 w-8 text-primary" />
+                </div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">Select a Class</h3>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                   Choose a class from the dropdown to start marking attendance
                 </p>
               </div>
