@@ -323,8 +323,8 @@ export default function Settings() {
 
   return (
     <MainLayout>
-      <div className="max-w-4xl animate-fade-in space-y-6">
-        <PageGradientHeader emoji="⚙️" title="Settings" subtitle="Manage your school settings and preferences" gradient="from-muted/30 via-primary/5 to-blue-500/5" />
+      <div className="max-w-4xl page-content">
+        <PageGradientHeader emoji="⚙️" title="Settings" subtitle="Manage school settings, account, and preferences" gradient="from-muted/30 via-primary/5 to-blue-500/5" />
         <Tabs defaultValue="school" className="space-y-6">
           <TabsList>
             <TabsTrigger value="school" className="gap-2">
