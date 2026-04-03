@@ -168,15 +168,17 @@ export default function Exams() {
                 <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
               </div>
             ) : exams.length === 0 ? (
-              <Card className="p-12 text-center">
-                <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <div className="table-container p-12 text-center">
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <ClipboardList className="h-8 w-8 text-primary" />
+                </div>
                 <h3 className="text-lg font-semibold mb-2">No Exams Yet</h3>
-                <p className="text-muted-foreground mb-4">Create your first exam to get started</p>
-                <Button onClick={() => navigate('/teacher/exams/create')} className="bg-gradient-primary">
+                <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">Create your first CBT exam to start assessing students</p>
+                <Button onClick={() => navigate('/teacher/exams/create')} className="btn-primary-gradient">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Exam
                 </Button>
-              </Card>
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {exams.map((exam) => (
