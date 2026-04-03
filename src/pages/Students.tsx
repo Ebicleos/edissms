@@ -309,8 +309,8 @@ export default function Students() {
 
   return (
     <MainLayout>
-      <div className="space-y-4 md:space-y-6 animate-fade-in">
-        <PageGradientHeader emoji="🎓" title="Students Database" subtitle={`${totalStudents} registered students`} gradient="from-accent/10 via-emerald-500/5 to-cyan-500/5" />
+      <div className="page-content">
+        <PageGradientHeader emoji="🎓" title="Student Management" subtitle={`${totalStudents} registered students`} gradient="from-accent/10 via-emerald-500/5 to-cyan-500/5" />
         {/* Header Actions */}
         <div className="flex flex-col gap-3 md:gap-4">
           <div className="flex gap-2 md:gap-3">
