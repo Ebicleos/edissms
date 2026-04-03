@@ -88,7 +88,7 @@ export default function AuditLogs() {
 
   return (
     <MainLayout title="Audit Logs" subtitle="View system activity and changes (live updates enabled)">
-      <div className="space-y-6 animate-fade-in">
+      <div className="page-content">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>

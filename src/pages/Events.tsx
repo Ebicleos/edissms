@@ -251,7 +251,7 @@ export default function Events() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="page-content">
         <PageGradientHeader emoji="🎉" title="Events Calendar" subtitle="Manage school events and calendar" gradient="from-primary/10 via-purple-500/5 to-pink-500/5" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar */}

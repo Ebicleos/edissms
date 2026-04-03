@@ -82,7 +82,7 @@ export default function SuperAdminDashboard() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="page-content">
         {/* Welcome Card */}
         <WelcomeCard
           name={profile?.full_name || 'Super Admin'}

@@ -113,7 +113,7 @@ export default function Exams() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="page-content">
         <PageGradientHeader emoji="📝" title="Exams & Assignments" subtitle="Manage exams, assignments, and results" gradient="from-blue-500/10 via-sky-500/5 to-cyan-500/5" />
         {/* Admin CBT Control Panel */}
         {role === 'admin' && (

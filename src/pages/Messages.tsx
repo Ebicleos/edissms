@@ -162,7 +162,7 @@ export default function Messages() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="page-content">
         <PageGradientHeader emoji="✉️" title="Messages" subtitle="Send emails, SMS, and WhatsApp messages" gradient="from-accent/10 via-blue-500/5 to-primary/5" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Compose Message */}

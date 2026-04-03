@@ -180,7 +180,7 @@ export default function SchoolManagement() {
 
   return (
     <MainLayout title="School Management" subtitle="Manage all registered schools">
-      <div className="space-y-6 animate-fade-in">
+      <div className="page-content">
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <div className="relative">

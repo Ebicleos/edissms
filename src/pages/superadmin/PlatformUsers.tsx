@@ -107,7 +107,7 @@ export default function PlatformUsers() {
 
   return (
     <MainLayout title="Platform Users" subtitle="Manage all users across schools">
-      <div className="space-y-6 animate-fade-in">
+      <div className="page-content">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>

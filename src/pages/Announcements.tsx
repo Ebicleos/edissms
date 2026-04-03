@@ -248,7 +248,7 @@ export default function Announcements() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="page-content">
         <PageGradientHeader emoji="📢" title="Announcements" subtitle="Manage school announcements" gradient="from-orange-500/10 via-rose-500/5 to-pink-500/5" />
         {/* Header */}
         <div className="flex justify-between items-center">

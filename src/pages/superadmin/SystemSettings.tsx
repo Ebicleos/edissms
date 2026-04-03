@@ -114,7 +114,7 @@ export default function SystemSettings() {
 
   return (
     <MainLayout title="System Settings" subtitle="Configure platform-wide settings (live updates enabled)">
-      <div className="max-w-4xl space-y-6 animate-fade-in">
+      <div className="max-w-4xl page-content">
         {/* Platform Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>

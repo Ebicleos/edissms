@@ -58,7 +58,7 @@ export default function IDCards() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="page-content">
         <PageGradientHeader emoji="🪪" title="Student ID Cards" subtitle="Generate and manage student identification cards" gradient="from-pink-500/10 via-purple-500/5 to-primary/5" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column - Student Selection */}
