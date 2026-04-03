@@ -288,7 +288,7 @@ export default function OnlineClasses() {
 
   return (
     <MainLayout>
-      <div className="space-y-8 animate-fade-in">
+      <div className="page-content">
         <PageGradientHeader emoji="🎥" title="Online Classes" subtitle="Live classes, lessons, and learning materials" gradient="from-cyan-500/10 via-blue-500/5 to-primary/5" />
         {/* Live Classes Section */}
         <section>
