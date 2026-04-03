@@ -452,7 +452,7 @@ export default function Students() {
         </div>
 
         {/* Desktop Table View */}
-        <div className="hidden md:block bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
+        <div className="hidden md:block table-container">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">

@@ -474,8 +474,8 @@ export default function Fees() {
 
   return (
     <MainLayout>
-      <div className="space-y-4 md:space-y-6 animate-fade-in">
-        <PageGradientHeader emoji="💰" title="Fees Management" subtitle="Track and manage school fee payments" gradient="from-emerald-500/10 via-accent/5 to-cyan-500/5" />
+      <div className="page-content">
+        <PageGradientHeader emoji="💰" title="Fees Management" subtitle="Track and manage student fee payments" gradient="from-emerald-500/10 via-accent/5 to-cyan-500/5" />
         {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-2 md:gap-4">
           <div className="bg-card rounded-xl border border-border/50 p-3 md:p-5 shadow-sm">
