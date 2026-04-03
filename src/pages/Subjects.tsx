@@ -187,8 +187,8 @@ export default function Subjects() {
 
   return (
     <MainLayout>
-      <div className="space-y-6">
-        <PageGradientHeader emoji="📖" title="Subjects" subtitle="Manage subjects for grade entry and report cards" gradient="from-rose-500/10 via-orange-500/5 to-amber-500/5">
+      <div className="page-content">
+        <PageGradientHeader emoji="📖" title="Subject Management" subtitle="Manage subjects for grade entry and report cards" gradient="from-rose-500/10 via-orange-500/5 to-amber-500/5">
           <div className="flex gap-2">
           <div className="flex gap-2">
             {subjects.length === 0 && (
