@@ -166,8 +166,8 @@ export default function Attendance() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in">
-        <PageGradientHeader emoji="✅" title="Attendance" subtitle="Mark and track student attendance" gradient="from-purple-500/10 via-primary/5 to-blue-500/5" />
+      <div className="page-content">
+        <PageGradientHeader emoji="✅" title="Attendance" subtitle="Mark and track daily student attendance" gradient="from-purple-500/10 via-primary/5 to-blue-500/5" />
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Column - Calendar and Class Selection */}
           <div className="space-y-4">
