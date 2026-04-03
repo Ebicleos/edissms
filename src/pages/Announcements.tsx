@@ -60,7 +60,7 @@ interface Announcement {
 }
 
 export default function Announcements() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
