@@ -149,6 +149,7 @@ export default function Announcements() {
       expiry_date: validatedData.expiry_date,
       publish_date: isPublished ? new Date().toISOString() : null,
       created_by: user?.id,
+      school_id: profile?.school_id,
     };
 
     let error;
