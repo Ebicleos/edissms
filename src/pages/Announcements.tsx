@@ -60,7 +60,7 @@ interface Announcement {
 }
 
 export default function Announcements() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -149,6 +149,7 @@ export default function Announcements() {
       expiry_date: validatedData.expiry_date,
       publish_date: isPublished ? new Date().toISOString() : null,
       created_by: user?.id,
+      school_id: profile?.school_id,
     };
 
     let error;
