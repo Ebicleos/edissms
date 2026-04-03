@@ -50,7 +50,7 @@ export default function StudentPromotion() {
   return (
     <MainLayout>
       <div className="page-content">
-        <PageGradientHeader emoji="⬆️" title="Student Promotion" subtitle="Promote students to the next class" gradient="from-emerald-500/10 via-lime-500/5 to-accent/5" />
+        <PageGradientHeader emoji="⬆️" title="Student Promotion" subtitle="Review performance and promote students" gradient="from-emerald-500/10 via-lime-500/5 to-accent/5" />
         {/* Selection Controls */}
         <Card>
           <CardHeader>

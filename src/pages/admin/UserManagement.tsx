@@ -314,7 +314,7 @@ export default function UserManagement() {
   return (
     <MainLayout>
       <div className="page-content">
-        <PageGradientHeader emoji="🛡️" title="User Management" subtitle="Manage all system users and reset passwords" gradient="from-primary/10 via-accent/5 to-emerald-500/5" />
+        <PageGradientHeader emoji="🛡️" title="User Management" subtitle="Manage accounts, roles, and access control" gradient="from-primary/10 via-accent/5 to-emerald-500/5" />
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-card rounded-xl border border-border/50 p-4 shadow-sm">
