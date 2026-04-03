@@ -244,17 +244,19 @@ export default function Exams() {
 
           <TabsContent value="assignments" className="space-y-4">
             {assignments.length === 0 ? (
-              <Card className="p-12 text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <div className="table-container p-12 text-center">
+                <div className="h-16 w-16 rounded-2xl bg-secondary/10 flex items-center justify-center mx-auto mb-4">
+                  <FileText className="h-8 w-8 text-secondary" />
+                </div>
                 <h3 className="text-lg font-semibold mb-2">No Assignments Yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Create assignments for your students
+                <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
+                  Create assignments for your students to complete
                 </p>
-                <Button onClick={() => navigate('/teacher/assignments')} className="bg-gradient-primary">
+                <Button onClick={() => navigate('/teacher/assignments')} className="btn-primary-gradient">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Assignment
                 </Button>
-              </Card>
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {assignments.map((assignment) => (
