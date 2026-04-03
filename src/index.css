@@ -652,6 +652,73 @@
   .page-header p {
     @apply text-muted-foreground;
   }
+
+  /* ===== STANDARDIZED PAGE LAYOUT ===== */
+  .page-content {
+    @apply space-y-4 md:space-y-6 animate-fade-in;
+  }
+
+  /* Action toolbar - consistent header actions across pages */
+  .action-toolbar {
+    @apply flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between;
+  }
+
+  .action-toolbar-start {
+    @apply flex gap-2 items-center flex-1;
+  }
+
+  .action-toolbar-end {
+    @apply flex gap-2 items-center flex-wrap;
+  }
+
+  /* Search input with icon */
+  .search-input-wrapper {
+    @apply relative flex-1 max-w-md;
+  }
+
+  .search-input-wrapper svg {
+    @apply absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none;
+  }
+
+  .search-input-wrapper input {
+    @apply pl-10;
+  }
+
+  /* Card containers for tables/lists */
+  .table-container {
+    @apply bg-card rounded-2xl border border-border/30 shadow-sm overflow-hidden;
+  }
+
+  .table-container-header {
+    @apply flex items-center justify-between p-4 sm:p-5 border-b border-border/30;
+  }
+
+  /* Consistent button styles */
+  .btn-primary-gradient {
+    @apply bg-gradient-primary hover:opacity-90 text-white transition-all;
+  }
+
+  /* Dialog form layout */
+  .dialog-form {
+    @apply space-y-4;
+  }
+
+  .dialog-form .form-row {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+  }
+
+  /* Info display grid */
+  .info-grid {
+    @apply grid grid-cols-2 gap-3 text-sm;
+  }
+
+  .info-grid-label {
+    @apply text-muted-foreground text-xs font-medium uppercase tracking-wide;
+  }
+
+  .info-grid-value {
+    @apply font-semibold text-foreground;
+  }
 }
 
 @layer utilities {

@@ -328,20 +328,19 @@ export default function Teachers() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in">
-        <PageGradientHeader emoji="👩‍🏫" title="Teachers" subtitle={`${teachers.length} teaching staff`} gradient="from-orange-500/10 via-rose-500/5 to-amber-500/5" />
-        {/* Header Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="page-content">
+        <PageGradientHeader emoji="👩‍🏫" title="Teacher Management" subtitle={`${teachers.length} teaching staff members`} gradient="from-orange-500/10 via-rose-500/5 to-amber-500/5" />
+        {/* Action Toolbar */}
+        <div className="action-toolbar">
+          <div className="search-input-wrapper">
+            <Search className="h-4 w-4" />
             <Input
               placeholder="Search by name or subject..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
             />
           </div>
-          <Button className="bg-gradient-primary hover:opacity-90" onClick={handleAddTeacher}>
+          <Button className="btn-primary-gradient" onClick={handleAddTeacher}>
             <Plus className="mr-2 h-4 w-4" />
             Add Teacher
           </Button>

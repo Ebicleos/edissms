@@ -171,7 +171,7 @@ export default function SubscriptionPayment() {
 
   return (
     <MainLayout title="Subscription" subtitle="Manage your school subscription">
-      <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+      <div className="max-w-4xl mx-auto page-content">
         {/* Current Subscription Status */}
         {subscription && (
           <Card>

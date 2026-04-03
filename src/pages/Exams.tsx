@@ -113,7 +113,7 @@ export default function Exams() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="page-content">
         <PageGradientHeader emoji="📝" title="Exams & Assignments" subtitle="Manage exams, assignments, and results" gradient="from-blue-500/10 via-sky-500/5 to-cyan-500/5" />
         {/* Admin CBT Control Panel */}
         {role === 'admin' && (
@@ -168,15 +168,17 @@ export default function Exams() {
                 <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
               </div>
             ) : exams.length === 0 ? (
-              <Card className="p-12 text-center">
-                <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <div className="table-container p-12 text-center">
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <ClipboardList className="h-8 w-8 text-primary" />
+                </div>
                 <h3 className="text-lg font-semibold mb-2">No Exams Yet</h3>
-                <p className="text-muted-foreground mb-4">Create your first exam to get started</p>
-                <Button onClick={() => navigate('/teacher/exams/create')} className="bg-gradient-primary">
+                <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">Create your first CBT exam to start assessing students</p>
+                <Button onClick={() => navigate('/teacher/exams/create')} className="btn-primary-gradient">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Exam
                 </Button>
-              </Card>
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {exams.map((exam) => (
@@ -242,17 +244,19 @@ export default function Exams() {
 
           <TabsContent value="assignments" className="space-y-4">
             {assignments.length === 0 ? (
-              <Card className="p-12 text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <div className="table-container p-12 text-center">
+                <div className="h-16 w-16 rounded-2xl bg-secondary/10 flex items-center justify-center mx-auto mb-4">
+                  <FileText className="h-8 w-8 text-secondary" />
+                </div>
                 <h3 className="text-lg font-semibold mb-2">No Assignments Yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Create assignments for your students
+                <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
+                  Create assignments for your students to complete
                 </p>
-                <Button onClick={() => navigate('/teacher/assignments')} className="bg-gradient-primary">
+                <Button onClick={() => navigate('/teacher/assignments')} className="btn-primary-gradient">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Assignment
                 </Button>
-              </Card>
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {assignments.map((assignment) => (
@@ -302,14 +306,16 @@ export default function Exams() {
           </TabsContent>
 
           <TabsContent value="results">
-            <div className="bg-card rounded-xl border border-border/50 p-12 shadow-sm text-center">
-              <Download className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <div className="table-container p-12 text-center">
+              <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                <Download className="h-8 w-8 text-accent" />
+              </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">Generate Report Cards</h3>
-              <p className="text-muted-foreground mb-6">
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
                 Select a class and term to generate and download student report cards
               </p>
               <Button 
-                className="bg-gradient-primary hover:opacity-90"
+                className="btn-primary-gradient"
                 onClick={() => navigate('/report-cards')}
               >
                 Generate Reports

@@ -309,18 +309,17 @@ export default function Students() {
 
   return (
     <MainLayout>
-      <div className="space-y-4 md:space-y-6 animate-fade-in">
-        <PageGradientHeader emoji="🎓" title="Students Database" subtitle={`${totalStudents} registered students`} gradient="from-accent/10 via-emerald-500/5 to-cyan-500/5" />
-        {/* Header Actions */}
-        <div className="flex flex-col gap-3 md:gap-4">
-          <div className="flex gap-2 md:gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="page-content">
+        <PageGradientHeader emoji="🎓" title="Student Management" subtitle={`${totalStudents} registered students`} gradient="from-accent/10 via-emerald-500/5 to-cyan-500/5" />
+        {/* Action Toolbar */}
+        <div className="action-toolbar">
+          <div className="action-toolbar-start">
+            <div className="search-input-wrapper">
+              <Search className="h-4 w-4" />
               <Input
                 placeholder="Search students..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
               />
             </div>
             <Select value={classFilter} onValueChange={setClassFilter}>
@@ -338,20 +337,20 @@ export default function Students() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex gap-2 md:self-end">
+          <div className="action-toolbar-end">
             <Button variant="outline" onClick={handleExportStudents} disabled={isExporting}>
               {isExporting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Download className="mr-2 h-4 w-4" />
               )}
-              Export CSV
+              <span className="hidden sm:inline">Export CSV</span>
             </Button>
             <Button variant="outline" onClick={() => setBulkImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
-              Bulk Import
+              <span className="hidden sm:inline">Bulk Import</span>
             </Button>
-            <Button asChild className="bg-gradient-primary hover:opacity-90">
+            <Button asChild className="btn-primary-gradient">
               <Link to="/admission">
                 <Plus className="mr-2 h-4 w-4" />
                 New Admission
@@ -453,7 +452,7 @@ export default function Students() {
         </div>
 
         {/* Desktop Table View */}
-        <div className="hidden md:block bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
+        <div className="hidden md:block table-container">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">

@@ -200,7 +200,7 @@ export default function SubscriptionManagement() {
 
   return (
     <MainLayout title="Subscription Management" subtitle="Manage school subscriptions and billing">
-      <div className="space-y-6 animate-fade-in">
+      <div className="page-content">
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <div className="flex gap-4">

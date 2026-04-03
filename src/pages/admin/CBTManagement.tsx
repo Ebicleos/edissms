@@ -183,8 +183,8 @@ export default function CBTManagement() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in">
-        <PageGradientHeader emoji="🖥️" title="CBT Management" subtitle="Monitor and control computer-based testing" gradient="from-red-500/10 via-rose-500/5 to-orange-500/5" />
+      <div className="page-content">
+        <PageGradientHeader emoji="🖥️" title="CBT Management" subtitle="Monitor active exams and control testing sessions" gradient="from-red-500/10 via-rose-500/5 to-orange-500/5" />
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
