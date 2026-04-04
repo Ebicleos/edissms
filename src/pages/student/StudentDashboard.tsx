@@ -244,8 +244,8 @@ export default function StudentDashboard() {
             <Card className="border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <div className="p-2 rounded-lg bg-pink-100">
-                    <Megaphone className="h-4 w-4 text-pink-600" />
+                  <div className="p-2 rounded-lg bg-pink/10">
+                    <Megaphone className="h-4 w-4 text-pink" />
                   </div>
                   Latest Announcements
                 </CardTitle>
@@ -283,8 +283,8 @@ export default function StudentDashboard() {
             <Card className="border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <div className="p-2 rounded-lg bg-blue-100">
-                    <CalendarDays className="h-4 w-4 text-blue-600" />
+                  <div className="p-2 rounded-lg bg-info/10">
+                    <CalendarDays className="h-4 w-4 text-info" />
                   </div>
                   Upcoming Events
                 </CardTitle>
@@ -328,8 +328,8 @@ export default function StudentDashboard() {
             <Card className="border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <div className="p-2 rounded-lg bg-amber-100">
-                    <BookOpen className="h-4 w-4 text-amber-600" />
+                  <div className="p-2 rounded-lg bg-warning/10">
+                    <BookOpen className="h-4 w-4 text-warning" />
                   </div>
                   Pending Assignments
                 </CardTitle>
@@ -350,7 +350,7 @@ export default function StudentDashboard() {
                           <p className="text-xs text-muted-foreground">{assignment.subject}</p>
                         </div>
                         {assignment.due_date && (
-                          <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200">
+                          <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/20">
                             Due {format(new Date(assignment.due_date), 'MMM d')}
                           </Badge>
                         )}
@@ -368,8 +368,8 @@ export default function StudentDashboard() {
             <Card className="border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <div className="p-2 rounded-lg bg-green-100">
-                    <ClipboardList className="h-4 w-4 text-green-600" />
+                  <div className="p-2 rounded-lg bg-success/10">
+                    <ClipboardList className="h-4 w-4 text-success" />
                   </div>
                   Upcoming Exams
                 </CardTitle>

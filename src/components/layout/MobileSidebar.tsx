@@ -1,4 +1,4 @@
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu, LogOut, ChevronDown } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -141,24 +141,28 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-72 p-0" aria-describedby={undefined}>
+      <SheetContent side="left" className="w-72 p-0 bg-sidebar border-sidebar-border" aria-describedby={undefined}>
         <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full relative overflow-hidden">
+          {/* Decorative background elements */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 rounded-full -translate-y-20 translate-x-20 blur-3xl" />
+          <div className="absolute bottom-20 left-0 w-32 h-32 bg-secondary/10 rounded-full translate-y-10 -translate-x-10 blur-3xl" />
+          
           {/* Logo */}
-          <div className="p-4 border-b border-border">
+          <div className="relative p-4 border-b border-white/5">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-                <GraduationCap className="h-6 w-6 text-white" />
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-secondary via-secondary to-coral shadow-lg shadow-secondary/30 flex items-center justify-center">
+                <GraduationCap className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="font-bold text-lg text-foreground">EduManage</h1>
-                <p className="text-xs text-muted-foreground">School Management</p>
+                <h1 className="font-display font-bold text-lg text-sidebar-foreground tracking-tight">EDISSMS</h1>
+                <p className="text-xs text-sidebar-foreground/50">School Management</p>
               </div>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-3">
+          <nav className="relative flex-1 overflow-y-auto p-3">
             <ul className="space-y-1">
               {filteredItems.map((item) => {
                 const Icon = item.icon;
@@ -167,15 +171,20 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
                   <li key={item.path}>
                     <NavLink
                       to={item.path}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground font-medium'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      className={`sidebar-link group relative overflow-hidden ${
+                        isActive ? 'active' : ''
                       }`}
                       onClick={() => onOpenChange(false)}
                     >
-                      <Icon className="h-5 w-5" />
-                      <span>{item.label}</span>
+                      {isActive && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-purple-500/10 to-transparent" />
+                      )}
+                      <Icon className={`relative h-5 w-5 transition-all duration-300 ${
+                        isActive 
+                          ? 'text-secondary scale-110' 
+                          : 'text-sidebar-foreground/50 group-hover:text-sidebar-foreground'
+                      }`} />
+                      <span className="relative text-sidebar-foreground truncate">{item.label}</span>
                     </NavLink>
                   </li>
                 );
@@ -184,12 +193,12 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
           </nav>
 
           {/* User Section */}
-          <div className="p-3 border-t border-border">
+          <div className="relative flex-shrink-0 border-t border-white/5 p-4 bg-gradient-to-t from-black/20 to-transparent">
             {/* View Mode Switcher for Superadmin */}
             {role === 'superadmin' && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between mb-2">
+                  <Button variant="outline" className="w-full justify-between mb-3 border-white/10 bg-white/5 text-sidebar-foreground hover:bg-white/10">
                     <span className="text-sm">{viewMode === 'superadmin' ? 'Super Admin View' : 'Admin View'}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
@@ -205,29 +214,28 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
               </DropdownMenu>
             )}
 
-            <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-sm font-semibold text-primary">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-secondary via-secondary to-pink-500 flex items-center justify-center shadow-lg shadow-secondary/20">
+                <span className="text-sm font-bold text-white">
                   {profile?.full_name?.split(' ').map((n) => n[0]).join('').slice(0, 2) || 'U'}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
+                <p className="text-sm font-semibold text-sidebar-foreground truncate">
                   {profile?.full_name || 'User'}
                 </p>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor()}`}>
+                <span className={`text-xs px-2.5 py-1 rounded-full font-semibold inline-block ${getRoleBadgeColor()}`}>
                   {effectiveRole || 'User'}
                 </span>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
             </div>
+            <button
+              onClick={handleLogout}
+              className="sidebar-link w-full text-red-400/80 hover:text-red-400 hover:bg-red-500/15 group"
+            >
+              <LogOut className="h-5 w-5 group-hover:scale-110 transition-transform" />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
       </SheetContent>
