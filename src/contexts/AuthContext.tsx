@@ -31,6 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<AuthContextType['profile']>(null);
   const [userClass, setUserClass] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const initialSessionResolved = useRef(false);
 
   const fetchUserData = async (userId: string, userEmail?: string | null, retryCount = 0): Promise<void> => {
     // Fetch all roles for user to handle multiple roles
