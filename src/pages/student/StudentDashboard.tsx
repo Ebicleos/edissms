@@ -328,8 +328,8 @@ export default function StudentDashboard() {
             <Card className="border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <div className="p-2 rounded-lg bg-amber-100">
-                    <BookOpen className="h-4 w-4 text-amber-600" />
+                  <div className="p-2 rounded-lg bg-warning/10">
+                    <BookOpen className="h-4 w-4 text-warning" />
                   </div>
                   Pending Assignments
                 </CardTitle>
