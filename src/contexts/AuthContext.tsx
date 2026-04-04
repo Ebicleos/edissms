@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -31,6 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<AuthContextType['profile']>(null);
   const [userClass, setUserClass] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const initialSessionResolved = useRef(false);
 
   const fetchUserData = async (userId: string, userEmail?: string | null, retryCount = 0): Promise<void> => {
     // Fetch all roles for user to handle multiple roles
@@ -145,11 +146,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Skip the INITIAL_SESSION event — we handle it via getSession below
+        if (!initialSessionResolved.current) return;
+
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer Supabase calls with setTimeout and wait for completion
+          // Defer Supabase calls with setTimeout to avoid deadlocks
           setTimeout(async () => {
             await fetchUserData(session.user.id, session.user.email);
             setIsLoading(false);
@@ -163,17 +167,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // THEN check for existing session
+    // THEN check for existing session (single source of truth for initial load)
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         await fetchUserData(session.user.id, session.user.email);
       }
+      initialSessionResolved.current = true;
       setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signIn = async (email: string, password: string) => {
