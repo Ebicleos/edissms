@@ -162,7 +162,7 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-3">
+          <nav className="relative flex-1 overflow-y-auto p-3">
             <ul className="space-y-1">
               {filteredItems.map((item) => {
                 const Icon = item.icon;
@@ -171,15 +171,20 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
                   <li key={item.path}>
                     <NavLink
                       to={item.path}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground font-medium'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      className={`sidebar-link group relative overflow-hidden ${
+                        isActive ? 'active' : ''
                       }`}
                       onClick={() => onOpenChange(false)}
                     >
-                      <Icon className="h-5 w-5" />
-                      <span>{item.label}</span>
+                      {isActive && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-purple-500/10 to-transparent" />
+                      )}
+                      <Icon className={`relative h-5 w-5 transition-all duration-300 ${
+                        isActive 
+                          ? 'text-secondary scale-110' 
+                          : 'text-sidebar-foreground/50 group-hover:text-sidebar-foreground'
+                      }`} />
+                      <span className="relative text-sidebar-foreground truncate">{item.label}</span>
                     </NavLink>
                   </li>
                 );
