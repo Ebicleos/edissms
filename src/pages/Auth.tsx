@@ -439,7 +439,7 @@ export default function Auth() {
                 <School className="h-7 w-7 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-bold text-2xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">EduManage</h1>
+                <h1 className="font-display font-bold text-2xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">EDISSMS</h1>
                 <p className="text-sm text-muted-foreground">Password Recovery</p>
               </div>
             </div>
