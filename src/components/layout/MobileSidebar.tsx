@@ -151,7 +151,7 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
                 <GraduationCap className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="font-bold text-lg text-foreground">EduManage</h1>
+                <h1 className="font-display font-bold text-lg text-foreground tracking-tight">EDISSMS</h1>
                 <p className="text-xs text-muted-foreground">School Management</p>
               </div>
             </div>

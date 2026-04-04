@@ -368,8 +368,8 @@ export default function StudentDashboard() {
             <Card className="border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <div className="p-2 rounded-lg bg-green-100">
-                    <ClipboardList className="h-4 w-4 text-green-600" />
+                  <div className="p-2 rounded-lg bg-success/10">
+                    <ClipboardList className="h-4 w-4 text-success" />
                   </div>
                   Upcoming Exams
                 </CardTitle>

@@ -142,10 +142,10 @@ export function Sidebar() {
           </div>
           <div>
             <h1 className="font-display font-bold text-lg text-sidebar-foreground tracking-tight flex items-center gap-1.5">
-              EduManage
+              EDISSMS
               <Sparkles className="h-4 w-4 text-secondary" />
             </h1>
-            <p className="text-xs text-sidebar-foreground/50 font-medium">School Portal</p>
+            <p className="text-xs text-sidebar-foreground/50 font-medium">School Management</p>
           </div>
         </div>
 
