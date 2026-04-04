@@ -141,18 +141,22 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-72 p-0" aria-describedby={undefined}>
+      <SheetContent side="left" className="w-72 p-0 bg-sidebar border-sidebar-border" aria-describedby={undefined}>
         <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full relative overflow-hidden">
+          {/* Decorative background elements */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 rounded-full -translate-y-20 translate-x-20 blur-3xl" />
+          <div className="absolute bottom-20 left-0 w-32 h-32 bg-secondary/10 rounded-full translate-y-10 -translate-x-10 blur-3xl" />
+          
           {/* Logo */}
-          <div className="p-4 border-b border-border">
+          <div className="relative p-4 border-b border-white/5">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-                <GraduationCap className="h-6 w-6 text-white" />
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-secondary via-secondary to-coral shadow-lg shadow-secondary/30 flex items-center justify-center">
+                <GraduationCap className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="font-display font-bold text-lg text-foreground tracking-tight">EDISSMS</h1>
-                <p className="text-xs text-muted-foreground">School Management</p>
+                <h1 className="font-display font-bold text-lg text-sidebar-foreground tracking-tight">EDISSMS</h1>
+                <p className="text-xs text-sidebar-foreground/50">School Management</p>
               </div>
             </div>
           </div>
