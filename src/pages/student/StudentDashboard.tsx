@@ -350,7 +350,7 @@ export default function StudentDashboard() {
                           <p className="text-xs text-muted-foreground">{assignment.subject}</p>
                         </div>
                         {assignment.due_date && (
-                          <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200">
+                          <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/20">
                             Due {format(new Date(assignment.due_date), 'MMM d')}
                           </Badge>
                         )}
