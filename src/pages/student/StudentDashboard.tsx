@@ -283,8 +283,8 @@ export default function StudentDashboard() {
             <Card className="border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <div className="p-2 rounded-lg bg-blue-100">
-                    <CalendarDays className="h-4 w-4 text-blue-600" />
+                  <div className="p-2 rounded-lg bg-info/10">
+                    <CalendarDays className="h-4 w-4 text-info" />
                   </div>
                   Upcoming Events
                 </CardTitle>
