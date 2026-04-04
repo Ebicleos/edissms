@@ -537,7 +537,7 @@ export default function Auth() {
               </div>
             </div>
             <div>
-              <h1 className="font-bold text-xl md:text-2xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">EduManage</h1>
+              <h1 className="font-display font-bold text-xl md:text-2xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">EDISSMS</h1>
               <p className="text-xs md:text-sm text-muted-foreground">School Management System</p>
             </div>
           </div>
