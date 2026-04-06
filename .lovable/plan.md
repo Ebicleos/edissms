@@ -1,53 +1,63 @@
 
 
-# Fix Plan: 5 Critical Bugs
+# Landing Page Enhancement + Heading Consistency
 
-## Root Cause Analysis
+## Current State
+The landing page is well-structured with proper sections (hero, features, benefits, pricing, testimonials, FAQ, contact, footer). However, at the current 360px mobile viewport, several areas need visual enhancement:
 
-### 1. Announcements fail to publish
-**Cause**: The insert does NOT include `school_id`. The announcements table has a `school_id` column, and the RLS policy requires `school_id = get_user_school(auth.uid())` for admin access. Without `school_id` in the insert payload, the row either fails RLS on insert or can't be read back.
-**Fix**: Add `school_id` from auth context to the announcement insert/update data.
+1. **Hero section** feels flat — needs a more vibrant gradient background and better mobile text sizing
+2. **Feature cards** lack color variety — all use similar muted styling
+3. **Stats section** is plain — needs gradient cards with more visual punch
+4. **Pricing cards** need better visual differentiation on mobile
+5. **Trust badges** and **CTA sections** could be more colorful
+6. **Footer** is generic — needs more personality
 
-### 2. Course material fails to upload
-**Cause**: The `learning-materials` storage bucket does not exist. The code uploads to `supabase.storage.from('learning-materials')` but no such bucket is configured (only `school-logos`, `student-photos`, `school-signatures`, `exam-assets` exist).
-**Fix**: Create the `learning-materials` storage bucket via migration, with appropriate RLS policies on `storage.objects`.
+## Plan
 
-### 3. Student attendance fails to fetch in teacher's portal
-**Cause**: The student attendance view (`StudentAttendance.tsx`) queries attendance with `.eq('student_id', studentId)` where `studentId` comes from `useStudentRecord` which returns `students.id` (the students table primary key). However, the RLS policy for students uses `student_id = auth.uid()` -- comparing the attendance `student_id` column against the auth user UUID. Since `students.id != auth.uid()`, the RLS blocks all reads for students. For teachers, this is fine (teacher RLS is role-based). The user reports this fails in the **teacher's portal** specifically, which suggests the attendance table's `student_id` stores `students.id` (not auth uid), so the teacher query should work. Let me re-check -- the teacher RLS allows all authenticated teachers to read. The issue may be that the Attendance page (`src/pages/Attendance.tsx`) used by teachers queries students but doesn't filter by `school_id`, potentially hitting limits or returning students from other schools. Actually, re-reading: the teacher fetches students via `students` table filtered by `class_id`, and the students RLS for teachers requires `school_id = get_user_school(auth.uid())`. This should work. The likely issue is that `fetchExistingAttendance` doesn't properly map student IDs.
+### 1. Enhanced Hero Section
+- Add a vivid animated gradient mesh background (purple → blue → teal) behind the hero
+- Add floating decorative shapes (circles, dots) with subtle animation
+- Improve mobile text sizing: h1 from `text-4xl` to a more impactful `text-[2.25rem]` with tighter line-height
+- Add a subtle shimmer effect on the "Manage" gradient text
+- Make the trust badge pill more colorful with a gradient border
 
-Let me look more carefully -- the real issue for the student's own attendance view is the RLS policy `student_id = auth.uid()`. But since `student_id` in the attendance table stores `students.id` (not `auth.uid()`), the student can never see their own attendance. For the teacher portal, the teacher RLS should work fine since it's role-based.
+### 2. Colorful Stats Bar
+- Replace plain text stats with gradient-backed cards (each stat gets its own unique gradient: blue, green, amber, purple)
+- Add emoji scaling animation on hover
+- Better mobile grid: 2×2 with proper gap
 
-**Fix**: Update the student attendance RLS policy to check `student_id IN (SELECT id FROM students WHERE user_id = auth.uid())` instead of `student_id = auth.uid()`.
+### 3. Feature Cards with Color Accents
+- Add a thin gradient top border to each card matching its icon color
+- Add subtle colored background tint (`from-blue-50/50` etc.) per card
+- Slightly larger icons on mobile
 
-### 4. Published exams not displayed in student portal
-**Cause**: The exams RLS policy for students uses `class_id = get_user_class(auth.uid())`. The `get_user_class` function queries `student_classes` table: `SELECT class_id FROM student_classes WHERE student_id = _user_id LIMIT 1`. If the student doesn't have a row in `student_classes`, this returns NULL and no exams are visible. Additionally, even if the student_classes record exists, the `class_id` stored there may not match the exam's `class_id` exactly (case/spacing differences), which is why the code does client-side normalization -- but the RLS blocks the rows at the database level first.
-**Fix**: Update the `get_user_class` function to also check the `students` table as a fallback: `SELECT class_id FROM students WHERE user_id = _user_id LIMIT 1`. This ensures the RLS works even without a `student_classes` record.
+### 4. Benefits Section
+- Add alternating pastel background tints to benefit cards
+- Add a decorative gradient divider between sections
 
-### 5. Student unable to view report card
-**Cause**: The report_cards RLS policy for students is `student_id = auth.uid()`. But `report_cards.student_id` references `students.id`, not the auth user ID. So the policy never matches.
-**Fix**: Update the RLS policy to `student_id IN (SELECT id FROM students WHERE user_id = auth.uid())`.
+### 5. Testimonials
+- Add colored left border accent to each card
+- Randomize avatar gradient colors (not all primary)
 
----
+### 6. Pricing Enhancement
+- Add gradient header bar to each pricing card (not just the popular one)
+- Each tier gets its own color identity (Starter=teal, Professional=primary, Enterprise=purple)
+- Better mobile stacking with full-width cards
 
-## Implementation Steps
+### 7. Final CTA Section
+- Replace flat gradient with an animated gradient mesh
+- Add floating particle/sparkle decorations
 
-### Step 1: Database Migration
-Single migration to fix all RLS and create the missing bucket:
+### 8. Footer
+- Add a gradient divider line above footer
+- Slightly warmer background
 
-- **Create `learning-materials` storage bucket** (public bucket for file access)
-- **Add storage RLS policies** for authenticated uploads and public reads
-- **Fix `get_user_class` function** to fallback to `students.user_id` lookup
-- **Fix report_cards student RLS**: Drop and recreate with subquery on `students.user_id`
-- **Fix attendance student RLS**: Drop and recreate with subquery on `students.user_id`
-- **Fix fee_payments student RLS**: Same pattern (currently uses `students.user_id` join which is correct -- verify)
+### 9. Heading Consistency Across App
+- Audit heading patterns: ensure `font-display font-bold` is used for all H1/H2 across dashboards and landing page
+- Already using `PageGradientHeader` in internal pages — verify no pages use mismatched heading styles
 
-### Step 2: Code Fix -- Announcements
-In `src/pages/Announcements.tsx`, add `school_id` from the auth context to the insert/update payload. The `useAuth` hook provides `profile.school_id`.
+## Files to Modify
+1. `src/pages/LandingPage.tsx` — All visual enhancements (single file, ~729 lines rewrite of styling classes)
 
-### Step 3: Code Fix -- OnlineClasses (material upload)
-No code changes needed -- once the bucket exists, uploads will work.
-
-## Files Modified
-1. **New migration**: Fix RLS policies + create storage bucket
-2. `src/pages/Announcements.tsx`: Add `school_id` to announcement data
+## No database changes needed.
 
