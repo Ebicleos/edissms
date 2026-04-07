@@ -120,7 +120,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         to: formattedPhone,
-        from: 'EduManage',
+        from: 'EDISMS',
         sms: message,
         type: 'plain',
         channel: 'generic',

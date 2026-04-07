@@ -62,7 +62,7 @@ const getEmailContent = (type: string, data: z.infer<typeof EmailRequestSchema>[
                 <p style="margin: 0;"><strong>Transaction Reference:</strong> ${data?.reference}</p>
               </div>
               <p>Thank you for your payment!</p>
-              <p style="color: #666; font-size: 14px;">- EduManage Team</p>
+              <p style="color: #666; font-size: 14px;">- EDISMS Team</p>
             </div>
           </div>
         `,
@@ -83,8 +83,8 @@ const getEmailContent = (type: string, data: z.infer<typeof EmailRequestSchema>[
                 <p><strong>Amount:</strong> ₦${data?.amount?.toLocaleString()}</p>
                 <p style="margin: 0;"><strong>Valid Until:</strong> ${data?.expiryDate}</p>
               </div>
-              <p>Enjoy full access to all EduManage features!</p>
-              <p style="color: #666; font-size: 14px;">- EduManage Team</p>
+              <p>Enjoy full access to all EDISMS features!</p>
+              <p style="color: #666; font-size: 14px;">- EDISMS Team</p>
             </div>
           </div>
         `,
@@ -107,7 +107,7 @@ const getEmailContent = (type: string, data: z.infer<typeof EmailRequestSchema>[
                   Renew Subscription
                 </a>
               </div>
-              <p style="color: #666; font-size: 14px;">- EduManage Team</p>
+              <p style="color: #666; font-size: 14px;">- EDISMS Team</p>
             </div>
           </div>
         `,
@@ -130,22 +130,22 @@ const getEmailContent = (type: string, data: z.infer<typeof EmailRequestSchema>[
                   Renew Now
                 </a>
               </div>
-              <p style="color: #666; font-size: 14px;">- EduManage Team</p>
+              <p style="color: #666; font-size: 14px;">- EDISMS Team</p>
             </div>
           </div>
         `,
       };
     case 'welcome':
       return {
-        subject: `Welcome to EduManage - ${data?.schoolName}`,
+        subject: `Welcome to EDISMS - ${data?.schoolName}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%); padding: 30px; text-align: center;">
-              <h1 style="color: white; margin: 0;">Welcome to EduManage!</h1>
+              <h1 style="color: white; margin: 0;">Welcome to EDISMS!</h1>
             </div>
             <div style="padding: 30px; background: #f9fafb;">
               <p>Dear ${data?.name || 'Admin'},</p>
-              <p>Welcome to EduManage! Your school <strong>${data?.schoolName}</strong> has been successfully registered.</p>
+              <p>Welcome to EDISMS! Your school <strong>${data?.schoolName}</strong> has been successfully registered.</p>
               <p>You have a <strong>30-day free trial</strong> to explore all features.</p>
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/auth" 
@@ -153,15 +153,15 @@ const getEmailContent = (type: string, data: z.infer<typeof EmailRequestSchema>[
                   Login to Dashboard
                 </a>
               </div>
-              <p style="color: #666; font-size: 14px;">- EduManage Team</p>
+              <p style="color: #666; font-size: 14px;">- EDISMS Team</p>
             </div>
           </div>
         `,
       };
     default:
       return {
-        subject: 'EduManage Notification',
-        html: `<p>You have a new notification from EduManage.</p>`,
+        subject: 'EDISMS Notification',
+        html: `<p>You have a new notification from EDISMS.</p>`,
       };
   }
 };
@@ -237,7 +237,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'EduManage <onboarding@resend.dev>',
+        from: 'EDISMS <onboarding@resend.dev>',
         to: [to],
         subject,
         html,

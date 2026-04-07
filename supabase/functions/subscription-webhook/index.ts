@@ -137,7 +137,7 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               to: schoolData.phone,
-              message: `Your ${metadata.plan_type} subscription for ${schoolData.name} has been activated. Thank you for subscribing to EduManage!`,
+              message: `Your ${metadata.plan_type} subscription for ${schoolData.name} has been activated. Thank you for subscribing to EDISMS!`,
               type: 'subscription_activated',
             }),
           });
