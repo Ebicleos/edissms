@@ -238,7 +238,7 @@ async function handleFeePayment(
           },
           body: JSON.stringify({
             to: studentData.phone_contact,
-            message: `Payment of ₦${amountPaid.toLocaleString()} received for ${studentData.full_name}. Ref: ${reference}. Thank you! - ${schoolData?.name || 'EduManage'}`,
+            message: `Payment of ₦${amountPaid.toLocaleString()} received for ${studentData.full_name}. Ref: ${reference}. Thank you! - ${schoolData?.name || 'EDISMS'}`,
             type: 'payment_confirmation',
           }),
         });

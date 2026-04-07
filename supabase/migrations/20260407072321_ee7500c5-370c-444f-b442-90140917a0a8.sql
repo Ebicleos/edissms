@@ -1,0 +1,1 @@
+ALTER TABLE platform_settings ADD CONSTRAINT platform_settings_key_unique UNIQUE (key);

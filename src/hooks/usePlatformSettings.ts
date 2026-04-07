@@ -34,7 +34,7 @@ interface PlatformSettings {
 const defaultSettings: PlatformSettings = {
   maintenanceMode: { enabled: false, message: '' },
   systemAnnouncement: { message: '', type: 'info' },
-  platformConfig: { name: 'EduManage', support_email: 'support@edumanage.com', allow_registrations: true },
+  platformConfig: { name: 'EDISMS + School Management', support_email: 'support@edisms.com', allow_registrations: true },
   pricing: { termly: 50000, yearly: 120000, trial_days: 30 },
 };
 
@@ -96,8 +96,7 @@ export function usePlatformSettings() {
   const updateSetting = async (key: string, value: MaintenanceMode | SystemAnnouncement | PlatformConfig | Pricing) => {
     const { error } = await supabase
       .from('platform_settings')
-      .update({ value: value as unknown as Json })
-      .eq('key', key);
+      .upsert({ key, value: value as unknown as Json }, { onConflict: 'key' });
 
     if (error) {
       console.error('Error updating setting:', error);

@@ -544,7 +544,7 @@ export default function SchoolRegistration() {
             <School className="h-7 w-7 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="font-bold text-2xl">EduManage</h1>
+            <h1 className="font-bold text-2xl">EDISMS</h1>
             <p className="text-sm text-muted-foreground">School Registration</p>
           </div>
         </div>
