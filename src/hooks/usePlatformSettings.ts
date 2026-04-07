@@ -34,7 +34,7 @@ interface PlatformSettings {
 const defaultSettings: PlatformSettings = {
   maintenanceMode: { enabled: false, message: '' },
   systemAnnouncement: { message: '', type: 'info' },
-  platformConfig: { name: 'EduManage', support_email: 'support@edumanage.com', allow_registrations: true },
+  platformConfig: { name: 'EDISMS + School Management', support_email: 'support@edisms.com', allow_registrations: true },
   pricing: { termly: 50000, yearly: 120000, trial_days: 30 },
 };
 
