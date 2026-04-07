@@ -509,30 +509,40 @@ export default function TakeExam() {
         "fixed left-0 right-0 z-50 bg-background border-b shadow-sm",
         isTestMode ? "top-8" : "top-0"
       )}>
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="font-bold text-lg">{exam?.title}</h1>
-              <p className="text-sm text-muted-foreground">{exam?.subject}</p>
+        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-bold text-sm sm:text-lg truncate">{exam?.title}</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">{exam?.subject}</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               <div className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-lg font-bold",
+                "flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-mono text-sm sm:text-lg font-bold",
                 getTimerColor()
               )}>
-                <Clock className="h-5 w-5" />
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
                 {formatTime(timeLeft)}
               </div>
               <Button 
                 onClick={() => setShowSubmitDialog(true)}
                 disabled={isSubmitting}
+                size="sm"
+                className="hidden sm:flex"
               >
                 <Send className="h-4 w-4 mr-2" />
                 Submit
               </Button>
+              <Button 
+                onClick={() => setShowSubmitDialog(true)}
+                disabled={isSubmitting}
+                size="icon"
+                className="sm:hidden h-8 w-8"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-2 mt-2 sm:mt-3">
             <Progress value={progress} className="flex-1 h-2" />
             <span className="text-xs text-muted-foreground whitespace-nowrap">
               {answeredCount}/{questions.length}
@@ -541,19 +551,19 @@ export default function TakeExam() {
         </div>
       </header>
 
-      <div className={cn("pb-24 container mx-auto px-4", isTestMode ? "pt-36" : "pt-28")}>
-        <div className="grid lg:grid-cols-4 gap-6">
-          {/* Question Navigation Sidebar */}
-          <Card className={cn("lg:col-span-1 h-fit sticky", isTestMode ? "top-36" : "top-28")}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Questions</CardTitle>
+      <div className={cn("pb-20 sm:pb-24 container mx-auto px-3 sm:px-4", isTestMode ? "pt-28 sm:pt-36" : "pt-24 sm:pt-28")}>
+        <div className="grid lg:grid-cols-4 gap-4 sm:gap-6">
+          {/* Question Navigation - Horizontal on mobile, sidebar on desktop */}
+          <Card className={cn("lg:col-span-1 h-fit lg:sticky", isTestMode ? "lg:top-36" : "lg:top-28")}>
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm">Questions</CardTitle>
               <p className="text-xs text-muted-foreground">
                 {answeredCount}/{questions.length} answered
                 {flaggedCount > 0 && ` • ${flaggedCount} flagged`}
               </p>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-5 gap-2">
+            <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+              <div className="grid grid-cols-8 sm:grid-cols-5 gap-1.5 sm:gap-2">
                 {questions.map((q, idx) => {
                   const answer = answers.get(q.id);
                   return (
@@ -561,7 +571,7 @@ export default function TakeExam() {
                       key={q.id}
                       onClick={() => setCurrentIndex(idx)}
                       className={cn(
-                        "w-full aspect-square rounded-lg text-sm font-medium transition-all",
+                        "w-full aspect-square rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all min-h-[32px]",
                         currentIndex === idx && "ring-2 ring-primary",
                         answer?.selected_option 
                           ? "bg-primary text-primary-foreground" 
@@ -574,7 +584,7 @@ export default function TakeExam() {
                   );
                 })}
               </div>
-              <div className="mt-4 space-y-2">
+              <div className="mt-3 sm:mt-4 space-y-2">
                 <div className="flex flex-wrap gap-2 text-xs">
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 rounded bg-primary" />
@@ -592,7 +602,7 @@ export default function TakeExam() {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full"
+                  className="w-full text-xs sm:text-sm"
                   onClick={goToFirstUnanswered}
                 >
                   Go to Unanswered
@@ -603,12 +613,12 @@ export default function TakeExam() {
 
           {/* Question Content */}
           <Card className="lg:col-span-3">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between px-4 sm:px-6 pt-4 sm:pt-6 pb-2 sm:pb-3">
               <div>
-                <Badge variant="outline" className="mb-2">
+                <Badge variant="outline" className="mb-1.5 sm:mb-2 text-xs">
                   Question {currentIndex + 1} of {questions.length}
                 </Badge>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {currentQuestion?.marks || 1} mark{(currentQuestion?.marks || 1) > 1 ? 's' : ''}
                 </p>
               </div>
@@ -616,25 +626,25 @@ export default function TakeExam() {
                 variant={currentAnswer?.flagged ? "destructive" : "outline"}
                 size="sm"
                 onClick={handleFlagQuestion}
+                className="text-xs sm:text-sm"
               >
-                <Flag className="h-4 w-4 mr-2" />
+                <Flag className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 {currentAnswer?.flagged ? 'Unflag' : 'Flag'}
               </Button>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <p className="text-lg font-medium">{currentQuestion?.question_text}</p>
+            <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6 pb-4 sm:pb-6">
+              <p className="text-sm sm:text-lg font-medium leading-relaxed">{currentQuestion?.question_text}</p>
 
-              {/* Question Diagram/Image */}
               {(currentQuestion as any)?.image_url && (
                 <div className="rounded-lg border bg-muted/30 p-2 flex justify-center">
                   <img 
                     src={(currentQuestion as any).image_url} 
                     alt="Question diagram" 
-                    className="max-h-64 object-contain rounded"
+                    className="max-h-48 sm:max-h-64 object-contain rounded"
                   />
                 </div>
               )}
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {['A', 'B', 'C', 'D'].map((option) => {
                   const optionKey = `option_${option.toLowerCase()}` as keyof Question;
                   const optionText = currentQuestion?.[optionKey];
@@ -647,21 +657,21 @@ export default function TakeExam() {
                       key={option}
                       onClick={() => handleSelectOption(option)}
                       className={cn(
-                        "w-full text-left p-4 rounded-lg border-2 transition-all",
+                        "w-full text-left p-3 sm:p-4 rounded-lg border-2 transition-all flex items-start gap-2 sm:gap-3 min-h-[44px]",
                         isSelected
                           ? "border-primary bg-primary/5"
                           : "border-border hover:border-primary/50"
                       )}
                     >
                       <span className={cn(
-                        "inline-flex items-center justify-center w-8 h-8 rounded-full mr-3 font-medium",
+                        "inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full text-xs sm:text-sm font-medium shrink-0",
                         isSelected
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted"
                       )}>
                         {option}
                       </span>
-                      {optionText as string}
+                      <span className="text-sm sm:text-base pt-0.5">{optionText as string}</span>
                     </button>
                   );
                 })}
@@ -672,14 +682,15 @@ export default function TakeExam() {
       </div>
 
       {/* Fixed Navigation Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+      <footer className="fixed bottom-0 left-0 right-0 bg-background border-t p-2 sm:p-4 z-40">
         <div className="container mx-auto flex justify-between items-center">
-          <div className="flex gap-2">
+          <div className="flex gap-1 sm:gap-2">
             <Button
               variant="outline"
               size="icon"
               onClick={() => setCurrentIndex(0)}
               disabled={currentIndex === 0}
+              className="h-9 w-9 sm:h-10 sm:w-10"
             >
               <ChevronsLeft className="h-4 w-4" />
             </Button>
@@ -687,27 +698,32 @@ export default function TakeExam() {
               variant="outline"
               onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
               disabled={currentIndex === 0}
+              size="sm"
+              className="text-xs sm:text-sm"
             >
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Previous
+              <ChevronLeft className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Previous</span>
             </Button>
           </div>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-xs sm:text-sm text-muted-foreground font-medium">
             {currentIndex + 1} / {questions.length}
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-1 sm:gap-2">
             <Button
               onClick={() => setCurrentIndex(prev => Math.min(questions.length - 1, prev + 1))}
               disabled={currentIndex === questions.length - 1}
+              size="sm"
+              className="text-xs sm:text-sm"
             >
-              Next
-              <ChevronRight className="h-4 w-4 ml-2" />
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="h-4 w-4 sm:ml-1" />
             </Button>
             <Button
               variant="outline"
               size="icon"
               onClick={() => setCurrentIndex(questions.length - 1)}
               disabled={currentIndex === questions.length - 1}
+              className="h-9 w-9 sm:h-10 sm:w-10"
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
