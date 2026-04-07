@@ -136,101 +136,101 @@ export default function ExamResults() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
         {/* Back Button */}
-        <Button variant="ghost" onClick={() => navigate('/cbt')}>
+        <Button variant="ghost" onClick={() => navigate('/cbt')} size="sm">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to CBT Portal
         </Button>
 
         {/* Results Summary Card */}
         <Card className="overflow-hidden">
-          <div className="bg-gradient-to-r from-primary to-primary/80 p-8 text-primary-foreground">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold mb-1">{submission.exam?.title}</h1>
-                <p className="text-primary-foreground/80">{submission.exam?.subject}</p>
+          <div className="bg-gradient-to-r from-primary to-primary/80 p-4 sm:p-8 text-primary-foreground">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-2xl font-bold mb-1 truncate">{submission.exam?.title}</h1>
+                <p className="text-primary-foreground/80 text-sm">{submission.exam?.subject}</p>
                 {submission.submitted_at && (
-                  <p className="text-sm mt-2 text-primary-foreground/60">
-                    Submitted on {format(new Date(submission.submitted_at), 'MMMM d, yyyy h:mm a')}
+                  <p className="text-xs sm:text-sm mt-1 sm:mt-2 text-primary-foreground/60">
+                    Submitted {format(new Date(submission.submitted_at), 'MMM d, yyyy h:mm a')}
                   </p>
                 )}
               </div>
               <div className={cn(
-                "w-24 h-24 rounded-full flex items-center justify-center",
+                "w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center shrink-0",
                 gradeInfo.bg
               )}>
-                <span className={cn("text-4xl font-bold", gradeInfo.color)}>
+                <span className={cn("text-2xl sm:text-4xl font-bold", gradeInfo.color)}>
                   {gradeInfo.grade}
                 </span>
               </div>
             </div>
           </div>
 
-          <CardContent className="p-8">
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <div className="text-center p-4 bg-muted rounded-lg">
-                <Trophy className="h-8 w-8 mx-auto mb-2 text-primary" />
-                <p className="text-3xl font-bold">{submission.score || 0}/{submission.total_marks || 0}</p>
-                <p className="text-sm text-muted-foreground">Total Score</p>
+          <CardContent className="p-4 sm:p-8">
+            <div className="grid grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
+              <div className="text-center p-3 sm:p-4 bg-muted rounded-lg">
+                <Trophy className="h-5 w-5 sm:h-8 sm:w-8 mx-auto mb-1 sm:mb-2 text-primary" />
+                <p className="text-lg sm:text-3xl font-bold">{submission.score || 0}/{submission.total_marks || 0}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Score</p>
               </div>
-              <div className="text-center p-4 bg-muted rounded-lg">
-                <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                <p className="text-3xl font-bold">{correctCount}</p>
-                <p className="text-sm text-muted-foreground">Correct Answers</p>
+              <div className="text-center p-3 sm:p-4 bg-muted rounded-lg">
+                <CheckCircle2 className="h-5 w-5 sm:h-8 sm:w-8 mx-auto mb-1 sm:mb-2 text-green-600" />
+                <p className="text-lg sm:text-3xl font-bold">{correctCount}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Correct</p>
               </div>
-              <div className="text-center p-4 bg-muted rounded-lg">
-                <XCircle className="h-8 w-8 mx-auto mb-2 text-red-600" />
-                <p className="text-3xl font-bold">{answers.length - correctCount}</p>
-                <p className="text-sm text-muted-foreground">Incorrect Answers</p>
+              <div className="text-center p-3 sm:p-4 bg-muted rounded-lg">
+                <XCircle className="h-5 w-5 sm:h-8 sm:w-8 mx-auto mb-1 sm:mb-2 text-red-600" />
+                <p className="text-lg sm:text-3xl font-bold">{answers.length - correctCount}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Wrong</p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span>Score Progress</span>
                 <span className="font-medium">{percentage}%</span>
               </div>
-              <Progress value={percentage} className="h-3" />
+              <Progress value={percentage} className="h-2 sm:h-3" />
             </div>
           </CardContent>
         </Card>
 
         {/* Question Review */}
         <Card>
-          <CardHeader>
-            <CardTitle>Question Review</CardTitle>
-            <CardDescription>See how you answered each question</CardDescription>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-base sm:text-lg">Question Review</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">See how you answered each question</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
             {answers.map((answer, idx) => (
               <div 
                 key={answer.id}
                 className={cn(
-                  "p-4 rounded-lg border-2",
+                  "p-3 sm:p-4 rounded-lg border-2",
                   answer.is_correct ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
                 )}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <Badge variant="outline" className="mb-2">
-                    Question {idx + 1}
+                <div className="flex items-start justify-between mb-2 sm:mb-3">
+                  <Badge variant="outline" className="text-xs">
+                    Q{idx + 1}
                   </Badge>
                   {answer.is_correct ? (
-                    <Badge className="bg-green-500">
+                    <Badge className="bg-green-500 text-xs">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                       Correct
                     </Badge>
                   ) : (
-                    <Badge variant="destructive">
+                    <Badge variant="destructive" className="text-xs">
                       <XCircle className="h-3 w-3 mr-1" />
-                      Incorrect
+                      Wrong
                     </Badge>
                   )}
                 </div>
 
-                <p className="font-medium mb-4">{answer.question?.question_text}</p>
+                <p className="font-medium text-sm sm:text-base mb-3 sm:mb-4">{answer.question?.question_text}</p>
 
-                <div className="grid gap-2">
+                <div className="grid gap-1.5 sm:gap-2">
                   {['A', 'B', 'C', 'D'].map((opt) => {
                     const optKey = `option_${opt.toLowerCase()}` as keyof typeof answer.question;
                     const optText = answer.question?.[optKey];
@@ -243,26 +243,26 @@ export default function ExamResults() {
                       <div
                         key={opt}
                         className={cn(
-                          "p-3 rounded border flex items-center gap-2",
+                          "p-2 sm:p-3 rounded border flex items-center gap-2 min-h-[36px]",
                           isCorrect && "bg-green-100 border-green-300",
                           isSelected && !isCorrect && "bg-red-100 border-red-300",
                           !isCorrect && !isSelected && "bg-white border-gray-200"
                         )}
                       >
                         <span className={cn(
-                          "w-6 h-6 rounded-full text-xs flex items-center justify-center font-medium",
+                          "w-5 h-5 sm:w-6 sm:h-6 rounded-full text-xs flex items-center justify-center font-medium shrink-0",
                           isCorrect && "bg-green-500 text-white",
                           isSelected && !isCorrect && "bg-red-500 text-white",
                           !isCorrect && !isSelected && "bg-gray-200"
                         )}>
                           {opt}
                         </span>
-                        <span className="text-sm">{optText as string}</span>
+                        <span className="text-xs sm:text-sm">{optText as string}</span>
                         {isCorrect && (
-                          <CheckCircle2 className="h-4 w-4 ml-auto text-green-600" />
+                          <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-auto text-green-600 shrink-0" />
                         )}
                         {isSelected && !isCorrect && (
-                          <XCircle className="h-4 w-4 ml-auto text-red-600" />
+                          <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-auto text-red-600 shrink-0" />
                         )}
                       </div>
                     );
