@@ -96,8 +96,7 @@ export function usePlatformSettings() {
   const updateSetting = async (key: string, value: MaintenanceMode | SystemAnnouncement | PlatformConfig | Pricing) => {
     const { error } = await supabase
       .from('platform_settings')
-      .update({ value: value as unknown as Json })
-      .eq('key', key);
+      .upsert({ key, value: value as unknown as Json }, { onConflict: 'key' });
 
     if (error) {
       console.error('Error updating setting:', error);

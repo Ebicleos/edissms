@@ -242,7 +242,7 @@ export default function SubscriptionPayment() {
               {subscription?.status === 'active' ? 'Renew Subscription' : 'Subscribe Now'}
             </CardTitle>
             <CardDescription>
-              Choose a plan to {subscription?.status === 'active' ? 'extend your subscription' : 'continue using EduManage'}
+              Choose a plan to {subscription?.status === 'active' ? 'extend your subscription' : 'continue using EDISMS'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">

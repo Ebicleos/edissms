@@ -19,7 +19,7 @@ export interface SchoolSettings {
 
 const getDefaultSettings = (): SchoolSettings => ({
   id: '',
-  school_name: 'EduManage School',
+  school_name: 'EDISMS School',
   motto: 'Excellence in Education',
   email: '',
   phone: '',
