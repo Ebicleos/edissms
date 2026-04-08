@@ -84,37 +84,6 @@ export default function CBTPortal() {
     }
   }, [user, studentRecord, studentLoading]);
 
-  const fetchExams = async () => {
-    if (!studentRecord?.class_id) return;
-    const normalizedStudentClass = studentRecord.class_id.toLowerCase().replace(/\s+/g, '');
-    const { data, error } = await supabase
-      .from('exams')
-      .select('*')
-      .eq('is_published', true)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      const filteredExams = data.filter((exam: Exam) => {
-        const normalizedExamClass = exam.class_id.toLowerCase().replace(/\s+/g, '');
-        return normalizedExamClass === normalizedStudentClass;
-      });
-      setExams(filteredExams);
-      const hasActiveExam = filteredExams.some((exam: Exam) => exam.is_exam_active);
-      setExamSystemActive(hasActiveExam);
-    }
-    setIsLoading(false);
-  };
-
-  const fetchSubmissions = async () => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from('exam_submissions')
-      .select('*')
-      .eq('student_id', user.id);
-    if (!error && data) {
-      setSubmissions(data);
-    }
-  };
 
   const getExamStatus = (exam: Exam) => {
     const now = new Date();
