@@ -43,7 +43,7 @@ export default function CBTPortal() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [examSystemActive, setExamSystemActive] = useState(false);
-  const [submissionsLoaded, setSubmissionsLoaded] = useState(false);
+  
 
   // Fetch submissions first, then exams — prevents race condition
   useEffect(() => {
