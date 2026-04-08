@@ -56,7 +56,7 @@ export default function CBTPortal() {
         .select('*')
         .eq('student_id', user.id);
       if (subData) setSubmissions(subData);
-      setSubmissionsLoaded(true);
+      
 
       // Step 2: Load exams (only after submissions are known)
       if (studentRecord?.class_id) {
