@@ -43,20 +43,46 @@ export default function CBTPortal() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [examSystemActive, setExamSystemActive] = useState(false);
+  const [submissionsLoaded, setSubmissionsLoaded] = useState(false);
 
+  // Fetch submissions first, then exams — prevents race condition
   useEffect(() => {
-    if (studentRecord?.class_id) {
-      fetchExams();
-    } else if (!studentLoading) {
+    const loadData = async () => {
+      if (!user) return;
+      
+      // Step 1: Load submissions
+      const { data: subData } = await supabase
+        .from('exam_submissions')
+        .select('*')
+        .eq('student_id', user.id);
+      if (subData) setSubmissions(subData);
+      setSubmissionsLoaded(true);
+
+      // Step 2: Load exams (only after submissions are known)
+      if (studentRecord?.class_id) {
+        const normalizedStudentClass = studentRecord.class_id.toLowerCase().replace(/\s+/g, '');
+        const { data, error } = await supabase
+          .from('exams')
+          .select('*')
+          .eq('is_published', true)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          const filteredExams = data.filter((exam: Exam) => {
+            const normalizedExamClass = exam.class_id.toLowerCase().replace(/\s+/g, '');
+            return normalizedExamClass === normalizedStudentClass;
+          });
+          setExams(filteredExams);
+          setExamSystemActive(filteredExams.some((exam: Exam) => exam.is_exam_active));
+        }
+      }
       setIsLoading(false);
-    }
-  }, [studentRecord, studentLoading]);
+    };
 
-  useEffect(() => {
-    if (user) {
-      fetchSubmissions();
+    if (!studentLoading) {
+      loadData();
     }
-  }, [user]);
+  }, [user, studentRecord, studentLoading]);
 
   const fetchExams = async () => {
     if (!studentRecord?.class_id) return;
