@@ -1,57 +1,52 @@
 
+# Fix: CBT Exam Scores in Report Cards + Hide Submitted Exams
 
-# Fix: Published CBT Exams Not Visible in Student Portal
+## Problem Analysis
 
-## Root Cause
+### Issue 1: Exams taken do not reflect in report cards
+**Root Cause**: Complete data pipeline disconnect. Report cards are generated from the `student_grades` table (populated by teachers via manual grade entry in `GradeEntry.tsx`). CBT exam scores are stored in `exam_submissions` table. The `grade-exam` edge function grades the exam and updates `exam_submissions` but **never writes to `student_grades`**. So CBT results exist in a separate silo that report card generation never reads.
 
-**Class ID format mismatch between tables.**
+**Fix**: After grading in the `grade-exam` edge function, automatically insert/upsert the CBT score into `student_grades` as the `exam_score` column. This bridges the two systems. The edge function already has the exam's subject, class_id, and student_id available — it just needs to fetch the exam metadata and write to `student_grades`.
 
-- Exams table stores: `"SSS 1"` (with space, mixed case)
-- Students table stores: `"sss1"` (no space, lowercase)
+### Issue 2: Submitted exams still visible in available tab
+**Root Cause**: The CBT portal filtering logic at line 130 already filters by status, but `getExamStatus()` correctly returns 'completed' for submitted exams, so they should already be excluded from `availableExams`. However, the issue is that `fetchSubmissions` runs in a separate `useEffect` and may not have loaded yet when exams render — causing a brief window where completed exams show as "available". Also, the score should be displayed immediately after submission.
 
-The RLS policy on `exams` for students uses:
-```sql
-(is_published = true) AND (class_id = get_user_class(auth.uid()))
-```
+**Fix**: Ensure submissions are fetched before rendering exam lists, and after exam submission, redirect to results page or show score inline.
 
-`get_user_class` returns `"sss1"` from the students table. The strict SQL `=` comparison against `"SSS 1"` fails, so RLS blocks all exam rows before they ever reach the client.
+## Implementation Plan
 
-The CBTPortal code has client-side normalization (lines 65-78), but it never runs because zero rows pass RLS.
-
-## Fix Strategy
-
-**Update the `get_user_class` SQL function** to normalize both sides of the comparison, and also update the RLS policy to use a normalized comparison.
-
-### Option A (Recommended): Normalize the `get_user_class` function output
-Change the function to return the class_id as-is (it already does), but update the **RLS policy** on `exams` to compare normalized values:
+### Step 1: Update `grade-exam` edge function
+After grading, fetch the exam's `subject`, `class_id`, and school settings (term, academic_year), then upsert into `student_grades`:
 
 ```sql
--- Drop the existing student SELECT policy
-DROP POLICY "Students can view published exams for their class" ON exams;
-
--- Create new policy with normalized comparison
-CREATE POLICY "Students can view published exams for their class"
-ON exams FOR SELECT TO public
-USING (
-  is_published = true 
-  AND LOWER(REPLACE(class_id, ' ', '')) = LOWER(REPLACE(get_user_class(auth.uid()), ' ', ''))
-);
+-- Upsert into student_grades with CBT exam score
+INSERT INTO student_grades (student_id, subject_name, class_id, term, academic_year, exam_score, total_score)
+VALUES (...)
+ON CONFLICT (student_id, subject_name, class_id, term, academic_year)
+DO UPDATE SET exam_score = EXCLUDED.exam_score, total_score = ca1_score + ca2_score + ca3_score + EXCLUDED.exam_score
 ```
 
-### Also fix the same issue on these tables with identical RLS patterns:
-- `questions` (student view policy)
-- `assignments` (student view policy)
-- `learning_materials` (student view policy)
-- `online_classes` (student view policy)
+This requires adding a unique constraint on `student_grades` for the upsert.
 
-Each has a policy comparing `class_id = get_user_class(auth.uid())` that will fail with the same mismatch.
+### Step 2: Database migration
+- Add unique constraint on `student_grades(student_id, subject_name, class_id, term, academic_year)` to enable upsert
 
-## Database Migration
-One migration to update all 5 RLS policies to use normalized comparison.
+### Step 3: Fix CBT Portal exam visibility
+In `CBTPortal.tsx`:
+- Ensure submissions load before exams render (combine into single useEffect or add loading gate)
+- After submission in `TakeExam.tsx`, the redirect already goes to results — but also refresh submissions data
+- Show score badge on completed exams more prominently
 
-## Code Changes
-None required — the CBTPortal already handles client-side normalization. Once RLS passes the rows through, everything works.
+### Step 4: Fix TakeExam submission flow
+In `TakeExam.tsx`, after successful submission and grading:
+- Navigate to results page (already happens)
+- The CBTPortal will correctly show the exam as "completed" on next visit since submissions are fetched
 
-## Files Modified
-1. **New migration**: Update 5 RLS policies with normalized class_id comparison
+## Files to Modify
+1. `supabase/functions/grade-exam/index.ts` — Add student_grades upsert after grading
+2. **New migration** — Add unique constraint on student_grades
+3. `src/pages/cbt/CBTPortal.tsx` — Fix race condition between submissions and exams loading; ensure completed exams never appear in available tab
+4. `src/pages/cbt/TakeExam.tsx` — Minor: ensure score display after submission
 
+## No other files need changes
+The report card generation in `useReportCards.ts` already reads from `student_grades` correctly — once CBT scores flow into that table, they will automatically appear in report cards.
