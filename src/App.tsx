@@ -167,6 +167,12 @@ const App = () => (
                 <Settings />
               </ProtectedRoute>
             } />
+            <Route path="/settings/report-card-template" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <ReportCardTemplateEditor />
+              </ProtectedRoute>
+            } />
+
             <Route path="/report-cards" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <ReportCards />
