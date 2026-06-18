@@ -715,11 +715,21 @@ export default function Settings() {
           <TabsContent value="report-cards">
             <Card>
               <CardHeader>
-                <CardTitle>Report Card Settings</CardTitle>
-                <CardDescription>
-                  Configure report card display and academic calendar
-                </CardDescription>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <CardTitle>Report Card Settings</CardTitle>
+                    <CardDescription>
+                      Configure report card display and academic calendar
+                    </CardDescription>
+                  </div>
+                  <Button asChild variant="outline" size="sm">
+                    <a href="/settings/report-card-template">
+                      <FileText className="h-4 w-4 mr-2" /> Customize Template
+                    </a>
+                  </Button>
+                </div>
               </CardHeader>
+
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>

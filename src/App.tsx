@@ -38,6 +38,7 @@ import Attendance from "./pages/Attendance";
 import IDCards from "./pages/IDCards";
 import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
+import ReportCardTemplateEditor from "./pages/admin/ReportCardTemplateEditor";
 import ReportCards from "./pages/ReportCards";
 import StudentPromotion from "./pages/StudentPromotion";
 import Subjects from "./pages/Subjects";
@@ -166,6 +167,12 @@ const App = () => (
                 <Settings />
               </ProtectedRoute>
             } />
+            <Route path="/settings/report-card-template" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <ReportCardTemplateEditor />
+              </ProtectedRoute>
+            } />
+
             <Route path="/report-cards" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <ReportCards />

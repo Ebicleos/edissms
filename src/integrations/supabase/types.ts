@@ -1102,6 +1102,10 @@ export type Database = {
           principal_name: string | null
           principal_signature_url: string | null
           report_card_config: Json | null
+          report_card_footer_note: string
+          report_card_tagline: string | null
+          report_card_template_id: string
+          report_card_title: string
           school_id: string | null
           school_initials: string | null
           school_name: string | null
@@ -1124,6 +1128,10 @@ export type Database = {
           principal_name?: string | null
           principal_signature_url?: string | null
           report_card_config?: Json | null
+          report_card_footer_note?: string
+          report_card_tagline?: string | null
+          report_card_template_id?: string
+          report_card_title?: string
           school_id?: string | null
           school_initials?: string | null
           school_name?: string | null
@@ -1146,6 +1154,10 @@ export type Database = {
           principal_name?: string | null
           principal_signature_url?: string | null
           report_card_config?: Json | null
+          report_card_footer_note?: string
+          report_card_tagline?: string | null
+          report_card_template_id?: string
+          report_card_title?: string
           school_id?: string | null
           school_initials?: string | null
           school_name?: string | null
