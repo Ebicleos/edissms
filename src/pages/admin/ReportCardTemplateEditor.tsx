@@ -186,10 +186,12 @@ export default function ReportCardTemplateEditor() {
     <MainLayout>
       <div className="space-y-6">
         <PageGradientHeader
-          icon={FileText}
+          emoji="📄"
           title="Report Card Template"
-          description="Pick a design and customize what appears on every report card."
+          subtitle="Pick a design and customize what appears on every report card."
+          gradient="from-indigo-500/15 to-sky-500/15"
         />
+
 
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => navigate('/settings')}>
