@@ -14,19 +14,8 @@ import { toast } from 'sonner';
 
 const TERMS = ['first', 'second', 'third'];
 
-interface SchoolSettings {
-  schoolName: string;
-  motto: string;
-  address: string;
-  phone: string;
-  email: string;
-  logoUrl?: string;
-  principalName?: string;
-  closingDate?: string;
-  nextTermBegins?: string;
-  teacherSignatureUrl?: string;
-  principalSignatureUrl?: string;
-}
+import type { TemplateSchoolSettings, ReportCardTemplateId } from './ReportCardTemplate';
+type SchoolSettings = TemplateSchoolSettings;
 
 export function BulkReportCardGenerator() {
   const [selectedClass, setSelectedClass] = useState('');
