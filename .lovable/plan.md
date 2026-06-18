@@ -1,52 +1,50 @@
+## Goal
 
+Let school admins pick a report card design preset and customize content fields, with a live preview, on a dedicated page at `/settings/report-card-template`.
 
-# Fix: CBT Exam Scores in Report Cards + Hide Submitted Exams
+## Scope
 
-## Problem 1: CBT exam scores not in report cards
-**Root cause**: Report cards read from `student_grades` table. CBT grading (`grade-exam` edge function) only writes to `exam_submissions`. The two systems are completely disconnected — no data flows from CBT to report cards.
+- 3 preset templates: **Classic** (current design), **Modern** (cleaner sans-serif, accent color, card-style sections), **Compact** (tighter spacing, single-page focus).
+- Editable content fields surfaced in one place: report title, header tagline, term labels, footer note ("NB:…"), conduct/attitude/interest labels, signature labels, plus existing principal name / closing date / next term / signature uploads.
+- Live preview pane (right side on desktop, stacked on mobile) renders the selected preset with sample student data + the admin's school branding so changes are visible immediately.
+- Admin-only access (gated by `has_role(admin)` / superadmin). Teachers continue to see read-only generated cards.
 
-## Problem 2: Submitted exams still visible
-**Root cause**: `fetchSubmissions()` and `fetchExams()` run in separate `useEffect` hooks. Submissions may not be loaded when exams render, causing completed exams to briefly appear as "available".
+## Technical Changes
 
----
+### 1. Database (migration)
+Add to `public.school_settings`:
+- `report_card_template_id text not null default 'classic'` — one of `classic | modern | compact`.
+- `report_card_title text default 'STUDENT TERMLY REPORT CARD'`
+- `report_card_footer_note text default 'NB: DO NOT JUDGE YOUR CHILD/CHILDREN PERFORMANCE BASED ON POSITION BUT ON AVERAGE'`
+- `report_card_tagline text` (optional sub-header under school name)
 
-## Changes
+Existing RLS on `school_settings` already restricts to the school's admins — reused as-is.
 
-### 1. Database Migration
-Add a unique constraint on `student_grades` to enable safe upsert:
-```sql
-ALTER TABLE public.student_grades
-ADD CONSTRAINT student_grades_unique_student_subject_term
-UNIQUE (student_id, subject_name, class_id, term, academic_year);
-```
+### 2. Template components
+- Refactor `src/components/reports/ReportCardTemplate.tsx` into a thin dispatcher that picks one of:
+  - `src/components/reports/templates/ClassicTemplate.tsx` (lift current JSX here verbatim)
+  - `src/components/reports/templates/ModernTemplate.tsx`
+  - `src/components/reports/templates/CompactTemplate.tsx`
+- All three accept the same `data` + extended `schoolSettings` props (now including `templateId`, `reportTitle`, `footerNote`, `tagline`).
+- `BulkReportCardGenerator.tsx` continues to use `ReportCardTemplate` — no consumer changes needed.
 
-### 2. Update `supabase/functions/grade-exam/index.ts`
-After grading the submission (updating `exam_submissions`), add a bridge step:
-- Fetch the exam's `subject`, `class_id`, `school_id`
-- Fetch `term` and `academic_year` from `school_settings`
-- Normalize term format (e.g. "First Term" → "first")
-- Calculate exam score as percentage scaled to 60 (standard Nigerian CA=40, Exam=60 split)
-- Check if a `student_grades` row already exists for this student+subject+class+term+year
-  - If exists: update `exam_score` and recalculate `total_score`
-  - If not: insert new row with `exam_score` and zero CA scores
-- Wrap in try/catch so grading never fails even if bridge fails
+### 3. New page + route
+- `src/pages/admin/ReportCardTemplateEditor.tsx`:
+  - Left column: template picker (3 cards w/ thumbnail labels), content-field form, signature uploads, save button.
+  - Right column: sticky live preview using `ReportCardTemplate` with fabricated sample `ReportCardData` and the admin's `school_settings` values.
+- Register route `/settings/report-card-template` (admin guard) in the existing router file.
+- Add a "Customize Template" button inside `Settings.tsx` → Report Cards tab that links to the new page (keeps the existing tab for quick field edits; the new page is the full editor).
 
-### 3. Update `src/pages/cbt/CBTPortal.tsx`
-- Combine the two `useEffect` hooks into one sequential flow: fetch submissions first, then exams
-- Add a `submissionsLoaded` gate so exams don't render until submissions are known
-- This ensures `getExamStatus()` correctly identifies completed exams before rendering
+### 4. Sidebar / nav
+- No new top-level sidebar entry. Entry point is the Settings tab button.
 
-### 4. Minor: `src/pages/cbt/CBTPortal.tsx` — Show score on available tab for completed
-- Already handled by the tab filtering, but ensure the loading state covers both fetches
+## Out of scope
+- No drag/drop layout editor, no font/color picker, no raw HTML editor.
+- Grading scale stays read-only (matches current note "Contact support to customize").
+- Student-facing report views unchanged (they already render via `ReportCardTemplate`).
 
-## Files Modified
-1. **New migration** — unique constraint on `student_grades`
-2. `supabase/functions/grade-exam/index.ts` — bridge CBT scores to `student_grades`
-3. `src/pages/cbt/CBTPortal.tsx` — fix loading race condition between submissions and exams
-
-## Technical Details
-- The `student_grades` table has columns: `ca1_score`, `ca2_score`, `ca3_score`, `exam_score`, `total_score`
-- CBT score is scaled to /60 (exam portion) to match the grading system
-- The `useReportCards.ts` hook already reads from `student_grades` — no changes needed there
-- Edge function uses service role key so no RLS issues for the insert
-
+## Verification
+- Type-check passes.
+- Visiting `/settings/report-card-template` as admin: switching presets updates preview instantly; Save persists `report_card_template_id` and content fields; reload preserves selection.
+- Generating a report card via `BulkReportCardGenerator` after switching to "Modern" renders the Modern layout.
+- Non-admin route guard redirects.
