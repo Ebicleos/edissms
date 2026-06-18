@@ -38,6 +38,7 @@ import Attendance from "./pages/Attendance";
 import IDCards from "./pages/IDCards";
 import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
+import ReportCardTemplateEditor from "./pages/admin/ReportCardTemplateEditor";
 import ReportCards from "./pages/ReportCards";
 import StudentPromotion from "./pages/StudentPromotion";
 import Subjects from "./pages/Subjects";
