@@ -1,0 +1,8 @@
+# EDISSMS
+
+> EDISSMS is an all-in-one school management platform built for Nigerian schools — student records, attendance, fees, exams, report cards, and parent communication in one place.
+
+## Pages
+
+- [Home](/): Overview of EDISSMS, features, and pricing for school administrators.
+- [Install App](/install): Install the EDISSMS Progressive Web App on mobile or desktop.

@@ -49,12 +49,12 @@ export default function Install() {
             <div className="mx-auto h-24 w-24 rounded-2xl bg-primary shadow-lg flex items-center justify-center overflow-hidden">
               <img 
                 src="/pwa-icon-512.png" 
-                alt="EDISSMS" 
+                alt="EDISSMS School Management System icon" 
                 className="h-full w-full object-cover"
               />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">EDISSMS</h1>
+              <h1 className="text-3xl font-bold text-foreground">EDISSMS — School Management Portal</h1>
               <p className="text-muted-foreground mt-1">School Management System</p>
             </div>
           </div>
