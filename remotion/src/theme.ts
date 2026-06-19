@@ -1,0 +1,16 @@
+export const theme = {
+  bg: "#f6f8fb",
+  bgSoft: "#eef2f7",
+  panel: "#ffffff",
+  panelMuted: "#f8fafc",
+  border: "#e6ebf2",
+  primary: "#2563eb",
+  primarySoft: "#dbeafe",
+  text: "#0f172a",
+  textMuted: "#64748b",
+  success: "#10b981",
+  successSoft: "#d1fae5",
+  warning: "#f59e0b",
+  danger: "#ef4444",
+  font: "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif",
+};
