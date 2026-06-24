@@ -1,6 +1,5 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import LandingPage from './LandingPage';
 import Dashboard from './Dashboard';
 import { Loader2 } from 'lucide-react';
 
@@ -15,9 +14,9 @@ const Index = () => {
     );
   }
 
-  // Unauthenticated users see the landing page
+  // Unauthenticated users go straight to auth
   if (!user) {
-    return <LandingPage />;
+    return <Navigate to="/auth" replace />;
   }
 
   // Authenticated users get redirected to their role-based dashboard
