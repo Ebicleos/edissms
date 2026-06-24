@@ -425,8 +425,8 @@ export default function Auth() {
     return (
       <div className="min-h-screen flex flex-col relative overflow-hidden">
         {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-muted/30 to-background" />
-        <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-0 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950/40 dark:to-slate-950" />
+        <div className="absolute inset-0 opacity-40">
           <div className="absolute top-0 -left-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl animate-pulse-slow" />
           <div className="absolute bottom-0 -right-40 w-80 h-80 bg-secondary/20 rounded-full blur-3xl animate-pulse-slow" />
         </div>
@@ -516,8 +516,8 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
       {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-muted/30 to-background" />
-      <div className="absolute inset-0 opacity-30">
+      <div className="absolute inset-0 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950/40 dark:to-slate-950" />
+      <div className="absolute inset-0 opacity-40">
         <div className="absolute top-20 -left-40 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute top-40 -right-40 w-80 h-80 bg-secondary/20 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute -bottom-20 left-1/3 w-72 h-72 bg-accent/20 rounded-full blur-3xl animate-pulse-slow" />
