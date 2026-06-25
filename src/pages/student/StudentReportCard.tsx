@@ -117,12 +117,12 @@ export default function StudentReportCard() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={selectedTerm || ''} onValueChange={(v) => setSelectedTerm(v || null)}>
+          <Select value={selectedTerm ?? 'all'} onValueChange={(v) => setSelectedTerm(v === 'all' ? null : v)}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="All Terms" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Terms</SelectItem>
+              <SelectItem value="all">All Terms</SelectItem>
               {TERMS.map(term => (
                 <SelectItem key={term.value} value={term.value}>{term.label}</SelectItem>
               ))}
