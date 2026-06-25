@@ -58,9 +58,9 @@ export function useGradeEntry() {
         .from('school_settings')
         .select('grading_scale')
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       
       if (data?.grading_scale && Array.isArray(data.grading_scale)) {
         setGradingScale(data.grading_scale as unknown as GradeScale[]);
