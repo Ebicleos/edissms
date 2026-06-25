@@ -115,7 +115,7 @@ export default function TeacherDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             {quickActions.map((action) => (
               <ActionCard
-                key={action.path}
+                key={action.title}
                 title={action.title}
                 description={action.description}
                 icon={action.icon}
