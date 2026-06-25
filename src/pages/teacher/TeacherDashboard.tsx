@@ -68,8 +68,8 @@ export default function TeacherDashboard() {
     { title: 'Create Exam', description: 'Create new exams or assignments', icon: Plus, path: '/teacher/exams/create', variant: 'green' as const },
     { title: 'Manage Exams', description: 'View and edit your exams', icon: ClipboardList, path: '/teacher/exams', variant: 'purple' as const },
     { title: 'Attendance', description: 'Mark student attendance', icon: Calendar, path: '/attendance', variant: 'orange' as const },
-    { title: 'Grade Entry', description: 'Enter student grades', icon: BookOpen, path: '/teacher/grade-entry', variant: 'pink' as const },
-    { title: 'Results', description: 'View exam results', icon: BarChart3, path: '/teacher/exams', variant: 'cyan' as const },
+    { title: 'Grade Entry', description: 'Enter student grades', icon: BookOpen, path: '/teacher/grades', variant: 'pink' as const },
+    { title: 'Assignments', description: 'Manage class assignments', icon: BarChart3, path: '/teacher/assignments', variant: 'cyan' as const },
   ];
 
   return (
@@ -115,7 +115,7 @@ export default function TeacherDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             {quickActions.map((action) => (
               <ActionCard
-                key={action.path}
+                key={action.title}
                 title={action.title}
                 description={action.description}
                 icon={action.icon}
