@@ -217,12 +217,12 @@ export default function GradeEntry() {
               )}
             </CardTitle>
             <CardDescription>
-              <div className="flex items-center gap-4">
+              <span className="flex items-center gap-4">
                 <span className="flex items-center gap-1">
                   <Calculator className="h-4 w-4" />
                   CA1, CA2, CA3, Theory: Max 10 each | Exam: Max 60
                 </span>
-              </div>
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent>
