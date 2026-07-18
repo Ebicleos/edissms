@@ -53,9 +53,10 @@ const VerifyPaymentSchema = z.object({
   reference: z.string().min(1),
 });
 
+// Prices in USD
 const PLAN_PRICES = {
-  termly: 50000,
-  yearly: 120000,
+  termly: 5,
+  yearly: 15,
 };
 
 const PLAN_DURATION_MONTHS = {
