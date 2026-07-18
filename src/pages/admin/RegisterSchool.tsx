@@ -295,8 +295,8 @@ export default function RegisterSchool() {
                     }`}
                     onClick={() => updateField('planType', 'termly')}
                   >
-                    <h3 className="font-semibold">Termly</h3>
-                    <p className="text-sm text-muted-foreground">₦50,000/term</p>
+                    <h3 className="font-semibold">Termly Plan</h3>
+                    <p className="text-sm text-muted-foreground">$5 / term</p>
                   </div>
                   <div 
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
@@ -304,8 +304,8 @@ export default function RegisterSchool() {
                     }`}
                     onClick={() => updateField('planType', 'yearly')}
                   >
-                    <h3 className="font-semibold">Yearly</h3>
-                    <p className="text-sm text-muted-foreground">₦120,000/year</p>
+                    <h3 className="font-semibold">Yearly Plan</h3>
+                    <p className="text-sm text-muted-foreground">$15 / year</p>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
