@@ -32,9 +32,10 @@ interface Subscription {
   payment_reference?: string;
 }
 
+// Prices in USD
 const PLAN_PRICES = {
-  termly: 50000,
-  yearly: 120000,
+  termly: 5,
+  yearly: 15,
 };
 
 export default function SubscriptionPayment() {
