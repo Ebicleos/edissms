@@ -1700,6 +1700,8 @@ export type Database = {
       }
     }
     Functions: {
+      admin_exists: { Args: never; Returns: boolean }
+      email_is_registered: { Args: { p_email: string }; Returns: boolean }
       get_paginated_students: {
         Args: {
           p_class_filter?: string
