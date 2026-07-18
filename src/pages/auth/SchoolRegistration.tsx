@@ -513,7 +513,7 @@ export default function SchoolRegistration() {
                 <div className="space-y-1 text-sm text-muted-foreground">
                   <p>School: {receiptData.schoolName}</p>
                   <p>Plan: {receiptData.planType === 'yearly' ? 'Yearly' : 'Termly'}</p>
-                  <p>Amount: ₦{receiptData.amount.toLocaleString()}</p>
+                  <p>Amount: ${receiptData.amount.toLocaleString()}</p>
                   <p>Reference: {receiptData.reference}</p>
                   <p>Valid Until: {receiptData.subscriptionEnd}</p>
                 </div>
