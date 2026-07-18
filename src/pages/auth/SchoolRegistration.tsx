@@ -781,7 +781,7 @@ export default function SchoolRegistration() {
                     <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
                       <p className="text-sm font-medium text-green-800 dark:text-green-200">Secure Payment via Paystack</p>
                       <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                        You'll be redirected to Paystack to complete your payment of ₦{PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()}.
+                        You'll be redirected to Paystack to complete your payment of ${PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()}.
                       </p>
                     </div>
                   )}
