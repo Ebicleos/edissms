@@ -83,16 +83,11 @@ export default function Auth() {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
 
-  // Check if admin exists
+  // Check if admin exists (uses SECURITY DEFINER RPC because anon cannot read user_roles)
   useEffect(() => {
     const checkAdminExists = async () => {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('id')
-        .eq('role', 'admin')
-        .limit(1);
-      
-      if (!error && data && data.length > 0) {
+      const { data, error } = await supabase.rpc('admin_exists');
+      if (!error && data === true) {
         setAdminExists(true);
       }
     };
@@ -138,11 +133,9 @@ export default function Auth() {
 
     setIsLoading(true);
     
-    const { data: existingProfile, error: lookupError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', forgotPasswordEmail)
-      .maybeSingle();
+    // Use SECURITY DEFINER RPC because anon cannot read profiles
+    const { data: emailRegistered, error: lookupError } = await supabase
+      .rpc('email_is_registered', { p_email: forgotPasswordEmail });
 
     if (lookupError) {
       setIsLoading(false);
@@ -150,7 +143,7 @@ export default function Auth() {
       return;
     }
 
-    if (!existingProfile) {
+    if (!emailRegistered) {
       setIsLoading(false);
       toast.error('Email not registered', {
         description: 'This email is not registered in our system.',
@@ -158,11 +151,17 @@ export default function Auth() {
       return;
     }
 
-    const { data: userRole } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', existingProfile.id)
-      .maybeSingle();
+    // Note: anon cannot read user_roles; the rate-limit branch below only applies
+    // once a session exists. For anon, we skip role-specific rate limiting and
+    // rely on the DB trigger check_password_reset_rate_limit + Supabase auth throttling.
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const { data: userRole } = currentUser
+      ? await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', currentUser.id)
+          .maybeSingle()
+      : { data: null };
 
     if (userRole?.role === 'teacher' || userRole?.role === 'student') {
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -181,7 +180,7 @@ export default function Auth() {
       }
 
       await supabase.from('password_reset_requests').insert({
-        user_id: existingProfile.id,
+        user_id: currentUser?.id ?? null,
         email: forgotPasswordEmail,
         role: userRole.role,
         status: 'pending',
@@ -356,7 +355,7 @@ export default function Auth() {
       const { data: existingStudentClass } = await supabase
         .from('student_classes')
         .select('student_id')
-        .eq('admission_number', studentAdmissionNumber)
+        .ilike('admission_number', studentAdmissionNumber.trim())
         .maybeSingle();
 
       if (existingStudentClass) {
@@ -384,13 +383,11 @@ export default function Auth() {
       }
     }
     
-    const { data: existingProfiles } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', signupEmail)
-      .maybeSingle();
+    // Anon cannot read profiles; use SECURITY DEFINER RPC to detect duplicate emails
+    const { data: emailTaken } = await supabase
+      .rpc('email_is_registered', { p_email: signupEmail });
     
-    if (existingProfiles) {
+    if (emailTaken) {
       setIsLoading(false);
       toast.error('Email already exists. Please login.');
       return;

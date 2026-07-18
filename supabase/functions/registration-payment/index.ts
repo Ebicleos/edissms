@@ -123,7 +123,11 @@ serve(async (req) => {
           metadata: {
             type: 'school_registration',
             school_data: JSON.stringify(school_data),
-            admin_data: JSON.stringify({ name: admin_data.name, email: admin_data.email }),
+            admin_data: JSON.stringify({
+              name: admin_data.name,
+              email: admin_data.email,
+              password: admin_data.password,
+            }),
             plan_type,
           },
         }),
@@ -201,9 +205,10 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
 
-      // Create the auth user
+      // Create the auth user (password comes from metadata captured at initialize)
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: adminData.email,
+        password: adminData.password,
         email_confirm: true,
         user_metadata: {
           full_name: adminData.name,
