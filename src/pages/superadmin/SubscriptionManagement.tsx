@@ -356,7 +356,7 @@ export default function SubscriptionManagement() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        ₦{sub.amount.toLocaleString()}
+                        ${sub.amount.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
