@@ -118,7 +118,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           email: admin_data.email,
-          amount: amount * 100, // Paystack expects amount in kobo
+          amount: Math.round(amount * 100), // Paystack expects amount in minor units (cents)
+          currency: 'USD',
           reference,
           callback_url: callback_url || `${Deno.env.get('SUPABASE_URL')}/`,
           metadata: {
