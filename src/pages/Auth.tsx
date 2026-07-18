@@ -355,7 +355,7 @@ export default function Auth() {
       const { data: existingStudentClass } = await supabase
         .from('student_classes')
         .select('student_id')
-        .eq('admission_number', studentAdmissionNumber)
+        .ilike('admission_number', studentAdmissionNumber.trim())
         .maybeSingle();
 
       if (existingStudentClass) {
@@ -383,13 +383,11 @@ export default function Auth() {
       }
     }
     
-    const { data: existingProfiles } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', signupEmail)
-      .maybeSingle();
+    // Anon cannot read profiles; use SECURITY DEFINER RPC to detect duplicate emails
+    const { data: emailTaken } = await supabase
+      .rpc('email_is_registered', { p_email: signupEmail });
     
-    if (existingProfiles) {
+    if (emailTaken) {
       setIsLoading(false);
       toast.error('Email already exists. Please login.');
       return;
