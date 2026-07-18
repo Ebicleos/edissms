@@ -28,9 +28,10 @@ const registrationSchema = z.object({
   path: ['confirmPassword'],
 });
 
+// Prices in USD
 const PLAN_PRICES = {
-  termly: 50000,
-  yearly: 120000,
+  termly: 5,
+  yearly: 15,
 };
 
 export default function SchoolRegistration() {
@@ -512,7 +513,7 @@ export default function SchoolRegistration() {
                 <div className="space-y-1 text-sm text-muted-foreground">
                   <p>School: {receiptData.schoolName}</p>
                   <p>Plan: {receiptData.planType === 'yearly' ? 'Yearly' : 'Termly'}</p>
-                  <p>Amount: ₦{receiptData.amount.toLocaleString()}</p>
+                  <p>Amount: ${receiptData.amount.toLocaleString()}</p>
                   <p>Reference: {receiptData.reference}</p>
                   <p>Valid Until: {receiptData.subscriptionEnd}</p>
                 </div>
@@ -716,7 +717,7 @@ export default function SchoolRegistration() {
                     >
                       <h3 className="font-semibold">Termly Plan</h3>
                       <p className="text-sm text-muted-foreground">4 months access</p>
-                      <p className="text-lg font-bold mt-2">₦50,000</p>
+                      <p className="text-lg font-bold mt-2">$5</p>
                       <p className="text-xs text-muted-foreground">per term</p>
                     </div>
                     <div 
@@ -727,8 +728,8 @@ export default function SchoolRegistration() {
                     >
                       <h3 className="font-semibold">Yearly Plan</h3>
                       <p className="text-sm text-muted-foreground">12 months access</p>
-                      <p className="text-lg font-bold mt-2">₦120,000</p>
-                      <p className="text-xs text-muted-foreground">per year (Save 20%)</p>
+                      <p className="text-lg font-bold mt-2">$15</p>
+                      <p className="text-xs text-muted-foreground">per year</p>
                     </div>
                   </div>
 
@@ -761,7 +762,7 @@ export default function SchoolRegistration() {
                           <h4 className="font-semibold">Pay Now</h4>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Pay ₦{PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()} and get instant access.
+                          Pay ${PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()} and get instant access.
                         </p>
                       </div>
                     </div>
@@ -780,7 +781,7 @@ export default function SchoolRegistration() {
                     <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
                       <p className="text-sm font-medium text-green-800 dark:text-green-200">Secure Payment via Paystack</p>
                       <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                        You'll be redirected to Paystack to complete your payment of ₦{PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()}.
+                        You'll be redirected to Paystack to complete your payment of ${PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()}.
                       </p>
                     </div>
                   )}
@@ -828,7 +829,7 @@ export default function SchoolRegistration() {
                     ) : (
                       <>
                         <CreditCard className="mr-2 h-4 w-4" />
-                        Pay ₦{PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()}
+                        Pay ${PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()}
                       </>
                     )}
                   </Button>

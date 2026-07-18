@@ -271,7 +271,7 @@ export default function SubscriptionManagement() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="amount">Amount (₦) *</Label>
+                    <Label htmlFor="amount">Amount ($) *</Label>
                     <Input
                       id="amount"
                       type="number"
@@ -356,7 +356,7 @@ export default function SubscriptionManagement() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        ₦{sub.amount.toLocaleString()}
+                        ${sub.amount.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">

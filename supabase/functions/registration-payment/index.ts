@@ -53,9 +53,10 @@ const VerifyPaymentSchema = z.object({
   reference: z.string().min(1),
 });
 
+// Prices in USD
 const PLAN_PRICES = {
-  termly: 50000,
-  yearly: 120000,
+  termly: 5,
+  yearly: 15,
 };
 
 const PLAN_DURATION_MONTHS = {
@@ -117,7 +118,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           email: admin_data.email,
-          amount: amount * 100, // Paystack expects amount in kobo
+          amount: Math.round(amount * 100), // Paystack expects amount in minor units (cents)
+          currency: 'USD',
           reference,
           callback_url: callback_url || `${Deno.env.get('SUPABASE_URL')}/`,
           metadata: {

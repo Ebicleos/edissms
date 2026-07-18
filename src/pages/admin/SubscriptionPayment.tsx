@@ -32,9 +32,10 @@ interface Subscription {
   payment_reference?: string;
 }
 
+// Prices in USD
 const PLAN_PRICES = {
-  termly: 50000,
-  yearly: 120000,
+  termly: 5,
+  yearly: 15,
 };
 
 export default function SubscriptionPayment() {
@@ -139,9 +140,9 @@ export default function SubscriptionPayment() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NG', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'NGN',
+      currency: 'USD',
       minimumFractionDigits: 0,
     }).format(amount);
   };
@@ -287,7 +288,7 @@ export default function SubscriptionPayment() {
                 }`}
                 onClick={() => setSelectedPlan('yearly')}
               >
-                <Badge className="absolute -top-3 right-4 bg-green-500">Save 20%</Badge>
+                <Badge className="absolute -top-3 right-4 bg-green-500">Best Value</Badge>
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold">Yearly Plan</h3>
                   <p className="text-sm text-muted-foreground">12 months of access</p>
