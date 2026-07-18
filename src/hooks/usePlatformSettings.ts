@@ -35,7 +35,7 @@ const defaultSettings: PlatformSettings = {
   maintenanceMode: { enabled: false, message: '' },
   systemAnnouncement: { message: '', type: 'info' },
   platformConfig: { name: 'EDISMS + School Management', support_email: 'support@edisms.com', allow_registrations: true },
-  pricing: { termly: 50000, yearly: 120000, trial_days: 30 },
+  pricing: { termly: 5, yearly: 15, trial_days: 30 },
 };
 
 export function usePlatformSettings() {
