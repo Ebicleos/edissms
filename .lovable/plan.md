@@ -1,40 +1,50 @@
-## Plan: End-to-End App Flow Test & Fix
+# Audit signup & registration flows
 
-Drive the running app with Playwright (headless Chromium against `localhost:8080`), walk every major user flow, capture screenshots + console + network, then fix every defect uncovered.
+## Scope
 
-### Flows to exercise
-1. **Unauthenticated** → `/` redirects to `/auth`; auth page loads cleanly (blue background, no console errors).
-2. **Admin flow** (sign in as existing admin via injected Supabase session)
-   - Dashboard loads, sidebar nav works
-   - Students: list, search, pagination, create, edit, bulk import dialog
-   - Teachers: list/create
-   - Classes & subjects
-   - Fees: create fee, record payment
-   - CBT: create exam, add question (incl. AI generation)
-   - Report cards: bulk generate, template editor (Settings → Report Card Template)
-   - Communication Center (SMS/email composer opens)
-   - Settings pages (school profile, branding, payment, maintenance)
-3. **Teacher flow**: dashboard, class view, exam authoring, grade entry
-4. **Student flow**: login by admission number, dashboard, CBT exam start/submit, results, report card view, learning materials
-5. **Superadmin flow**: tenant list, view-switching, platform settings
-6. **Password reset**: forgot-password form submits, rate-limit message renders
+Four entry points to exercise end-to-end:
 
-### Procedure (per flow)
-- Launch Playwright, restore Supabase session for the target role
-- Navigate each page, click primary actions, screenshot
-- Collect: `console` errors/warnings, failed network requests (4xx/5xx), unhandled promise rejections
-- Record findings in a checklist file under `/tmp/browser/audit/`
+1. `/auth` — role-based signup tabs (Admin, Teacher, Student)
+2. `/auth` — login (email + admission-number)
+3. `/auth` — forgot password
+4. `/auth/register-school` — paid school registration (trial + Paystack)
+5. `/admin/register-school` — first-admin school registration (post-signup)
 
-### Fix pass
-- Triage findings by severity (broken page > broken action > console warning > visual)
-- For each defect: read the relevant component, apply minimal fix, re-run that specific flow to confirm green
-- Database/RLS issues → SQL migration; UI/logic issues → component edits; missing routes → `App.tsx`
+## Method
 
-### Deliverable
-- Audit report (chat reply) listing each issue found, the fix applied, and verification screenshot
-- All previously-broken flows now pass
+For each flow, drive Playwright headless against `http://localhost:8080` using the injected superadmin session where needed, and unauthenticated context for signup. Capture screenshots, console errors, network 4xx/5xx, and Supabase RPC errors at every step. For paid registration, stop at the Paystack redirect (do not complete a real charge) and separately exercise the `?reference=` callback path with a fake reference to verify the verify-branch error handling.
 
-### Notes / assumptions
-- I'll use whatever admin/teacher/student accounts already exist in the DB. If a role has no seeded account, I'll flag it instead of creating one (account creation can change tenant data).
-- Scope: functional + console/network errors only. No visual redesign unless something is visibly broken.
-- I will NOT delete tenant data, run destructive bulk actions, or change platform secrets during the audit.
+Test cases per flow:
+
+- **Admin signup**: Only allowed when no admin exists. Verify `adminExists` gate, profile creation, `user_roles` insert, redirect to `/admin/register-school`.
+- **Teacher signup**: Class required, `teacher_classes` insert, profile school_id backfill from role, redirect to `/teacher`.
+- **Student signup**: Admission number + name validation via `validate_student_for_signup`, `link_student_to_user` RPC, duplicate detection, class formatting, redirect to `/student`.
+- **Login (admin/teacher)**: Email + password, invalid credentials messaging.
+- **Login (student)**: Admission-number lookup via `lookup_student_for_login`, email resolution fallbacks, "not created yet" vs "incorrect password" branches.
+- **Forgot password**: Email existence check, 3/24h rate limit branch, `password_reset_requests` insert, `resetPasswordForEmail` redirect URL.
+- **School registration (trial)**: Zod validation, duplicate email check, edge function init, callback verify branch with bad reference.
+- **First-admin RegisterSchool**: Form → school insert → subscription → profile update → role update.
+
+## Known suspects to verify during the audit
+
+Only fix items confirmed by the audit; each is currently unconfirmed:
+
+- `Auth.tsx` signup does not navigate after success — user is left on the auth page while the `useEffect` redirect races the `onAuthStateChange` role fetch. Confirm behaviour and, if stuck, force a `navigate` after `refreshProfile`.
+- Admin signup path: after account creation, `role === 'admin'` + no `school_id` triggers `ProtectedRoute` to `/admin/register-school`, but the redirect target is `/` from `Auth.tsx`. Verify the handoff works.
+- `AuthContext.signUp` for students inserts into `student_classes` with `student_id: data.user.id`, but the existing linked record may already have a row — check for unique-violation errors and switch to upsert if reproduced.
+- `registration-payment` verify branch: `authData.user.id` is used before checking `authError` returns early on duplicate-email; confirm behaviour on retry with same admin email.
+- `Auth.tsx` forgot-password path queries `profiles.email` — verify RLS allows anon read (previous scan flagged similar); if blocked, move lookup into an RPC.
+- Student signup pre-check queries `student_classes` with `.eq('admission_number', ...)` (case-sensitive) while login uses `ilike`. Confirm and normalise.
+
+## Deliverables
+
+- One consolidated report of what passed, what failed, and the exact fix applied per failure.
+- Code fixes limited to bugs the audit reproduces; no speculative refactors.
+- Re-run the same Playwright suite after fixes to confirm green.
+
+## Technical notes
+
+- Use unique emails per run (`test+<ts>@edissms.dev`) to avoid duplicate-profile short-circuits.
+- Seed a student row via `supabase--insert` before testing student signup so `validate_student_for_signup` returns true.
+- Use `supabase--read_query` to inspect `profiles`, `user_roles`, `student_classes`, `password_reset_requests` after each mutating step.
+- Clean up test accounts via `delete-user` edge function at end of run.
