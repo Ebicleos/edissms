@@ -288,7 +288,7 @@ export default function SubscriptionPayment() {
                 }`}
                 onClick={() => setSelectedPlan('yearly')}
               >
-                <Badge className="absolute -top-3 right-4 bg-green-500">Save 20%</Badge>
+                <Badge className="absolute -top-3 right-4 bg-green-500">Best Value</Badge>
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold">Yearly Plan</h3>
                   <p className="text-sm text-muted-foreground">12 months of access</p>
