@@ -829,7 +829,7 @@ export default function SchoolRegistration() {
                     ) : (
                       <>
                         <CreditCard className="mr-2 h-4 w-4" />
-                        Pay ₦{PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()}
+                        Pay ${PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()}
                       </>
                     )}
                   </Button>
