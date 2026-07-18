@@ -762,7 +762,7 @@ export default function SchoolRegistration() {
                           <h4 className="font-semibold">Pay Now</h4>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Pay ₦{PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()} and get instant access.
+                          Pay ${PLAN_PRICES[formData.planType as keyof typeof PLAN_PRICES].toLocaleString()} and get instant access.
                         </p>
                       </div>
                     </div>
