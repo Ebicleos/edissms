@@ -180,7 +180,7 @@ export default function Auth() {
       }
 
       await supabase.from('password_reset_requests').insert({
-        user_id: existingProfile.id,
+        user_id: currentUser?.id ?? null,
         email: forgotPasswordEmail,
         role: userRole.role,
         status: 'pending',
