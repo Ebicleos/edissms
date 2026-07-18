@@ -268,7 +268,7 @@ export default function SystemSettings() {
                 />
               </div>
               <div>
-                <Label htmlFor="yearlyPrice">Yearly Price (₦)</Label>
+                <Label htmlFor="yearlyPrice">Yearly Price ($)</Label>
                 <Input
                   id="yearlyPrice"
                   type="number"
